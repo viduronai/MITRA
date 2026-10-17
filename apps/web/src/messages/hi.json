@@ -1,0 +1,141 @@
+{
+  "_note": "TODO: native-speaker review",
+  "meta": {
+    "title": "Mitra",
+    "description": "आपका AI कर्मचारी हर कॉल का जवाब देता है, appointment बुक करता है और follow-up करता है।"
+  },
+  "nav": {
+    "label": "मुख्य मेन्यू",
+    "home": "होम",
+    "calls": "कॉल",
+    "team": "टीम",
+    "customers": "ग्राहक",
+    "more": "और",
+    "routines": "रूटीन",
+    "approvals": "मंज़ूरी",
+    "connect": "कनेक्ट",
+    "soon": "जल्द",
+    "collapse": "मेन्यू छोटा करें",
+    "expand": "मेन्यू बड़ा करें",
+    "skip": "मुख्य हिस्से पर जाएँ",
+    "brand": "Mitra होम"
+  },
+  "header": {
+    "isWorking": "{name} काम कर रही है",
+    "isPaused": "{name} रुकी हुई है",
+    "callsLive": "{count, plural, =0 {अभी कोई कॉल नहीं} one {# कॉल चल रही है} other {# कॉल चल रही हैं}}"
+  },
+  "language": {
+    "change": "भाषा बदलें"
+  },
+  "theme": {
+    "change": "रूप बदलें",
+    "light": "लाइट",
+    "dark": "डार्क",
+    "system": "मेरे फ़ोन जैसा"
+  },
+  "home": {
+    "greetingMorning": "सुप्रभात, {name}",
+    "greetingAfternoon": "नमस्ते, {name}",
+    "greetingEvening": "शुभ संध्या, {name}",
+    "statsLabel": "आज एक नज़र में",
+    "callsToday": "आज की कॉल",
+    "booked": "बुक हुईं",
+    "rescued": "मिस्ड कॉल बचाईं",
+    "needsYou": "आपकी ज़रूरत है",
+    "trendUp": "कल से {value} ज़्यादा",
+    "trendDown": "कल से {value} कम",
+    "trendSame": "कल जितनी ही",
+    "needsYouCount": "{count, plural, =0 {अभी आपकी ज़रूरत नहीं है} one {# बात पर आपका जवाब चाहिए} other {# बातों पर आपका जवाब चाहिए}}",
+    "allClear": "सब ठीक है। कुछ भी हुआ तो प्रिया आपको बताएगी।",
+    "recentCalls": "हाल की कॉल",
+    "seeAllCalls": "सभी कॉल देखें"
+  },
+  "needs": {
+    "unknownQuestion": "{name} ने रविवार की टाइमिंग के बारे में पूछा। प्रिया को जवाब नहीं पता था।",
+    "unknownQuestionAction": "प्रिया को सिखाएँ",
+    "upsetCaller": "{name} लंबे इंतज़ार से नाराज़ लगे।",
+    "upsetCallerAction": "वापस कॉल करें",
+    "failedMessage": "{name} को booking मैसेज नहीं गया।",
+    "failedMessageAction": "फिर से भेजें",
+    "sentAgain": "{name} को booking मैसेज फिर से भेज दिया।"
+  },
+  "results": {
+    "booked": "बुक हुआ",
+    "interested": "रुचि है",
+    "callBack": "वापस कॉल",
+    "notInterested": "रुचि नहीं",
+    "failed": "नहीं हो पाया"
+  },
+  "call": {
+    "duration": "{minutes, plural, =0 {} other {#मि }}{seconds}से",
+    "incoming": "आई हुई कॉल",
+    "outgoing": "की गई कॉल",
+    "handledBy": "{name} ने बात की",
+    "open": "{name} की कॉल खोलें"
+  },
+  "employee": {
+    "working": "काम पर",
+    "paused": "रुकी हुई",
+    "hearSample": "सैंपल सुनें",
+    "stopSample": "सैंपल रोकें",
+    "receptionist": "रिसेप्शनिस्ट",
+    "bookedToday": "{count, plural, =0 {आज अभी कोई बुकिंग नहीं} one {आज # बुक हुआ} other {आज # बुक हुए}}",
+    "callsToday": "आज {count, plural, one {# कॉल} other {# कॉल}}"
+  },
+  "voice": {
+    "play": "{name} की आवाज़ सुनें",
+    "stop": "{name} की आवाज़ रोकें",
+    "playing": "चल रहा है",
+    "groupLabel": "एक आवाज़ चुनें"
+  },
+  "setup": {
+    "title": "सेटअप पूरा करें",
+    "progress": "{percent}% पूरा",
+    "business": "अपने बिज़नेस की जानकारी दें",
+    "teach": "प्रिया को अपने क्लिनिक के बारे में सिखाएँ",
+    "voice": "प्रिया की आवाज़ चुनें",
+    "testCall": "टेस्ट कॉल करें",
+    "forward": "अपनी मिस्ड कॉल फ़ॉरवर्ड करें",
+    "done": "हो गया",
+    "todo": "करना है",
+    "continue": "सेटअप जारी रखें"
+  },
+  "calls": {
+    "title": "कॉल",
+    "subtitle": "आज प्रिया ने जो भी कॉल उठाईं या कीं।",
+    "today": "आज"
+  },
+  "team": {
+    "title": "आपकी टीम",
+    "subtitle": "प्रिया आपकी कॉल का जवाब देती है, appointment बुक करती है और रिमाइंडर भेजती है।",
+    "moreSoon": "और AI कर्मचारी जल्द आ रहे हैं — follow-up कॉलर और payment कॉलर।"
+  },
+  "customers": {
+    "title": "ग्राहक",
+    "subtitle": "प्रिया ने जिनसे भी बात की, और उसे उनके बारे में क्या याद है।",
+    "emptyTitle": "अभी कोई ग्राहक नहीं",
+    "empty": "प्रिया जिनसे बात करेगी, वे पहली कॉल के बाद यहाँ दिखेंगे।",
+    "emptyAction": "ग्राहक जोड़ें"
+  },
+  "more": {
+    "title": "और",
+    "billing": "बिलिंग और मिनट",
+    "billingHint": "{amount} बैलेंस · लगभग {minutes} मिनट बचे",
+    "profile": "बिज़नेस प्रोफ़ाइल",
+    "profileHint": "नाम, ब्रांच और काम के घंटे",
+    "people": "लोग और एक्सेस",
+    "peopleHint": "आपकी टीम में कौन Mitra इस्तेमाल कर सकता है",
+    "compliance": "नियम-पालन",
+    "complianceHint": "सहमति, opt-out और डेटा अनुरोध",
+    "appearance": "भाषा और रूप",
+    "appearanceHint": "भाषा, लाइट या डार्क",
+    "help": "मदद",
+    "helpHint": "WhatsApp पर हमसे बात करें"
+  },
+  "empty": {
+    "callsTitle": "अभी कोई कॉल नहीं",
+    "calls": "प्रिया जवाब देना शुरू करेगी तो कॉल यहाँ दिखेंगी।",
+    "callsAction": "टेस्ट कॉल करें"
+  }
+}

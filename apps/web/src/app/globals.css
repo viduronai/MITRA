@@ -1,0 +1,367 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Mitra UI tokens — see docs/06-DESIGN-SYSTEM.md.
+ * Raw Mitra tokens (--brand-*, --accent-*, --bg, --surface, --text…) are the
+ * source of truth. shadcn's variables (--primary, --card, --ring…) are mapped
+ * onto them so every shadcn component inherits the Mitra look.
+ *
+ * Theme: light on :root; dark follows the system unless data-theme="light",
+ * or is forced with data-theme="dark" on <html>.
+ */
+
+/* `dark:` utilities follow the same rules as the tokens below. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/* ---------- Light (default) ---------- */
+:root {
+  color-scheme: light;
+
+  /* §3.1 Brand */
+  --brand-50: #eef0ff;
+  --brand-100: #dce0ff;
+  --brand-500: #4b4ded;
+  --brand-600: #3b3bd6;
+  --brand-700: #2f2fb0;
+  --on-brand: #ffffff;
+  /* "Marigold" accent */
+  --accent-400: #f7b84b;
+  --accent-100: #fff3dc;
+  --on-accent-100: #7a4f00;
+
+  /* §3.2 Neutrals (warm "Stone") */
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --border: #e7e6e3;
+  --text: #17171a;
+  --text-muted: #5f5e66;
+  --text-subtle: #8c8b93;
+
+  /* §3.3 Semantic. *-fg variants keep text on soft fills ≥ 4.5:1. */
+  --success: #12a150;
+  --success-fg: #0b6b35;
+  --warning: #d98e04;
+  --warning-fg: #7f5300;
+  --danger: #dc3545;
+  --danger-fg: #b11f2d;
+  --info: #2f7fe0;
+  --info-fg: #1b5bab;
+
+  /* §5 Elevation — soft, warm */
+  --elev-xs: 0 1px 2px rgba(23, 23, 26, 0.05);
+  --elev-sm: 0 2px 8px rgba(23, 23, 26, 0.06);
+  --elev-md: 0 8px 24px rgba(23, 23, 26, 0.08);
+  --elev-lg: 0 24px 48px rgba(23, 23, 26, 0.12);
+}
+
+/* ---------- Dark ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --brand-50: #14152e;
+    --brand-100: #1c1e40;
+    --brand-500: #7c7eff;
+    --brand-600: #8e90ff;
+    --brand-700: #a7a9ff;
+    --on-brand: #0b0b0d;
+    --accent-400: #f7b84b;
+    --accent-100: #3a2c10;
+    --on-accent-100: #f7c56b;
+    --bg: #0b0b0d;
+    --surface: #141417;
+    --surface-2: #1b1b1f;
+    --border: #2a2a30;
+    --text: #f2f2f3;
+    --text-muted: #a1a0a8;
+    --text-subtle: #76757d;
+    --success: #3dd68c;
+    --success-fg: #3dd68c;
+    --warning: #f5b83d;
+    --warning-fg: #f5b83d;
+    --danger: #ff6b6b;
+    --danger-fg: #ff6b6b;
+    --info: #6aa8ff;
+    --info-fg: #6aa8ff;
+    /* §12: shadows give way to borders + elevated surfaces */
+    --elev-xs: 0 0 #0000;
+    --elev-sm: 0 0 #0000;
+    --elev-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+    --elev-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand-50: #14152e;
+  --brand-100: #1c1e40;
+  --brand-500: #7c7eff;
+  --brand-600: #8e90ff;
+  --brand-700: #a7a9ff;
+  --on-brand: #0b0b0d;
+  --accent-400: #f7b84b;
+  --accent-100: #3a2c10;
+  --on-accent-100: #f7c56b;
+  --bg: #0b0b0d;
+  --surface: #141417;
+  --surface-2: #1b1b1f;
+  --border: #2a2a30;
+  --text: #f2f2f3;
+  --text-muted: #a1a0a8;
+  --text-subtle: #76757d;
+  --success: #3dd68c;
+  --success-fg: #3dd68c;
+  --warning: #f5b83d;
+  --warning-fg: #f5b83d;
+  --danger: #ff6b6b;
+  --danger-fg: #ff6b6b;
+  --info: #6aa8ff;
+  --info-fg: #6aa8ff;
+  --elev-xs: 0 0 #0000;
+  --elev-sm: 0 0 #0000;
+  --elev-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --elev-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- shadcn variables → Mitra tokens ---------- */
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--brand-600);
+  --primary-foreground: var(--on-brand);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  /* shadcn "accent" = neutral hover fill (not Marigold) */
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--brand-500);
+  --radius: 0.75rem;
+  --chart-1: var(--brand-600);
+  --chart-2: var(--accent-400);
+  --chart-3: var(--success);
+  --chart-4: var(--info);
+  --chart-5: var(--text-subtle);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--brand-600);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--brand-50);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--brand-500);
+
+  /* §7 Motion */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  /* shadcn semantic colours */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Mitra colours (bg-brand-600, text-text-muted, bg-accent-400…) */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-on-brand: var(--on-brand);
+  --color-accent-100: var(--accent-100);
+  --color-accent-400: var(--accent-400);
+  --color-on-accent-100: var(--on-accent-100);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-fg: var(--info-fg);
+
+  /* §4 Fonts (variables come from next/font in app/layout.tsx) */
+  --font-sans: var(--font-inter), var(--font-noto-telugu),
+    var(--font-noto-devanagari), system-ui, sans-serif;
+  --font-display: var(--font-geist), var(--font-inter),
+    var(--font-noto-telugu), var(--font-noto-devanagari), sans-serif;
+  --font-heading: var(--font-display);
+
+  /* §5 Radius: inputs/buttons 12 · cards 16 · sheets/modals 24 · pills full */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2rem;
+  --radius-card: 1rem;
+  --radius-sheet: 1.5rem;
+
+  /* §5 Elevation */
+  --shadow-xs: var(--elev-xs);
+  --shadow-sm: var(--elev-sm);
+  --shadow-md: var(--elev-md);
+  --shadow-lg: var(--elev-lg);
+
+  /* §7 Motion */
+  --ease-standard: var(--motion-ease-standard);
+  --ease-emphasized: var(--motion-ease-emphasized);
+  --animate-wave: wave 0.9s ease-in-out infinite;
+
+  @keyframes wave {
+    0%,
+    100% {
+      transform: scaleY(0.35);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+}
+
+/* §7 Motion utilities: motion-fast / motion-base / motion-slow */
+@utility motion-fast {
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--motion-ease-standard);
+}
+@utility motion-base {
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--motion-ease-standard);
+}
+@utility motion-slow {
+  transition-duration: var(--motion-slow);
+  transition-timing-function: var(--motion-ease-emphasized);
+}
+
+/* §11 Focus ring: 2px brand-500 + 2px offset */
+@utility focus-ring {
+  outline: none;
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Extends a small control's hit area to at least 44×44 px (§11). */
+@utility hit-area {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 24px;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  @media (min-width: 768px) {
+    body {
+      font-size: 16px;
+    }
+  }
+  h1,
+  h2 {
+    font-family: var(--font-display);
+  }
+  /* §4: Indic scripts get more line-height and never all-caps */
+  :lang(te),
+  :lang(hi) {
+    line-height: 1.7;
+    text-transform: none;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* §7: respect reduced motion — keep only near-instant fades */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,55 @@
+# Local development services for Mitra.
+# Start: npm run infra:up   ·   Stop: npm run infra:down
+# Ports are offset from defaults to avoid clashing with anything already installed.
+name: mitra
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: mitra
+      POSTGRES_PASSWORD: mitra_dev_password
+      POSTGRES_DB: mitra
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mitra -d mitra"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  nats:
+    image: nats:2.11-alpine
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats_data:/data
+
+  temporal:
+    image: temporalio/temporal:latest
+    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/data/temporal.db"]
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    volumes:
+      - temporal_data:/data
+
+volumes:
+  postgres_data:
+  nats_data:
+  temporal_data:

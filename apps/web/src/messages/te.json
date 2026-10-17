@@ -1,0 +1,141 @@
+{
+  "_note": "TODO: native-speaker review",
+  "meta": {
+    "title": "Mitra",
+    "description": "మీ AI ఉద్యోగి ప్రతి కాల్‌కి జవాబిస్తుంది, appointments బుక్ చేస్తుంది, follow-up చేస్తుంది."
+  },
+  "nav": {
+    "label": "ముఖ్య మెనూ",
+    "home": "హోమ్",
+    "calls": "కాల్స్",
+    "team": "టీమ్",
+    "customers": "కస్టమర్లు",
+    "more": "ఇంకా",
+    "routines": "రొటీన్లు",
+    "approvals": "అనుమతులు",
+    "connect": "కనెక్ట్",
+    "soon": "త్వరలో",
+    "collapse": "మెనూ చిన్నది చేయండి",
+    "expand": "మెనూ పెద్దది చేయండి",
+    "skip": "ముఖ్య భాగానికి వెళ్ళండి",
+    "brand": "Mitra హోమ్"
+  },
+  "header": {
+    "isWorking": "{name} పని చేస్తోంది",
+    "isPaused": "{name} ఆగి ఉంది",
+    "callsLive": "{count, plural, =0 {ఇప్పుడు కాల్స్ లేవు} one {# కాల్ జరుగుతోంది} other {# కాల్స్ జరుగుతున్నాయి}}"
+  },
+  "language": {
+    "change": "భాష మార్చండి"
+  },
+  "theme": {
+    "change": "రూపం మార్చండి",
+    "light": "లైట్",
+    "dark": "డార్క్",
+    "system": "నా ఫోన్ లాగే"
+  },
+  "home": {
+    "greetingMorning": "శుభోదయం, {name}",
+    "greetingAfternoon": "నమస్కారం, {name}",
+    "greetingEvening": "శుభ సాయంత్రం, {name}",
+    "statsLabel": "ఈరోజు ఒక్క చూపులో",
+    "callsToday": "ఈరోజు కాల్స్",
+    "booked": "బుక్ అయినవి",
+    "rescued": "మిస్డ్ కాల్స్ కాపాడినవి",
+    "needsYou": "మీ సహాయం కావాలి",
+    "trendUp": "నిన్నటి కంటే {value} ఎక్కువ",
+    "trendDown": "నిన్నటి కంటే {value} తక్కువ",
+    "trendSame": "నిన్నటి లాగే",
+    "needsYouCount": "{count, plural, =0 {ఇప్పుడు మీ సహాయం అవసరం లేదు} one {# విషయానికి మీ జవాబు కావాలి} other {# విషయాలకు మీ జవాబు కావాలి}}",
+    "allClear": "అన్నీ సరిగ్గా ఉన్నాయి. ఏదైనా వస్తే ప్రియ మీకు చెబుతుంది.",
+    "recentCalls": "ఇటీవలి కాల్స్",
+    "seeAllCalls": "అన్ని కాల్స్ చూడండి"
+  },
+  "needs": {
+    "unknownQuestion": "{name} ఆదివారం టైమింగ్స్ గురించి అడిగారు. ప్రియకు జవాబు తెలియలేదు.",
+    "unknownQuestionAction": "ప్రియకు నేర్పండి",
+    "upsetCaller": "ఎక్కువసేపు వేచి ఉండటం వల్ల {name} కోపంగా ఉన్నారు.",
+    "upsetCallerAction": "తిరిగి కాల్ చేయండి",
+    "failedMessage": "{name} కి booking మెసేజ్ వెళ్ళలేదు.",
+    "failedMessageAction": "మళ్ళీ పంపండి",
+    "sentAgain": "{name} కి booking మెసేజ్ మళ్ళీ పంపాం."
+  },
+  "results": {
+    "booked": "బుక్ అయింది",
+    "interested": "ఆసక్తి ఉంది",
+    "callBack": "తిరిగి కాల్",
+    "notInterested": "ఆసక్తి లేదు",
+    "failed": "విఫలమైంది"
+  },
+  "call": {
+    "duration": "{minutes, plural, =0 {} other {#ని }}{seconds}సె",
+    "incoming": "వచ్చిన కాల్",
+    "outgoing": "చేసిన కాల్",
+    "handledBy": "{name} మాట్లాడింది",
+    "open": "{name} తో కాల్ తెరవండి"
+  },
+  "employee": {
+    "working": "పని చేస్తోంది",
+    "paused": "ఆగి ఉంది",
+    "hearSample": "శాంపిల్ వినండి",
+    "stopSample": "శాంపిల్ ఆపండి",
+    "receptionist": "రిసెప్షనిస్ట్",
+    "bookedToday": "{count, plural, =0 {ఈరోజు ఇంకా బుకింగ్స్ లేవు} one {ఈరోజు # బుక్ అయింది} other {ఈరోజు # బుక్ అయ్యాయి}}",
+    "callsToday": "ఈరోజు {count, plural, one {# కాల్} other {# కాల్స్}}"
+  },
+  "voice": {
+    "play": "{name} గొంతు వినండి",
+    "stop": "{name} గొంతు ఆపండి",
+    "playing": "వినిపిస్తోంది",
+    "groupLabel": "ఒక గొంతు ఎంచుకోండి"
+  },
+  "setup": {
+    "title": "సెటప్ పూర్తి చేయండి",
+    "progress": "{percent}% పూర్తయింది",
+    "business": "మీ బిజినెస్ వివరాలు ఇవ్వండి",
+    "teach": "మీ క్లినిక్ గురించి ప్రియకు నేర్పండి",
+    "voice": "ప్రియ గొంతు ఎంచుకోండి",
+    "testCall": "టెస్ట్ కాల్ చేయండి",
+    "forward": "మీ మిస్డ్ కాల్స్ ఫార్వర్డ్ చేయండి",
+    "done": "పూర్తయింది",
+    "todo": "చేయాలి",
+    "continue": "సెటప్ కొనసాగించండి"
+  },
+  "calls": {
+    "title": "కాల్స్",
+    "subtitle": "ఈరోజు ప్రియ మాట్లాడిన ప్రతి కాల్.",
+    "today": "ఈరోజు"
+  },
+  "team": {
+    "title": "మీ టీమ్",
+    "subtitle": "ప్రియ మీ కాల్స్‌కి జవాబిస్తుంది, appointments బుక్ చేస్తుంది, రిమైండర్లు పంపుతుంది.",
+    "moreSoon": "ఇంకా AI ఉద్యోగులు త్వరలో వస్తున్నారు — follow-up కాలర్, payment కాలర్."
+  },
+  "customers": {
+    "title": "కస్టమర్లు",
+    "subtitle": "ప్రియ మాట్లాడిన ప్రతి ఒక్కరూ, వారి గురించి ఆమెకు గుర్తున్నవి.",
+    "emptyTitle": "ఇంకా కస్టమర్లు లేరు",
+    "empty": "ప్రియ మాట్లాడిన వారు వారి మొదటి కాల్ తర్వాత ఇక్కడ కనిపిస్తారు.",
+    "emptyAction": "కస్టమర్‌ని జోడించండి"
+  },
+  "more": {
+    "title": "ఇంకా",
+    "billing": "బిల్లింగ్ & నిమిషాలు",
+    "billingHint": "{amount} బ్యాలెన్స్ · సుమారు {minutes} నిమిషాలు మిగిలాయి",
+    "profile": "బిజినెస్ ప్రొఫైల్",
+    "profileHint": "పేరు, బ్రాంచ్‌లు, పని వేళలు",
+    "people": "వ్యక్తులు & యాక్సెస్",
+    "peopleHint": "మీ టీమ్‌లో ఎవరు Mitra వాడవచ్చు",
+    "compliance": "నిబంధనలు",
+    "complianceHint": "సమ్మతి, opt-outs, డేటా అభ్యర్థనలు",
+    "appearance": "భాష & రూపం",
+    "appearanceHint": "భాష, లైట్ లేదా డార్క్",
+    "help": "సహాయం",
+    "helpHint": "WhatsApp లో మాతో మాట్లాడండి"
+  },
+  "empty": {
+    "callsTitle": "ఇంకా కాల్స్ లేవు",
+    "calls": "ప్రియ జవాబివ్వడం మొదలుపెట్టాక కాల్స్ ఇక్కడ కనిపిస్తాయి.",
+    "callsAction": "టెస్ట్ కాల్ చేయండి"
+  }
+}

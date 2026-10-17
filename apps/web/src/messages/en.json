@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "title": "Mitra",
+    "description": "Your AI employee answers every call, books appointments and follows up."
+  },
+  "nav": {
+    "label": "Main",
+    "home": "Home",
+    "calls": "Calls",
+    "team": "Team",
+    "customers": "Customers",
+    "more": "More",
+    "routines": "Routines",
+    "approvals": "Approvals",
+    "connect": "Connect",
+    "soon": "Soon",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "skip": "Skip to main content",
+    "brand": "Mitra home"
+  },
+  "header": {
+    "isWorking": "{name} is working",
+    "isPaused": "{name} is paused",
+    "callsLive": "{count, plural, =0 {no calls right now} one {# call live} other {# calls live}}"
+  },
+  "language": {
+    "change": "Change language"
+  },
+  "theme": {
+    "change": "Change appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Same as my phone"
+  },
+  "home": {
+    "greetingMorning": "Good morning, {name}",
+    "greetingAfternoon": "Good afternoon, {name}",
+    "greetingEvening": "Good evening, {name}",
+    "statsLabel": "Today at a glance",
+    "callsToday": "Calls today",
+    "booked": "Booked",
+    "rescued": "Missed calls rescued",
+    "needsYou": "Needs you",
+    "trendUp": "{value} more than yesterday",
+    "trendDown": "{value} fewer than yesterday",
+    "trendSame": "Same as yesterday",
+    "needsYouCount": "{count, plural, =0 {Nothing needs you right now} one {# thing needs your answer} other {# things need your answer}}",
+    "allClear": "You're all caught up. Priya will tell you if something comes up.",
+    "recentCalls": "Recent calls",
+    "seeAllCalls": "See all calls"
+  },
+  "needs": {
+    "unknownQuestion": "{name} asked about Sunday timings. Priya didn't know the answer.",
+    "unknownQuestionAction": "Teach Priya",
+    "upsetCaller": "{name} sounded upset about a long wait.",
+    "upsetCallerAction": "Call back",
+    "failedMessage": "The booking message to {name} didn't send.",
+    "failedMessageAction": "Send again",
+    "sentAgain": "Sent the booking message to {name} again."
+  },
+  "results": {
+    "booked": "Booked",
+    "interested": "Interested",
+    "callBack": "Call back",
+    "notInterested": "Not interested",
+    "failed": "Failed"
+  },
+  "call": {
+    "duration": "{minutes, plural, =0 {} other {#m }}{seconds}s",
+    "incoming": "Incoming call",
+    "outgoing": "Outgoing call",
+    "handledBy": "Handled by {name}",
+    "open": "Open call with {name}"
+  },
+  "employee": {
+    "working": "Working",
+    "paused": "Paused",
+    "hearSample": "Hear sample",
+    "stopSample": "Stop sample",
+    "receptionist": "Receptionist",
+    "bookedToday": "{count, plural, =0 {No bookings yet today} one {# booked today} other {# booked today}}",
+    "callsToday": "{count, plural, one {# call} other {# calls}} today"
+  },
+  "voice": {
+    "play": "Play {name}'s voice",
+    "stop": "Stop {name}'s voice",
+    "playing": "Playing",
+    "groupLabel": "Choose a voice"
+  },
+  "setup": {
+    "title": "Finish setting up",
+    "progress": "{percent}% done",
+    "business": "Add your business details",
+    "teach": "Teach Priya about your clinic",
+    "voice": "Pick Priya's voice",
+    "testCall": "Make a test call",
+    "forward": "Forward your missed calls",
+    "done": "Done",
+    "todo": "To do",
+    "continue": "Continue setup"
+  },
+  "calls": {
+    "title": "Calls",
+    "subtitle": "Every call Priya answered or made today.",
+    "today": "Today"
+  },
+  "team": {
+    "title": "Your team",
+    "subtitle": "Priya answers your calls, books appointments and sends reminders.",
+    "moreSoon": "More AI employees are coming soon — a follow-up caller and a payment caller."
+  },
+  "customers": {
+    "title": "Customers",
+    "subtitle": "Everyone Priya has spoken with, and what she remembers about them.",
+    "emptyTitle": "No customers yet",
+    "empty": "People Priya speaks with will appear here after their first call.",
+    "emptyAction": "Add a customer"
+  },
+  "more": {
+    "title": "More",
+    "billing": "Billing & minutes",
+    "billingHint": "{amount} balance · about {minutes} minutes left",
+    "profile": "Business profile",
+    "profileHint": "Name, branches and working hours",
+    "people": "People & access",
+    "peopleHint": "Who in your team can use Mitra",
+    "compliance": "Compliance",
+    "complianceHint": "Consent, opt-outs and data requests",
+    "appearance": "Language & appearance",
+    "appearanceHint": "Language, light or dark",
+    "help": "Help",
+    "helpHint": "Chat with us on WhatsApp"
+  },
+  "empty": {
+    "callsTitle": "No calls yet",
+    "calls": "Calls will appear here once Priya starts answering.",
+    "callsAction": "Make a test call"
+  }
+}

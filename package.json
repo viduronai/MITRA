@@ -1,0 +1,20 @@
+{
+  "name": "mitra",
+  "private": true,
+  "description": "Mitra — AI voice employees for Indian businesses",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace apps/web",
+    "build:web": "npm run build --workspace apps/web",
+    "lint:web": "npm run lint --workspace apps/web",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
