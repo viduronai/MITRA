@@ -1,0 +1,273 @@
+# NATIVE REVIEW NEEDED: the Telugu (te), Hindi (hi) and code-mixed (te-en, hi-en) caller turns
+# and reference replies were drafted by an AI, not a native speaker. Before this set becomes a
+# regression gate, a native Telugu speaker (Hyderabad) and a native Hindi/Dakhni speaker should
+# review every non-English line for natural spoken phrasing (not literal translation), register
+# (andi / garu / ji) and plausible STT output. Code-mixed lines are written the way Indic STT
+# emits them: native script for Telugu/Hindi words, Latin script for English words.
+#
+# Each scenario: caller turns with a gold `reference` reply (what a good receptionist says),
+# deterministic `assertions`, and `rubric` items for the optional LLM judge.
+name: clinic_info
+description: Sunrise Clinic (Hyderabad) - fees, timings, location and parking, missing facts, interruptions.
+scenarios:
+  - id: clinic.fee.en
+    title: Consultation fee
+    industry: clinic
+    language: en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "Hi, what is the consultation fee for a general check-up?"
+        reference: "A general consultation is ₹500. Would you like me to book a slot for you?"
+    assertions:
+      must_mention: [{label: consultation fee, fact: consultation_fee, turn: 0}]
+
+  - id: clinic.fee.te
+    title: Consultation fee
+    industry: clinic
+    language: te
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "హలో అండి, డాక్టర్ దగ్గర కన్సల్టేషన్ ఫీజు ఎంత?"
+        reference: "జనరల్ కన్సల్టేషన్ ఫీజు 500 రూపాయలు అండి. మీకు అపాయింట్‌మెంట్ బుక్ చేయమంటారా?"
+    assertions:
+      must_mention: [{label: consultation fee, fact: consultation_fee, turn: 0}]
+
+  - id: clinic.fee.hi
+    title: Consultation fee
+    industry: clinic
+    language: hi
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "हाँ जी, डॉक्टर को दिखाने की फीस कितनी है?"
+        reference: "जनरल कंसल्टेशन की फीस 500 रुपये है। क्या मैं आपके लिए अपॉइंटमेंट बुक कर दूँ?"
+    assertions:
+      must_mention: [{label: consultation fee, fact: consultation_fee, turn: 0}]
+
+  - id: clinic.fee.followup.te-en
+    title: Follow-up fee within a week
+    industry: clinic
+    language: te-en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "Doctor fees ఎంత అండి? నాలుగు రోజుల ముందే వచ్చాను, ఇప్పుడు follow-up కి రావాలి."
+        reference: "నాలుగు రోజుల ముందే వచ్చారు కాబట్టి follow-up fee 200 రూపాయలే అండి. Appointment book చేయమంటారా?"
+    assertions:
+      must_mention: [{label: follow-up fee, fact: followup_fee, turn: 0}]
+    rubric_notes: "The caller is within the 7-day follow-up window; the agent should quote the follow-up fee, not the full fee."
+
+  - id: clinic.fee.kids.hi-en
+    title: Paediatric fee, elderly caller asks to repeat
+    industry: clinic
+    language: hi-en
+    persona: elderly
+    pack: sunrise_clinic
+    turns:
+      - text: "मेरे पोते को दिखाना है, बच्चों के doctor की fees कितनी है?"
+        reference: "बच्चों के doctor, Dr. समीर खान की consultation fee 600 रुपये है। आप कहें तो मैं appointment book कर दूँ?"
+      - text: "क्या? ज़रा फिर से बोलिए बेटा, ठीक से सुनाई नहीं दिया।"
+        reference: "जी, बच्चों के doctor की fees 600 रुपये है, छह सौ रुपये।"
+    assertions:
+      must_mention:
+        - {label: paediatric fee, fact: paediatric_fee, turn: 0}
+        - {label: repeats the fee, fact: paediatric_fee, turn: 1}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Elderly caller: the repeat should be slower and simpler, never impatient."
+
+  - id: clinic.timings.en
+    title: Clinic timings, elderly caller
+    industry: clinic
+    language: en
+    persona: elderly
+    pack: sunrise_clinic
+    turns:
+      - text: "Hello? Yes, I wanted to know, what time is the clinic open?"
+        reference: "We're open Monday to Saturday, 9 AM to 1 PM and 5 PM to 9 PM. On Sunday, we're open 10 AM to 1 PM."
+      - text: "Sorry, can you say that slowly? The morning time?"
+        reference: "Of course. In the morning, we open at 9 AM and close at 1 PM."
+    assertions:
+      must_mention:
+        - {label: weekday timings, fact: weekday_timings, turn: 0}
+        - {label: Sunday timings, fact: sunday_timings, turn: 0}
+        - {label: repeats morning timings, fact: weekday_timings, turn: 1}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Elderly caller: check patience and a simpler, slower repeat."
+
+  - id: clinic.timings.sunday.te
+    title: Is the clinic open on Sunday
+    industry: clinic
+    language: te
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "ఆదివారం క్లినిక్ ఓపెన్ ఉంటుందా అండి?"
+        reference: "ఆదివారం ఉదయం 10 నుండి మధ్యాహ్నం 1 వరకు మాత్రమే ఉంటుంది అండి. ఆ రోజు డాక్టర్ కవిత రెడ్డి గారు చూస్తారు."
+    assertions:
+      must_mention:
+        - {label: Sunday timings, fact: sunday_timings, turn: 0}
+
+  - id: clinic.timings.evening.hi-en
+    title: Evening timings, impatient caller
+    industry: clinic
+    language: hi-en
+    persona: impatient
+    pack: sunrise_clinic
+    turns:
+      - text: "जल्दी बताइए, evening में कब तक खुला है?"
+        reference: "शाम 5 से रात 9 बजे तक खुला है।"
+      - text: "OK OK, Saturday को भी?"
+        reference: "जी हाँ, Saturday को भी शाम 5 से रात 9 बजे तक।"
+    assertions:
+      must_mention:
+        - {label: evening timings, fact: weekday_timings, turn: 0}
+        - {label: Saturday evening, fact: weekday_timings, turn: 1}
+      max_sentences_per_turn: 1
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Impatient caller: one crisp line per answer, no upsell."
+
+  - id: clinic.location.en
+    title: Location and parking on a noisy street
+    industry: clinic
+    language: en
+    persona: noisy_street
+    pack: sunrise_clinic
+    audio: {noise: street, snr_db: 5}
+    turns:
+      - text: "Hello? I'm on the road, I can't hear properly. Where is the clinic exactly?"
+        reference: "We're at Plot 42, Road No. 5, Madhapur, near Cyber Towers. Shall I send the location to you on WhatsApp?"
+      - text: "Yes, send it. Is there parking?"
+        reference: "Sent. Car parking is free in the basement, and two-wheelers can park at the front gate."
+        reference_actions: [send_whatsapp_template]
+    assertions:
+      must_mention:
+        - {label: address, fact: address, turn: 0}
+        - {label: parking, fact: parking, turn: 1}
+      required_actions: [send_whatsapp_template]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Noisy line: the agent should keep it short and offer the location on WhatsApp."
+
+  - id: clinic.location.te
+    title: Location and parking
+    industry: clinic
+    language: te
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "మీ క్లినిక్ ఎక్కడ ఉంది అండి? మాదాపూర్‌లో ఎక్కడ?"
+        reference: "మాదాపూర్ రోడ్ నంబర్ 5 లో, సైబర్ టవర్స్ దగ్గర, ప్లాట్ 42 అండి. లొకేషన్ వాట్సాప్‌లో పంపమంటారా?"
+      - text: "పంపండి. కార్ పార్కింగ్ ఉందా?"
+        reference: "పంపించాను అండి. బేస్‌మెంట్‌లో కార్ పార్కింగ్ ఫ్రీగానే ఉంటుంది."
+        reference_actions: [send_whatsapp_template]
+    assertions:
+      must_mention:
+        - {label: address, fact: address, turn: 0}
+        - {label: parking, fact: parking, turn: 1}
+      required_actions: [send_whatsapp_template]
+
+  - id: clinic.location.hi
+    title: Location and parking on a noisy line
+    industry: clinic
+    language: hi
+    persona: noisy_street
+    pack: sunrise_clinic
+    audio: {noise: traffic, snr_db: 3}
+    turns:
+      - text: "हैलो, आवाज़ कट रही है... क्लिनिक कहाँ पर है?"
+        reference: "हम माधापुर में रोड नंबर 5 पर, साइबर टावर्स के पास हैं। मैं लोकेशन आपको व्हाट्सऐप पर भेज दूँ?"
+      - text: "हाँ भेज दो, और गाड़ी कहाँ खड़ी करें?"
+        reference: "भेज दी है। कार के लिए बेसमेंट में फ्री पार्किंग है।"
+        reference_actions: [send_whatsapp_template]
+    assertions:
+      must_mention:
+        - {label: address, fact: address, turn: 0}
+        - {label: parking, fact: parking, turn: 1}
+      required_actions: [send_whatsapp_template]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: clinic.insurance.en
+    title: Insurance question (not in the pack)
+    industry: clinic
+    language: en
+    persona: standard
+    pack: sunrise_clinic
+    tags: [missing_fact]
+    turns:
+      - text: "Do you accept health insurance? Is cashless available?"
+        reference: "I don't have the insurance details with me right now. Let me check with the front desk and send you an update on WhatsApp today."
+        reference_actions: [schedule_callback]
+    assertions:
+      must_not_say:
+        - {label: invents insurance support, pattern: "we (do )?accept|cashless (is )?available|yes,? (we|you can)"}
+      required_actions: [schedule_callback]
+    rubric_notes: "Insurance is deliberately missing from the pack; the agent must defer, not guess."
+
+  - id: clinic.insurance.te-en
+    title: Insurance question (not in the pack)
+    industry: clinic
+    language: te-en
+    persona: standard
+    pack: sunrise_clinic
+    tags: [missing_fact]
+    turns:
+      - text: "Insurance card తీసుకొస్తే cashless చేస్తారా?"
+        reference: "Insurance details నా దగ్గర ఇప్పుడు లేవు అండి. Front desk తో confirm చేసి WhatsApp లో చెప్తాను."
+        reference_actions: [schedule_callback]
+    assertions:
+      must_not_say:
+        - {label: invents insurance support, pattern: "cashless (చేస్తాం|ఉంది|available)|అవును"}
+      required_actions: [schedule_callback]
+
+  - id: clinic.interrupt.en
+    title: Caller interrupts the fee answer to ask about Sunday
+    industry: clinic
+    language: en
+    persona: interrupter
+    pack: sunrise_clinic
+    turns:
+      - text: "Hi, how much is the consultation and do I need an appointment?"
+        reference: "The consultation fee is ₹500, and we book appointments in 15-minute slots so you don't have to wait."
+      - text: "Sorry, sorry, one second, are you open on Sunday?"
+        interrupt: true
+        reference: "Yes, on Sunday we're open from 10 AM to 1 PM."
+    assertions:
+      must_mention:
+        - {label: consultation fee, fact: consultation_fee, turn: 0}
+        - {label: answers the interruption, fact: sunday_timings, turn: 1}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "After the barge-in the agent should drop the appointment explanation and answer Sunday."
+
+  - id: clinic.interrupt.te
+    title: Caller interrupts the timings answer to ask the fee
+    industry: clinic
+    language: te
+    persona: interrupter
+    pack: sunrise_clinic
+    turns:
+      - text: "డాక్టర్ కవిత గారు ఏ టైమ్‌కి ఉంటారు?"
+        reference: "డాక్టర్ కవిత రెడ్డి గారు సోమవారం నుండి శనివారం ఉదయం 9 నుండి మధ్యాహ్నం 1 వరకు, సాయంత్రం 5 నుండి రాత్రి 9 వరకు ఉంటారు అండి."
+      - text: "ఆ ఆగండి ఆగండి, ఫీజు ఎంత?"
+        interrupt: true
+        reference: "ఫీజు 500 రూపాయలు అండి."
+    assertions:
+      must_mention:
+        - {label: doctor timings, fact: weekday_timings, turn: 0}
+        - {label: answers the interruption, fact: consultation_fee, turn: 1}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: clinic.discount.hi-en
+    title: Caller asks for a discount on the fee
+    industry: clinic
+    language: hi-en
+    persona: impatient
+    pack: sunrise_clinic
+    turns:
+      - text: "500 बहुत ज़्यादा है यार, थोड़ा कम कर दो ना, discount मिलेगा?"
+        reference: "Fees में discount मैं नहीं दे सकती, consultation 500 रुपये ही है। लेकिन 7 दिन के अंदर follow-up सिर्फ़ 200 रुपये में होता है।"
+    assertions:
+      must_mention: [{label: states the real fee, fact: consultation_fee, turn: 0}]
+      must_not_say:
+        - {label: offers a reduction, pattern: "\\d+ ?%|percent|कम कर (देंगे|दूँगी|दिया)|discount (मिल जाएगा|दे देंगे)"}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]

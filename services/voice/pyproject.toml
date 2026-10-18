@@ -1,0 +1,98 @@
+[project]
+name = "mitra-voice"
+version = "0.1.0"
+description = "Mitra real-time voice engine: Pipecat pipeline (VAD, STT, LLM, TTS) with the human layer."
+readme = "README.md"
+authors = [
+    { name = "Ashish Varma", email = "ashishmaddha02@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.143.3",
+    "httpx>=0.28.1",
+    "mitra-human",
+    # Pinned exactly: Pipecat's API moves fast (PipelineTask -> PipelineWorker in 1.3).
+    "pipecat-ai[anthropic,deepgram,elevenlabs,sarvam,silero,webrtc,websocket]==1.12.0",
+    "pydantic-settings>=2.16.0",
+    "structlog>=26.1.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+mitra-voice = "mitra_voice.main:run"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.17.1",
+]
+
+[tool.uv.sources]
+mitra-human = { path = "../../libs/mitra-human", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "mitra_voice"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "N", "S", "ASYNC", "C4", "SIM", "RUF", "PT", "DTZ"]
+ignore = [
+    "B008", # FastAPI Depends() in defaults is idiomatic
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mitra_voice", "mitra_human"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src"]
+
+# Pipecat ships py.typed, but many of its public methods (event_handler decorators, frame
+# constructors, service __init__s taking **kwargs) are unannotated. Strict mode would flag every
+# call into them as "untyped call in typed context", so for Pipecat-facing modules only we allow
+# untyped calls, untyped decorators (``@x.event_handler(...)``) and subclassing Pipecat's
+# partially-typed bases. Everything else (pack, prompt, config, intents, session) stays strict.
+[[tool.mypy.overrides]]
+module = [
+    "mitra_voice.app",
+    "mitra_voice.pipeline",
+    "mitra_voice.latency",
+    "mitra_voice.processors.*",
+    "mitra_voice.providers.*",
+]
+disallow_untyped_calls = false
+disallow_untyped_decorators = false
+disallow_subclassing_any = false
+
+# Third-party packages without type information.
+[[tool.mypy.overrides]]
+module = ["aiortc.*", "av.*", "loguru.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra"
+filterwarnings = [
+    # Pipecat's own internals still construct a few deprecated helpers.
+    "ignore::DeprecationWarning:pipecat.*",
+    "ignore:`AudioContextTTSService` is deprecated:DeprecationWarning",
+]

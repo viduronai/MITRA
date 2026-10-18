@@ -83,7 +83,7 @@ async def test_transcript_answers_from_confirmed_facts_only(
     call = await _get(client, headers, call_id)
 
     lines = _employee_lines(call)
-    assert "Thank you for calling Sunrise Clinic. This is Priya" in lines[0]
+    assert "This is Priya, an AI assistant from Sunrise Clinic." in lines[0]
     assert "The consultation fee is ₹500." in lines
     assert "Our timings are Mon-Sat 9 AM to 8 PM." in lines
     assert not any("Madhapur" in line for line in lines)  # not confirmed => not said
@@ -103,7 +103,9 @@ async def test_missing_fee_is_politely_deferred_and_greeting_is_used(
     call_id = await _call(client, headers, employee_id)
     clock.advance(10)
     lines = _employee_lines(await _get(client, headers, call_id))
-    assert lines[0] == greeting
+    # The owner's greeting is used, but the mandatory AI disclosure is prefixed (docs/08 §4).
+    assert lines[0].endswith(greeting)
+    assert "an AI assistant" in lines[0]
     assert any("confirm the exact fee" in line for line in lines)
 
 

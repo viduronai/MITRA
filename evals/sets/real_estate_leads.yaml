@@ -1,0 +1,276 @@
+# NATIVE REVIEW NEEDED: the Telugu (te), Hindi (hi) and code-mixed (te-en, hi-en) caller turns
+# and reference replies were drafted by an AI, not a native speaker. Before this set becomes a
+# regression gate, a native Telugu speaker (Vijayawada / coastal Andhra) and a native Hindi
+# speaker should review every non-English line for natural spoken phrasing (not literal
+# translation), register (andi / garu / ji) and plausible STT output. Code-mixed lines are
+# written the way Indic STT emits them: native script for Telugu/Hindi words, Latin for English.
+name: real_estate_leads
+description: Skyline Homes (Vijayawada) - budget and location qualification, prices grounded in facts, site visits, interruptions, noisy lines.
+scenarios:
+  - id: re.qualify.en
+    title: 2BHK enquiry, budget and area qualification
+    industry: real_estate
+    language: en
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "Hi, I'm looking for a 2BHK in Vijayawada. What do you have?"
+        reference: "We have 2 BHK flats at Skyline Riverside in Gollapudi, 1,150 sq ft, starting from ₹58 lakh. May I know your budget and preferred area?"
+      - text: "My budget is around 60 lakhs, and I work near Benz Circle."
+        reference: "That fits well, as Riverside in Gollapudi is about 20 minutes from Benz Circle. Would you like to visit the site this weekend?"
+        reference_actions: [record_field]
+    assertions:
+      must_mention:
+        - {label: 2BHK price, fact: riverside_2bhk, turn: 0}
+        - {label: asks budget, any_of: [budget], turn: 0}
+        - {label: relates location, fact: riverside_location, turn: 1}
+      required_actions: [record_field]
+
+  - id: re.qualify.te
+    title: Flat with an 80 lakh budget
+    industry: real_estate
+    language: te
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "నమస్తే అండి, మాకు విజయవాడలో ఫ్లాట్ కావాలి, బడ్జెట్ ఒక 80 లక్షల వరకు ఉంది."
+        reference: "మా స్కైలైన్ రివర్‌సైడ్‌లో 2 BHK 58 లక్షల నుండి, 3 BHK 82 లక్షల నుండి ఉన్నాయి అండి. మీకు ఎన్ని బెడ్‌రూమ్స్ కావాలి?"
+        reference_actions: [record_field]
+      - text: "3 BHK అయితే బాగుంటుంది, ప్రాజెక్ట్ ఎక్కడ ఉంది?"
+        reference: "ప్రాజెక్ట్ గొల్లపూడిలో ఉంది అండి, బెంజ్ సర్కిల్ నుండి సుమారు 20 నిమిషాలు. ఈ వీకెండ్ సైట్ విజిట్‌కి రమ్మంటారా?"
+        reference_actions: [record_field]
+    assertions:
+      must_mention:
+        - {label: 3BHK price near budget, fact: riverside_3bhk, turn: 0}
+        - {label: location, fact: riverside_location, turn: 1}
+      required_actions: [record_field]
+    rubric_notes: "The 3BHK starts at 82 lakh, slightly above the 80 lakh budget; the agent must not shade the price."
+
+  - id: re.qualify.plots.te-en
+    title: Investment plot, asks if rates will go up
+    industry: real_estate
+    language: te-en
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "Plot కొనాలి అనుకుంటున్నాం, investment purpose. మీ దగ్గర plots ఉన్నాయా?"
+        reference: "ఉన్నాయి అండి, Kankipadu లో Skyline Meadows లో 200 sq yd plots 32 లక్షల నుండి start అవుతాయి. మీ budget ఎంత అనుకుంటున్నారు?"
+      - text: "35 లక్షల వరకు. మరి rate future లో పెరుగుతుందా?"
+        reference: "Future rates గురించి నేను promise చేయలేను అండి, అది market మీద ఆధారపడి ఉంటుంది. మీ budget లో 200 sq yd plot వస్తుంది, ఒకసారి site చూస్తారా?"
+        reference_actions: [record_field]
+    assertions:
+      must_mention: [{label: plot price, fact: meadows_plots, turn: 0}]
+      must_not_say:
+        - {label: predicts appreciation, pattern: "పెరుగుతుంది|double అవుతుంది|ఖచ్చితంగా|definitely|sure(ly)? (go up|increase)", turn: 1}
+      required_actions: [record_field]
+
+  - id: re.qualify.hi
+    title: Relocating from Hyderabad, 2BHK
+    industry: real_estate
+    language: hi
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "नमस्ते, मैं हैदराबाद से विजयवाड़ा शिफ्ट हो रहा हूँ, वहाँ 2 BHK देख रहा हूँ।"
+        reference: "हमारे स्काईलाइन रिवरसाइड प्रोजेक्ट में 2 BHK 1,150 स्क्वेयर फीट का है और 58 लाख से शुरू होता है। आपका बजट और पसंद का इलाका बता देंगे?"
+      - text: "बजट 60 लाख तक है, और ऑफिस एमजी रोड के पास है।"
+        reference: "एमजी रोड पर लब्बीपेट में ही हमारा सेल्स ऑफिस है, वहाँ से हम आपको साइट पर ले चल सकते हैं। क्या इस शनिवार साइट विज़िट रख दें?"
+        reference_actions: [record_field]
+    assertions:
+      must_mention:
+        - {label: 2BHK price, fact: riverside_2bhk, turn: 0}
+        - {label: sales office, fact: sales_office, turn: 1}
+      required_actions: [record_field]
+
+  - id: re.visit.en
+    title: Book a Sunday site visit with pickup
+    industry: real_estate
+    language: en
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "Can I come and see the Riverside flats this Sunday?"
+        reference: "Yes, site visits run every day from 10 AM to 6 PM, and on weekends we offer free pickup from Benz Circle. What time suits you on Sunday?"
+      - text: "11 AM, and yes, I'll need the pickup."
+        reference: "Done, your site visit is booked for Sunday at 11 AM with pickup from Benz Circle. I'll send the details on WhatsApp."
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      must_mention:
+        - {label: visit timings, fact: site_visits, turn: 0}
+        - {label: pickup, fact: site_visit_pickup, turn: 0}
+      required_actions: [book_slot]
+
+  - id: re.visit.te
+    title: Site visit timings, elderly caller asks to repeat
+    industry: real_estate
+    language: te
+    persona: elderly
+    pack: skyline_homes
+    turns:
+      - text: "అమ్మాయ్, మా అబ్బాయి కోసం ఫ్లాట్ చూడాలి. సైట్ చూడటానికి ఎప్పుడు రావచ్చు?"
+        reference: "ప్రతిరోజూ ఉదయం 10 నుండి సాయంత్రం 6 వరకు సైట్ విజిట్ చేయొచ్చు అండి. శని, ఆదివారాల్లో బెంజ్ సర్కిల్ నుండి ఫ్రీ పికప్ కూడా ఉంది."
+      - text: "నాకు సరిగ్గా వినపడలేదమ్మా, మళ్ళీ చెప్పు, ఏ టైమ్?"
+        reference: "తప్పకుండా అండి. ఉదయం 10 నుండి సాయంత్రం 6 వరకు, ఏ రోజైనా రావచ్చు."
+      - text: "సరే, శనివారం పొద్దున్న పదకొండుకి వస్తాం, పికప్ కావాలి."
+        reference: "సరే అండి, శనివారం ఉదయం 11 గంటలకి బెంజ్ సర్కిల్ నుండి పికప్‌తో సైట్ విజిట్ బుక్ చేశాను. వివరాలు వాట్సాప్‌లో పంపిస్తాను."
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      must_mention:
+        - {label: visit timings, fact: site_visits, turn: 0}
+        - {label: repeats timings, fact: site_visits, turn: 1}
+      required_actions: [book_slot]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Elderly caller: patient, simpler repeat."
+
+  - id: re.visit.te-en
+    title: Book a visit fast, impatient caller
+    industry: real_estate
+    language: te-en
+    persona: impatient
+    pack: skyline_homes
+    turns:
+      - text: "Site visit book చేయండి, tomorrow 4 PM. Details తర్వాత చెప్పండి, ఇప్పుడు time లేదు."
+        reference: "Done అండి, tomorrow 4 PM కి site visit book చేశాను. Details WhatsApp లో పంపిస్తాను."
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      required_actions: [book_slot]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Impatient caller: confirm and get off the line; no qualification questions now."
+
+  - id: re.visit.hi-en
+    title: Weekend visit without a car
+    industry: real_estate
+    language: hi-en
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "Weekend पे site visit का कोई arrangement है? मेरे पास गाड़ी नहीं है।"
+        reference: "जी हाँ, Saturday और Sunday को Benz Circle से free pickup मिलता है। आप किस दिन और किस time आना चाहेंगे?"
+      - text: "Sunday 3 बजे।"
+        reference: "ठीक है, Sunday दोपहर 3 बजे Benz Circle से pickup के साथ आपकी site visit book कर दी है। Details WhatsApp पर भेज रही हूँ।"
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      must_mention: [{label: pickup, fact: site_visit_pickup, turn: 0}]
+      required_actions: [book_slot]
+
+  - id: re.price.3bhk.en
+    title: 3BHK price and is it negotiable
+    industry: real_estate
+    language: en
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "What's the price of a 3BHK at Riverside, and is that negotiable?"
+        reference: "A 3 BHK at Skyline Riverside is 1,550 sq ft and starts from ₹82 lakh. For any price discussion, I can connect you with our sales manager."
+    assertions:
+      must_mention: [{label: 3BHK price, fact: riverside_3bhk, turn: 0}]
+      must_not_say:
+        - {label: claims it is negotiable, pattern: "(yes|it is|it's) negotiable|we can (reduce|lower)"}
+
+  - id: re.price.sqft.te
+    title: Per square foot rate and booking token
+    industry: real_estate
+    language: te
+    persona: standard
+    pack: skyline_homes
+    turns:
+      - text: "రివర్‌సైడ్‌లో స్క్వేర్ ఫీట్ రేట్ ఎంత అండి?"
+        reference: "రివర్‌సైడ్‌లో బేస్ రేట్ స్క్వేర్ ఫీట్‌కి 5,000 రూపాయలు అండి. 2 BHK మొత్తం 58 లక్షల నుండి మొదలవుతుంది."
+      - text: "బుకింగ్‌కి ఎంత కట్టాలి?"
+        reference: "బుకింగ్ టోకెన్ 2 లక్షలు అండి, అది మొత్తం ధరలోనే అడ్జస్ట్ అవుతుంది."
+    assertions:
+      must_mention:
+        - {label: per sq ft rate, fact: price_per_sqft, turn: 0}
+        - {label: booking token, fact: booking_token, turn: 1}
+
+  - id: re.price.maintenance.hi
+    title: 2BHK price, then maintenance (not in the pack)
+    industry: real_estate
+    language: hi
+    persona: standard
+    pack: skyline_homes
+    tags: [missing_fact]
+    turns:
+      - text: "रिवरसाइड में 2 BHK की कीमत क्या है?"
+        reference: "रिवरसाइड में 2 BHK 1,150 स्क्वेयर फीट का है और 58 लाख से शुरू होता है। क्या आप साइट विज़िट करना चाहेंगे?"
+      - text: "और मेंटेनेंस हर महीने कितना लगेगा?"
+        reference: "मेंटेनेंस चार्जेज़ की सही जानकारी अभी मेरे पास नहीं है। मैं टीम से कन्फ़र्म करके आपको व्हाट्सऐप पर बता दूँगी।"
+        reference_actions: [schedule_callback]
+    assertions:
+      must_mention: [{label: 2BHK price, fact: riverside_2bhk, turn: 0}]
+      must_not_say:
+        - {label: invents a maintenance figure, pattern: "₹|रुपये|\\d+ (प्रति|per)", turn: 1}
+      required_actions: [schedule_callback]
+
+  - id: re.interrupt.price.te-en
+    title: Caller cuts in on the price to ask where the project is
+    industry: real_estate
+    language: te-en
+    persona: interrupter
+    pack: skyline_homes
+    turns:
+      - text: "Riverside లో 2BHK price ఎంత?"
+        reference: "Riverside లో 2 BHK 1,150 sq ft, 58 లక్షల నుండి start అవుతుంది అండి, registration తప్ప అన్నీ కలిపి."
+      - text: "ఆ ok ok, project ఎక్కడ ఉంది exactly?"
+        interrupt: true
+        reference: "Gollapudi లో ఉంది అండి, Benz Circle నుండి సుమారు 20 నిమిషాలు."
+    assertions:
+      must_mention:
+        - {label: 2BHK price, fact: riverside_2bhk, turn: 0}
+        - {label: answers the interruption, fact: riverside_location, turn: 1}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: re.interrupt.amenities.en
+    title: Caller cuts in on amenities to ask about parking
+    industry: real_estate
+    language: en
+    persona: interrupter
+    pack: skyline_homes
+    turns:
+      - text: "Tell me about the amenities at Riverside."
+        reference: "Riverside has a clubhouse, a swimming pool, a gym, a children's play area, 24x7 security and full power backup."
+      - text: "Okay, okay, does each flat get car parking?"
+        interrupt: true
+        reference: "Yes, every flat comes with one covered car park."
+    assertions:
+      must_mention:
+        - {label: amenities, fact: amenities, turn: 0}
+        - {label: answers the interruption, fact: car_parking, turn: 1}
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: re.noisy.office.te
+    title: Office location from a bus stop
+    industry: real_estate
+    language: te
+    persona: noisy_street
+    pack: skyline_homes
+    audio: {noise: traffic, snr_db: 4}
+    turns:
+      - text: "హలో? వినపడుతుందా? నేను బస్ స్టాప్ దగ్గర ఉన్నా... మీ ఆఫీస్ ఎక్కడ?"
+        reference: "వినపడుతుంది అండి. మా సేల్స్ ఆఫీస్ లబ్బీపేట, ఎంజీ రోడ్‌లో రెండో అంతస్తులో ఉంది, లొకేషన్ వాట్సాప్‌లో పంపిస్తాను."
+        reference_actions: [send_whatsapp_template]
+      - text: "సరే, ఈరోజు సాయంత్రం వస్తా."
+        reference: "సరే అండి, మీ కోసం ఎదురుచూస్తాం. మీ పేరు చెప్తారా, ఆఫీస్ వాళ్ళకి ముందే చెప్తాను?"
+        reference_actions: [record_field]
+    assertions:
+      must_mention: [{label: office location, fact: sales_office, turn: 0}]
+      required_actions: [send_whatsapp_template]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: re.noisy.cheapest.en
+    title: Cheapest option, noisy market
+    industry: real_estate
+    language: en
+    persona: noisy_street
+    pack: skyline_homes
+    audio: {noise: crowd, snr_db: 6}
+    turns:
+      - text: "Sorry, it's very noisy here. What's the cheapest option you have?"
+        reference: "Our most affordable option is an open plot at Skyline Meadows in Kankipadu, 200 sq yd, from ₹32 lakh. Shall I send the details on WhatsApp?"
+      - text: "Yes please."
+        reference: "Sent. Please call us back anytime if you have questions."
+        reference_actions: [send_whatsapp_template]
+    assertions:
+      must_mention: [{label: plot price, fact: meadows_plots, turn: 0}]
+      required_actions: [send_whatsapp_template]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]

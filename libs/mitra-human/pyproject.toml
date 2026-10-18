@@ -1,0 +1,50 @@
+[project]
+name = "mitra-human"
+version = "0.1.0"
+description = "Mitra human layer: Indian speech normalisation, back-channels, fillers, barge-in truncation, honorifics."
+readme = "README.md"
+authors = [
+    { name = "Ashish Varma", email = "ashishmaddha02@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.100",
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "N", "S", "C4", "SIM", "RUF", "PT"]
+# RUF001-003: the Indic word tables are full of characters ruff flags as ambiguous.
+# SIM905: word tables are kept as "a b c".split() so each decade reads as one line.
+ignore = ["RUF001", "RUF002", "RUF003", "SIM905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mitra_human"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

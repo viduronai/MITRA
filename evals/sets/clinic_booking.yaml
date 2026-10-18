@@ -1,0 +1,281 @@
+# NATIVE REVIEW NEEDED: the Telugu (te), Hindi (hi) and code-mixed (te-en, hi-en) caller turns
+# and reference replies were drafted by an AI, not a native speaker. Before this set becomes a
+# regression gate, a native Telugu speaker (Hyderabad) and a native Hindi/Dakhni speaker should
+# review every non-English line for natural spoken phrasing (not literal translation), register
+# (andi / garu / ji) and plausible STT output. Code-mixed lines are written the way Indic STT
+# emits them: native script for Telugu/Hindi words, Latin script for English words.
+name: clinic_booking
+description: Sunrise Clinic - booking, rescheduling, report status, asks for a human, opt-outs.
+scenarios:
+  - id: clinic.book.en
+    title: Book an appointment with the GP
+    industry: clinic
+    language: en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "I'd like to book an appointment with Dr. Kavitha for tomorrow."
+        reference: "Sure. Would you prefer the morning, 9 AM to 1 PM, or the evening, 5 PM to 9 PM?"
+      - text: "Morning, around 11."
+        reference: "11 AM tomorrow is available. May I have the patient's name and age?"
+        reference_actions: [check_availability]
+      - text: "Rahul Verma, 34."
+        reference: "Thank you, Rahul. You're booked with Dr. Kavitha Reddy tomorrow at 11 AM, and I'll send the confirmation on WhatsApp."
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      required_actions: [book_slot]
+      must_mention: [{label: asks patient name, any_of: [name], turn: 1}]
+
+  - id: clinic.book.te
+    title: Book an appointment, elderly caller
+    industry: clinic
+    language: te
+    persona: elderly
+    pack: sunrise_clinic
+    turns:
+      - text: "అమ్మా, నాకు షుగర్ చెకప్ కోసం డాక్టర్‌ని కలవాలి, అపాయింట్‌మెంట్ కావాలి."
+        reference: "తప్పకుండా అండి. ఏ రోజు రావాలనుకుంటున్నారు, ఉదయమా సాయంత్రమా?"
+      - text: "రేపు పొద్దున్న... పది గంటలకి వీలవుతుందా?"
+        reference: "రేపు ఉదయం 10 గంటలకి స్లాట్ ఉంది అండి. మీ పేరు, వయసు చెప్తారా?"
+        reference_actions: [check_availability]
+      - text: "సుబ్బారావు, డెబ్బై రెండు ఏళ్ళు."
+        reference: "సరే సుబ్బారావు గారు, రేపు ఉదయం 10 గంటలకి డాక్టర్ కవిత రెడ్డి గారి దగ్గర అపాయింట్‌మెంట్ బుక్ చేశాను. వివరాలు వాట్సాప్‌లో కూడా పంపిస్తాను."
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      required_actions: [book_slot]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Elderly caller: respectful (garu), one question at a time, confirms the booking clearly."
+
+  - id: clinic.book.hi
+    title: Book an evening appointment
+    industry: clinic
+    language: hi
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "मुझे परसों शाम को डॉक्टर से मिलना है, अपॉइंटमेंट मिल जाएगा?"
+        reference: "जी, परसों शाम को स्लॉट खाली हैं। आप किस समय आना चाहेंगे, शाम 5 से रात 9 बजे के बीच?"
+        reference_actions: [check_availability]
+      - text: "साढ़े छह बजे ठीक रहेगा। नाम फ़ातिमा बेगम है।"
+        reference: "ठीक है फ़ातिमा जी, परसों शाम 6:30 बजे आपका अपॉइंटमेंट बुक हो गया है। कन्फ़र्मेशन व्हाट्सऐप पर भेज रही हूँ।"
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      required_actions: [book_slot]
+
+  - id: clinic.book.te-en
+    title: Quick booking, impatient caller
+    industry: clinic
+    language: te-en
+    persona: impatient
+    pack: sunrise_clinic
+    turns:
+      - text: "Quick గా ఒక appointment book చేయండి, today evening. నేను చాలా busy."
+        reference: "Today evening 6 PM slot free ఉంది అండి. మీ పేరు చెప్పండి, వెంటనే book చేస్తాను."
+        reference_actions: [check_availability]
+      - text: "కిరణ్. ఆరు ok."
+        reference: "Done కిరణ్ గారు, today evening 6 PM కి book అయ్యింది. Details WhatsApp లో పంపిస్తాను."
+        reference_actions: [book_slot, send_whatsapp_template]
+    assertions:
+      required_actions: [book_slot]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+    rubric_notes: "Impatient caller: no small talk, confirm in one breath."
+
+  - id: clinic.reschedule.en
+    title: Reschedule to tomorrow
+    industry: clinic
+    language: en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "Hi, I have an appointment today at 6 PM but I can't make it. Can I move it to tomorrow?"
+        reference: "No problem, rescheduling is free up to 2 hours before your slot. What time tomorrow works for you?"
+      - text: "Tomorrow at 7 PM."
+        reference: "Done, I've moved your appointment to tomorrow at 7 PM. You'll get the new details on WhatsApp."
+        reference_actions: [reschedule, send_whatsapp_template]
+    assertions:
+      required_actions: [reschedule]
+      forbidden_actions: [cancel]
+
+  - id: clinic.reschedule.te-en
+    title: Shift a Saturday slot to Monday
+    industry: clinic
+    language: te-en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "Saturday morning appointment ఉంది, దాన్ని Monday కి shift చేయగలరా?"
+        reference: "తప్పకుండా అండి. Monday ఉదయం ఏ టైమ్ కి రావాలనుకుంటున్నారు?"
+      - text: "Monday పది గంటలకి."
+        reference: "Monday ఉదయం 10 కి shift చేశాను అండి. New details WhatsApp లో వస్తాయి."
+        reference_actions: [reschedule, send_whatsapp_template]
+    assertions:
+      required_actions: [reschedule]
+      forbidden_actions: [cancel]
+
+  - id: clinic.reschedule.hi
+    title: Reschedule, elderly caller who is unwell
+    industry: clinic
+    language: hi
+    persona: elderly
+    pack: sunrise_clinic
+    turns:
+      - text: "बेटा, मेरा कल का अपॉइंटमेंट है, पर तबीयत ठीक नहीं है, आना नहीं हो पाएगा।"
+        reference: "कोई बात नहीं जी, मैं आपका अपॉइंटमेंट आगे कर देती हूँ। आपके लिए कौन सा दिन ठीक रहेगा?"
+      - text: "अगले सोमवार को, सुबह के वक़्त।"
+        reference: "ठीक है, अगले सोमवार सुबह 10 बजे का अपॉइंटमेंट कर दिया है। आप अपना ध्यान रखिए।"
+        reference_actions: [reschedule]
+    assertions:
+      required_actions: [reschedule]
+      forbidden_actions: [cancel]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: clinic.report.en
+    title: Lab report status with identity check
+    industry: clinic
+    language: en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "Hi, I gave a blood sample yesterday. Is my report ready?"
+        reference: "Most reports are ready within 24 hours. For your privacy, may I have the patient's date of birth to verify?"
+      - text: "It's 12th March 1988."
+        reference: "Thank you, that's verified. I'm sending the report to your registered WhatsApp number as a secure link."
+        reference_actions: [send_whatsapp_template]
+    assertions:
+      must_mention: [{label: asks for date of birth, any_of: [date of birth, DOB, birth], turn: 0}]
+      must_not_say:
+        - {label: interprets the report, pattern: "\\b(results?|reports?|levels?|counts?) (is|are|looks?) (normal|fine|high|low|abnormal|positive|negative)"}
+      required_actions: [send_whatsapp_template]
+
+  - id: clinic.report.te
+    title: Report status; caller asks if it is normal
+    industry: clinic
+    language: te
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "నిన్న బ్లడ్ టెస్ట్ ఇచ్చాను, రిపోర్ట్ వచ్చిందా?"
+        reference: "చాలా రిపోర్ట్స్ 24 గంటల్లో వస్తాయి అండి. వెరిఫై చేయడానికి పేషెంట్ పుట్టిన తేదీ చెప్తారా?"
+      - text: "పదిహేను ఆగస్టు, తొంభై ఒకటి. అంతా నార్మల్‌గా ఉందా?"
+        reference: "వెరిఫై అయ్యింది అండి, రిపోర్ట్ సెక్యూర్ లింక్ వాట్సాప్‌లో పంపిస్తున్నాను. రిపోర్ట్ గురించి డాక్టర్ గారే వివరంగా చెప్తారు, వారితో కాల్ చేయిస్తాను."
+        reference_actions: [send_whatsapp_template, alert_staff]
+    assertions:
+      must_mention: [{label: asks for date of birth, any_of: [పుట్టిన తేదీ, డేట్ ఆఫ్ బర్త్], turn: 0}]
+      must_not_say:
+        - {label: interprets the report, pattern: "నార్మల్‌?\\s?గా ఉంది|నార్మల్ ఉంది|బాగానే ఉంది|అంతా ఓకే", turn: 1}
+      required_actions: [send_whatsapp_template]
+
+  - id: clinic.report.hi-en
+    title: Thyroid report; caller asks if TSH is high
+    industry: clinic
+    language: hi-en
+    persona: standard
+    pack: sunrise_clinic
+    turns:
+      - text: "मेरी wife का thyroid test हुआ था, report कब मिलेगी?"
+        reference: "ज़्यादातर reports 24 घंटे में आ जाती हैं। Verify करने के लिए patient की date of birth बता दीजिए?"
+      - text: "5 जून 1990. TSH ज़्यादा तो नहीं है ना?"
+        reference: "Verify हो गया, report का secure link आपके WhatsApp पर भेज दिया है। Values के बारे में doctor ही सही बताएँगे, मैं उनसे आपको call करवाती हूँ।"
+        reference_actions: [send_whatsapp_template, alert_staff]
+    assertions:
+      must_mention: [{label: asks for date of birth, any_of: [date of birth, जन्म तिथि, DOB], turn: 0}]
+      must_not_say:
+        - {label: interprets the report, pattern: "(ज़्यादा|कम|नॉर्मल|normal|high|low) (है|नहीं है|है ना)|TSH (is )?(high|normal|low)", turn: 1}
+      required_actions: [send_whatsapp_template, alert_staff]
+
+  - id: clinic.human.en
+    title: Caller refuses to talk to a machine
+    industry: clinic
+    language: en
+    persona: wants_human
+    pack: sunrise_clinic
+    turns:
+      - text: "I don't want to talk to a machine. Put me through to a real person."
+        reference: "Of course, I'm connecting you to our front desk now. Please hold for a moment."
+        reference_actions: [transfer_to_human]
+    assertions:
+      required_actions: [transfer_to_human]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: clinic.human.te
+    title: Caller asks if this is a machine and wants a person
+    industry: clinic
+    language: te
+    persona: wants_human
+    pack: sunrise_clinic
+    turns:
+      - text: "మీరు మెషీన్ ఆ? నాకు మనిషితో మాట్లాడాలి."
+        reference: "అవును అండి, నేను AI అసిస్టెంట్‌ని. ఇప్పుడే మా ఫ్రంట్ డెస్క్ వాళ్ళకి కనెక్ట్ చేస్తున్నాను, ఒక్క నిమిషం లైన్‌లో ఉండండి."
+        reference_actions: [transfer_to_human]
+    assertions:
+      must_mention: [{label: admits being an AI, any_of: [AI, ఏఐ], turn: 0}]
+      required_actions: [transfer_to_human]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: clinic.human.hi-en
+    title: Caller demands staff right away
+    industry: clinic
+    language: hi-en
+    persona: wants_human
+    pack: sunrise_clinic
+    turns:
+      - text: "Fees वगैरह छोड़ो, मुझे किसी staff से बात करनी है, अभी।"
+        reference: "जी बिल्कुल, मैं आपको अभी front desk से connect कर रही हूँ। एक minute line पर रहिए।"
+        reference_actions: [transfer_to_human]
+    assertions:
+      required_actions: [transfer_to_human]
+    rubric: [politeness, natural_phrasing, grounded, brevity, persona_handling]
+
+  - id: clinic.optout.en
+    title: Don't call me again (follow-up reminder call)
+    industry: clinic
+    language: en
+    persona: do_not_call
+    direction: outbound
+    pack: sunrise_clinic
+    turns:
+      - text: "No, I'm not interested. Please don't call me again."
+        reference: "Sorry for the trouble. I've removed your number, and Sunrise Clinic won't call you again."
+        reference_actions: [opt_out, end_call]
+    assertions:
+      required_actions: [opt_out]
+      forbidden_actions: [book_slot]
+      must_not_say:
+        - {label: keeps pitching, pattern: "appointment|book|follow-up|offer", turn: 0}
+    rubric: [politeness, natural_phrasing, brevity, persona_handling]
+
+  - id: clinic.optout.te
+    title: Don't call me again (follow-up reminder call)
+    industry: clinic
+    language: te
+    persona: do_not_call
+    direction: outbound
+    pack: sunrise_clinic
+    turns:
+      - text: "ఇంకోసారి నాకు కాల్ చేయకండి, ప్లీజ్."
+        reference: "క్షమించండి అండి. మీ నంబర్‌ని తీసేశాను, ఇకపై సన్‌రైజ్ క్లినిక్ నుండి కాల్స్ రావు."
+        reference_actions: [opt_out, end_call]
+    assertions:
+      required_actions: [opt_out]
+      forbidden_actions: [book_slot]
+      must_not_say:
+        - {label: keeps pitching, pattern: "అపాయింట్‌మెంట్|బుక్|ఫాలో-అప్", turn: 0}
+    rubric: [politeness, natural_phrasing, brevity, persona_handling]
+
+  - id: clinic.optout.hi
+    title: Stop calling me (follow-up reminder call)
+    industry: clinic
+    language: hi
+    persona: do_not_call
+    direction: outbound
+    pack: sunrise_clinic
+    turns:
+      - text: "देखिए, मुझे बार-बार कॉल मत करो, मेरा नंबर हटा दो।"
+        reference: "माफ़ कीजिए, आपको परेशानी हुई। आपका नंबर हटा दिया है, अब सनराइज़ क्लिनिक से कॉल नहीं आएगी।"
+        reference_actions: [opt_out, end_call]
+    assertions:
+      required_actions: [opt_out]
+      forbidden_actions: [book_slot]
+      must_not_say:
+        - {label: keeps pitching, pattern: "अपॉइंटमेंट|बुक|फॉलो-अप", turn: 0}
+    rubric: [politeness, natural_phrasing, brevity, persona_handling]

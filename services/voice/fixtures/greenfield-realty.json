@@ -1,0 +1,25 @@
+{
+  "business_id": "fixture-greenfield-realty",
+  "business_name": "Greenfield Homes",
+  "industry": "real_estate",
+  "employee_id": "fixture-arjun",
+  "employee_name": "Arjun",
+  "role_template": "lead_caller",
+  "languages": ["en", "te"],
+  "voice_id": "arjun-te-vij",
+  "voice_gender": "male",
+  "greeting": null,
+  "behaviour": {
+    "ask_for": ["budget", "preferred location"],
+    "never_say": ["guaranteed returns"],
+    "transfer_when": ["the caller wants to negotiate the price"]
+  },
+  "facts": [
+    {"category": "prices", "key": "2 BHK price range", "value": "₹65 lakh to ₹80 lakh"},
+    {"category": "prices", "key": "3 BHK price range", "value": "₹1.1 crore to ₹1.4 crore"},
+    {"category": "services", "key": "Projects", "value": "Greenfield Meadows (apartments, Kokapet) and Greenfield Villas (Shankarpally)"},
+    {"category": "timings", "key": "Site visits", "value": "every day, 10 AM to 6 PM"},
+    {"category": "location", "key": "Sales office", "value": "Greenfield Meadows site office, Kokapet, Hyderabad"}
+  ],
+  "knowledge_version": "fixture-2026-10-18"
+}

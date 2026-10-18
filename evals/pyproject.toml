@@ -1,0 +1,77 @@
+[project]
+name = "mitra-evals"
+version = "0.1.0"
+description = "Mitra conversation evals: golden sets, deterministic checks, optional LLM judge, bake-off metrics."
+readme = "README.md"
+authors = [
+    { name = "Ashish Varma", email = "ashishmaddha02@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.14.1",
+    "pyyaml>=6.0.2",
+]
+
+[project.optional-dependencies]
+# The LLM judge is optional: it runs only with ANTHROPIC_API_KEY and MITRA_JUDGE_MODEL set.
+judge = ["anthropic>=1.15.0"]
+
+[project.scripts]
+mitra-evals = "mitra_evals.cli:main"
+
+[dependency-groups]
+dev = [
+    "anthropic>=1.15.0",
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+    "types-pyyaml>=6.0.12",
+]
+# The `core-sim` agent imports services/core in-process when this group is installed.
+core = ["mitra-core"]
+
+[tool.uv]
+default-groups = ["dev", "core"]
+
+[tool.uv.sources]
+mitra-core = { path = "../services/core", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "N", "S", "ASYNC", "C4", "SIM", "RUF", "PT", "DTZ"]
+ignore = [
+    "RUF001", "RUF003", # Telugu/Devanagari text is intentional, not confusable Latin
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mitra_evals"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"

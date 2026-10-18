@@ -1,0 +1,144 @@
+{
+  "id": "skyline_homes",
+  "business_name": "Skyline Homes",
+  "industry": "real_estate",
+  "city": "Vijayawada",
+  "employee_name": "Anjali",
+  "role": "lead_caller",
+  "default_language": "te",
+  "languages": ["te", "en", "hi"],
+  "greeting": {
+    "inbound": {
+      "en": "Hello, this is Anjali, an AI assistant from Skyline Homes. This call may be recorded to help serve you better. How can I help you?",
+      "te": "నమస్కారం, నేను అంజలి, స్కైలైన్ హోమ్స్ నుండి AI అసిస్టెంట్‌ని. మీకు మెరుగైన సేవ కోసం ఈ కాల్ రికార్డ్ అవ్వచ్చు. చెప్పండి, మీకు ఏ విధంగా సహాయం చేయగలను?",
+      "hi": "नमस्ते, मैं अंजलि, स्काईलाइन होम्स की AI असिस्टेंट हूँ। बेहतर सेवा के लिए यह कॉल रिकॉर्ड हो सकती है। बताइए, मैं आपकी क्या मदद करूँ?"
+    },
+    "outbound": {
+      "en": "Hello, this is Anjali, an AI assistant calling from Skyline Homes about your enquiry on our Vijayawada projects. This call may be recorded to help serve you better. Is this a good time?",
+      "te": "నమస్కారం, నేను స్కైలైన్ హోమ్స్ నుండి AI అసిస్టెంట్ అంజలిని, మీరు మా విజయవాడ ప్రాజెక్ట్స్ గురించి అడిగారు కదా, అందుకే కాల్ చేశాను. మీకు మెరుగైన సేవ కోసం ఈ కాల్ రికార్డ్ అవ్వచ్చు. ఇప్పుడు ఒక్క రెండు నిమిషాలు మాట్లాడొచ్చా?",
+      "hi": "नमस्ते, मैं स्काईलाइन होम्स से AI असिस्टेंट अंजलि बोल रही हूँ, आपने हमारे विजयवाड़ा प्रोजेक्ट्स के बारे में पूछा था। बेहतर सेवा के लिए यह कॉल रिकॉर्ड हो सकती है। क्या अभी दो मिनट बात कर सकते हैं?"
+    }
+  },
+  "facts": [
+    {
+      "key": "riverside_project",
+      "category": "services",
+      "label": "Skyline Riverside",
+      "value": "2 and 3 BHK apartments at Gollapudi, Vijayawada; 12 floors, 180 flats",
+      "localized": {"te": "గొల్లపూడిలో 2, 3 BHK అపార్ట్‌మెంట్స్, 12 అంతస్తులు", "hi": "गोल्लपुडी में 2 और 3 BHK अपार्टमेंट, 12 मंज़िलें"},
+      "mentions": ["Riverside", "రివర్‌సైడ్", "रिवरसाइड"]
+    },
+    {
+      "key": "riverside_2bhk",
+      "category": "prices",
+      "label": "2 BHK at Skyline Riverside",
+      "value": "1,150 sq ft, from ₹58 lakh (all-inclusive except registration)",
+      "localized": {"te": "1,150 చదరపు అడుగులు, 58 లక్షల నుండి", "hi": "1,150 स्क्वेयर फीट, 58 लाख से शुरू"},
+      "mentions": ["58"]
+    },
+    {
+      "key": "riverside_3bhk",
+      "category": "prices",
+      "label": "3 BHK at Skyline Riverside",
+      "value": "1,550 sq ft, from ₹82 lakh (all-inclusive except registration)",
+      "localized": {"te": "1,550 చదరపు అడుగులు, 82 లక్షల నుండి", "hi": "1,550 स्क्वेयर फीट, 82 लाख से शुरू"},
+      "mentions": ["82"]
+    },
+    {
+      "key": "price_per_sqft",
+      "category": "prices",
+      "label": "Riverside base rate",
+      "value": "₹5,000 per sq ft",
+      "localized": {"te": "స్క్వేర్ ఫీట్‌కి 5,000 రూపాయలు", "hi": "5,000 रुपये प्रति स्क्वेयर फीट"},
+      "mentions": ["5,000", "5000"]
+    },
+    {
+      "key": "meadows_plots",
+      "category": "prices",
+      "label": "Skyline Meadows plots",
+      "value": "Open plots at Kankipadu, 200 sq yd, from ₹32 lakh",
+      "localized": {"te": "కంకిపాడులో 200 గజాల ప్లాట్స్, 32 లక్షల నుండి", "hi": "कंकिपाडु में 200 गज़ के प्लॉट, 32 लाख से"},
+      "mentions": ["32"]
+    },
+    {
+      "key": "booking_token",
+      "category": "prices",
+      "label": "Booking token",
+      "value": "₹2 lakh, adjusted in the final price",
+      "localized": {"te": "2 లక్షలు, మొత్తం ధరలో అడ్జస్ట్ అవుతుంది", "hi": "2 लाख, जो कुल कीमत में एडजस्ट हो जाता है"},
+      "mentions": ["2 lakh", "2 లక్ష", "2 लाख"]
+    },
+    {
+      "key": "riverside_location",
+      "category": "location",
+      "label": "Riverside location",
+      "value": "Gollapudi, about 20 minutes from Benz Circle",
+      "localized": {"te": "గొల్లపూడి, బెంజ్ సర్కిల్ నుండి సుమారు 20 నిమిషాలు", "hi": "गोल्लपुडी, बेंज सर्कल से लगभग 20 मिनट"},
+      "mentions": ["Gollapudi", "గొల్లపూడి", "गोल्लपुडी"]
+    },
+    {
+      "key": "sales_office",
+      "category": "location",
+      "label": "Sales office",
+      "value": "2nd floor, MG Road, Labbipet, Vijayawada",
+      "localized": {"te": "లబ్బీపేట, ఎంజీ రోడ్, రెండో అంతస్తు", "hi": "लब्बीपेट, एमजी रोड, दूसरी मंज़िल"},
+      "mentions": ["Labbipet", "లబ్బీపేట", "लब्बीपेट"]
+    },
+    {
+      "key": "site_visits",
+      "category": "timings",
+      "label": "Site visit timings",
+      "value": "Every day, 10 AM to 6 PM",
+      "localized": {"te": "ప్రతిరోజూ ఉదయం 10 నుండి సాయంత్రం 6 వరకు", "hi": "हर दिन सुबह 10 से शाम 6 बजे तक"},
+      "mentions": ["10 AM", "ఉదయం 10", "सुबह 10", "6 PM", "సాయంత్రం 6", "शाम 6"]
+    },
+    {
+      "key": "site_visit_pickup",
+      "category": "services",
+      "label": "Weekend pickup",
+      "value": "Free pickup from Benz Circle on Saturdays and Sundays",
+      "localized": {"te": "శని, ఆదివారాల్లో బెంజ్ సర్కిల్ నుండి ఫ్రీ పికప్", "hi": "शनिवार और रविवार को बेंज सर्कल से फ्री पिकअप"},
+      "mentions": ["Benz Circle", "బెంజ్ సర్కిల్", "बेंज सर्कल"]
+    },
+    {
+      "key": "possession",
+      "category": "policy",
+      "label": "Riverside possession",
+      "value": "December 2027, as per the builder's schedule",
+      "localized": {"te": "డిసెంబర్ 2027", "hi": "दिसंबर 2027"},
+      "mentions": ["2027"]
+    },
+    {
+      "key": "amenities",
+      "category": "services",
+      "label": "Riverside amenities",
+      "value": "Clubhouse, swimming pool, gym, children's play area, 24x7 security, 100% power backup",
+      "localized": {
+        "te": "క్లబ్‌హౌస్, స్విమ్మింగ్ పూల్, జిమ్, పిల్లల ప్లే ఏరియా, 24 గంటల సెక్యూరిటీ, 100% పవర్ బ్యాకప్",
+        "hi": "क्लबहाउस, स्विमिंग पूल, जिम, बच्चों का प्ले एरिया, 24 घंटे सिक्योरिटी, 100% पावर बैकअप"
+      },
+      "mentions": ["pool", "clubhouse", "power backup", "పూల్", "క్లబ్‌హౌస్", "పవర్ బ్యాకప్", "पूल", "क्लबहाउस", "पावर बैकअप"]
+    },
+    {
+      "key": "car_parking",
+      "category": "services",
+      "label": "Car parking",
+      "value": "One covered car park included with every flat",
+      "localized": {"te": "ప్రతి ఫ్లాట్‌కి ఒక కవర్డ్ కార్ పార్కింగ్", "hi": "हर फ़्लैट के साथ एक कवर्ड कार पार्किंग"},
+      "mentions": ["covered", "కవర్డ్", "कवर्ड"]
+    }
+  ],
+  "behaviour": {
+    "ask_for": ["budget", "preferred location", "when they plan to buy"],
+    "never_say": ["discount promises", "RERA or legal approval claims", "guaranteed returns or appreciation"],
+    "escalate_to": "Sales manager (Mr. Srinivas)"
+  },
+  "missing_facts": [
+    "RERA registration status and number",
+    "bank loan tie-ups",
+    "maintenance charges",
+    "discounts and festival offers",
+    "floor-wise availability and number of lifts",
+    "future appreciation or rental yield"
+  ]
+}

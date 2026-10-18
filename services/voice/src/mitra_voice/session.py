@@ -1,0 +1,120 @@
+"""One live call: its pack, transcript, latency turns, and the channel back to the client."""
+
+from __future__ import annotations
+
+import uuid
+from collections import OrderedDict
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any, Literal
+
+import structlog
+
+from mitra_voice.latency import LatencyTracker, TurnTimings, summarize, turn_record
+from mitra_voice.logging import redact_phones
+from mitra_voice.pack import EmployeePack, Scenario
+from mitra_voice.providers import ResolvedProviders
+
+log = structlog.get_logger(__name__)
+
+Role = Literal["user", "assistant"]
+SendFn = Callable[[dict[str, Any]], None]
+MAX_SESSIONS = 50
+
+
+def _noop(_: dict[str, Any]) -> None:
+    return None
+
+
+@dataclass
+class TranscriptEntry:
+    role: Role
+    text: str
+    interrupted: bool = False
+
+
+@dataclass
+class CallSession:
+    scenario: Scenario
+    pack: EmployeePack
+    providers: ResolvedProviders
+    id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    ended_at: str | None = None
+    transcript: list[TranscriptEntry] = field(default_factory=list)
+    tracker: LatencyTracker = field(default_factory=LatencyTracker)
+    send: SendFn = _noop
+
+    def __post_init__(self) -> None:
+        self.tracker.on_turn_complete = self._on_turn_complete
+        self._log = log.bind(session_id=self.id, scenario=self.scenario)
+
+    # --- events from the pipeline ---------------------------------------------------------------
+
+    def add_user(self, text: str) -> None:
+        self.transcript.append(TranscriptEntry("user", text))
+        self._log.info("turn.user", text=redact_phones(text), turn=len(self.tracker.turns))
+        self.send({"type": "transcript", "role": "user", "text": text})
+
+    def add_assistant(self, text: str, *, interrupted: bool = False) -> None:
+        self.transcript.append(TranscriptEntry("assistant", text, interrupted))
+        self._log.info("turn.assistant", text=redact_phones(text), interrupted=interrupted)
+        self.send(
+            {"type": "transcript", "role": "assistant", "text": text, "interrupted": interrupted}
+        )
+
+    def assistant_delta(self, text: str) -> None:
+        self.send({"type": "assistant_delta", "text": text})
+
+    def human_layer(self, kind: Literal["filler", "backchannel"], text: str) -> None:
+        if kind == "filler":
+            self.tracker.mark_filler(text)
+        self._log.info(f"human.{kind}", text=text)
+        self.send({"type": kind, "text": text})
+
+    async def _on_turn_complete(self, turn: TurnTimings) -> None:
+        record = turn_record(turn)
+        # Structured latency log line; timings only, never transcript text.
+        self._log.info("turn.latency", **record)
+        self.send({"type": "metrics", "turn": record})
+
+    def end(self) -> None:
+        self.ended_at = datetime.now(UTC).isoformat()
+        self._log.info("session.ended", turns=len(self.tracker.turns))
+
+    # --- read side ------------------------------------------------------------------------------
+
+    def metrics(self) -> dict[str, Any]:
+        return {
+            "session_id": self.id,
+            "scenario": self.scenario,
+            "created_at": self.created_at,
+            "ended_at": self.ended_at,
+            "providers": {
+                "stt": self.providers.stt,
+                "llm": self.providers.llm,
+                "tts": self.providers.tts,
+            },
+            "turns": [turn_record(t) for t in self.tracker.turns],
+            "summary": summarize(self.tracker.turns),
+        }
+
+
+class SessionRegistry:
+    """In-memory, bounded (oldest dropped). TODO(prod): Valkey for live state (TRD §4)."""
+
+    def __init__(self, max_sessions: int = MAX_SESSIONS) -> None:
+        self._sessions: OrderedDict[str, CallSession] = OrderedDict()
+        self._max = max_sessions
+
+    def add(self, session: CallSession) -> None:
+        self._sessions[session.id] = session
+        while len(self._sessions) > self._max:
+            self._sessions.popitem(last=False)
+
+    def get(self, session_id: str) -> CallSession | None:
+        return self._sessions.get(session_id)
+
+    def all(self) -> list[CallSession]:
+        return list(self._sessions.values())

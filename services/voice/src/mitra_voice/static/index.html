@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mitra Voice Test</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1b1f24; --muted: #5d6673; --line: #e3e6ea;
+    --accent: #2f6fde; --accent-text: #ffffff; --user: #e8f0fe; --bot: #f1f3f5; --warn: #b4540a;
+    --ok: #1f7a4d; --bad: #b42318; --chip: #eef1f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --panel: #181c21; --text: #e6e9ed; --muted: #9aa4b1; --line: #2a3038;
+      --accent: #5b8ff0; --accent-text: #0b0d10; --user: #1f2a3d; --bot: #22272e; --warn: #f0a35b;
+      --ok: #4cc38a; --bad: #f97066; --chip: #232931;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  h1 { font-size: 17px; margin: 0; font-weight: 650; }
+  .providers { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { background: var(--chip); color: var(--muted); border-radius: 999px; padding: 2px 10px;
+    font-size: 12.5px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 16px; display: grid; gap: 16px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; min-width: 0; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+    margin: 0 0 12px; font-weight: 600; }
+  .controls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  select, button { font: inherit; border-radius: 8px; border: 1px solid var(--line);
+    padding: 8px 12px; background: var(--panel); color: var(--text); }
+  button#talk { background: var(--accent); color: var(--accent-text); border-color: transparent;
+    font-weight: 600; min-width: 150px; cursor: pointer; }
+  button#talk.live { background: var(--bad); color: #fff; }
+  #status { color: var(--muted); }
+  #transcript { display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow-y: auto; }
+  .bubble { max-width: 85%; padding: 8px 12px; border-radius: 14px; overflow-wrap: anywhere; }
+  .bubble.user { align-self: flex-end; background: var(--user); border-bottom-right-radius: 4px; }
+  .bubble.assistant { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
+  .bubble .who { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .bubble .cut { color: var(--warn); font-size: 12px; margin-left: 6px; }
+  .note { align-self: center; font-size: 12.5px; color: var(--muted); font-style: italic; }
+  .empty { color: var(--muted); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+  tfoot td { font-weight: 600; border-bottom: none; }
+  .good { color: var(--ok); } .slow { color: var(--bad); }
+  .legend { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mitra Voice: engine test</h1>
+  <div class="providers" id="providers"></div>
+</header>
+<main>
+  <div class="controls">
+    <label>Scenario
+      <select id="scenario">
+        <option value="clinic">Clinic (Sunrise Clinic, Priya)</option>
+        <option value="real_estate">Real estate (Greenfield Homes, Arjun)</option>
+      </select>
+    </label>
+    <button id="talk" type="button">Start talking</button>
+    <span id="status">Idle</span>
+  </div>
+  <section aria-labelledby="t-h">
+    <h2 id="t-h">Live transcript</h2>
+    <div id="transcript" aria-live="polite"><div class="empty">Press "Start talking" and allow the microphone.</div></div>
+  </section>
+  <section aria-labelledby="l-h">
+    <h2 id="l-h">Per-turn latency (ms)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Turn</th><th>STT</th><th>Turn end</th><th>LLM TTFT</th><th>TTS TTFB</th><th>First audio</th><th>Notes</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="7" class="empty">No turns yet.</td></tr></tbody>
+        <tfoot id="summary"></tfoot>
+      </table>
+    </div>
+    <p class="legend">First audio = caller stops speaking to first assistant audio (target 800 ms p95).
+      STT and Turn end are measured from end of speech.</p>
+  </section>
+</main>
+<audio id="bot" autoplay></audio>
+<script>
+const $ = (id) => document.getElementById(id);
+const COLS = ["stt_ms", "turn_detect_ms", "llm_ttft_ms", "tts_ttfb_ms", "first_audio_ms"];
+let pc = null, dc = null, ping = null, sessionId = null, live = null;
+
+fetch("/health").then(r => r.json()).then(h => {
+  $("providers").innerHTML = Object.entries(h.providers)
+    .map(([k, v]) => `<span class="chip">${k.toUpperCase()}: ${v}</span>`).join("");
+}).catch(() => {});
+
+function setStatus(text) { $("status").textContent = text; }
+function clearEmpty(el) { const e = el.querySelector(".empty"); if (e) e.remove(); }
+function scrollDown() { const t = $("transcript"); t.scrollTop = t.scrollHeight; }
+
+function bubble(role, text) {
+  const t = $("transcript"); clearEmpty(t);
+  const div = document.createElement("div");
+  div.className = `bubble ${role}`;
+  div.innerHTML = `<span class="who">${role === "user" ? "Caller" : "Assistant"}</span><span class="text"></span>`;
+  div.querySelector(".text").textContent = text;
+  t.appendChild(div); scrollDown();
+  return div;
+}
+function note(text) {
+  const t = $("transcript"); clearEmpty(t);
+  const div = document.createElement("div"); div.className = "note"; div.textContent = text;
+  t.appendChild(div); scrollDown();
+}
+function fmt(v) {
+  if (v === null || v === undefined) return "–";
+  return Math.round(v).toString();
+}
+function cell(name, v) {
+  const cls = name === "first_audio_ms" && v != null ? (v <= 800 ? "good" : "slow") : "";
+  return `<td class="${cls}">${fmt(v)}</td>`;
+}
+function addRow(turn) {
+  const body = $("rows"); clearEmpty(body);
+  const notes = [turn.filler ? `filler: "${turn.filler}"` : "", turn.interrupted ? "barged in" : ""]
+    .filter(Boolean).join(", ");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${turn.turn}</td>${COLS.map(c => cell(c, turn[c])).join("")}<td></td>`;
+  tr.lastChild.textContent = notes;
+  body.appendChild(tr);
+}
+async function refreshSummary() {
+  if (!sessionId) return;
+  const m = await (await fetch(`/sessions/${sessionId}/metrics`)).json();
+  const s = m.summary;
+  const row = (label, key) => `<tr><td>${label}</td>${COLS.map(c => cell(c, s[c][key])).join("")}<td>n=${s.first_audio_ms.n}</td></tr>`;
+  $("summary").innerHTML = row("p50", "p50") + row("p95", "p95");
+  m.turns.forEach(t => {
+    const tr = $("rows").children[t.turn - 1];
+    if (tr && t.interrupted && !tr.lastChild.textContent.includes("barged")) {
+      tr.lastChild.textContent = [tr.lastChild.textContent, "barged in"].filter(Boolean).join(", ");
+    }
+  });
+}
+
+function onMessage(msg) {
+  switch (msg.type) {
+    case "transcript":
+      if (msg.role === "user") { bubble("user", msg.text); break; }
+      if (live) { live.querySelector(".text").textContent = msg.text; }
+      else { live = bubble("assistant", msg.text); }
+      if (msg.interrupted) live.insertAdjacentHTML("beforeend", '<span class="cut">(cut off by caller)</span>');
+      live = null; break;
+    case "assistant_delta":
+      if (!live) { live = bubble("assistant", msg.text); }
+      else { const t = live.querySelector(".text"); t.textContent = `${t.textContent} ${msg.text}`; scrollDown(); }
+      break;
+    case "filler": note(`filler: "${msg.text}"`); break;
+    case "backchannel": note(`back-channel: "${msg.text}"`); break;
+    case "metrics": addRow(msg.turn); refreshSummary().catch(() => {}); break;
+  }
+}
+
+function waitForIce(conn) {
+  return new Promise((resolve) => {
+    if (conn.iceGatheringState === "complete") return resolve();
+    const done = () => { if (conn.iceGatheringState === "complete") resolve(); };
+    conn.addEventListener("icegatheringstatechange", done);
+    setTimeout(resolve, 2000);
+  });
+}
+
+async function start() {
+  setStatus("Requesting microphone…");
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+  });
+  pc = new RTCPeerConnection({ iceServers: [] });
+  dc = pc.createDataChannel("chat", { ordered: true });
+  dc.onopen = () => { ping = setInterval(() => dc.readyState === "open" && dc.send(`ping: ${Date.now()}`), 1000); };
+  dc.onmessage = (e) => { try { onMessage(JSON.parse(e.data)); } catch (err) { console.warn(err); } };
+  // SmallWebRTC maps transceiver 0 to audio and 1 to camera video.
+  pc.addTransceiver(stream.getAudioTracks()[0], { direction: "sendrecv" });
+  pc.addTransceiver("video", { direction: "sendrecv" });
+  pc.ontrack = (e) => {
+    if (e.track.kind !== "audio") return;
+    const el = $("bot"); el.srcObject = e.streams[0] || new MediaStream([e.track]);
+    el.play().catch(() => {});
+  };
+  pc.onconnectionstatechange = () => {
+    if (pc && pc.connectionState === "connected") setStatus(`Connected · session ${sessionId}`);
+    if (pc && ["failed", "closed", "disconnected"].includes(pc.connectionState)) setStatus(`Call ${pc.connectionState}`);
+  };
+  await pc.setLocalDescription(await pc.createOffer());
+  await waitForIce(pc);
+  setStatus("Connecting…");
+  const res = await fetch("/api/offer", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sdp: pc.localDescription.sdp, type: "offer", scenario: $("scenario").value }),
+  });
+  if (!res.ok) throw new Error(`offer failed: ${res.status}`);
+  const answer = await res.json();
+  sessionId = answer.session_id;
+  window.mitraSessionId = sessionId;
+  await pc.setRemoteDescription({ sdp: answer.sdp, type: answer.type });
+}
+
+function stop() {
+  clearInterval(ping); ping = null;
+  if (pc) { pc.getSenders().forEach(s => s.track && s.track.stop()); pc.close(); }
+  pc = null; dc = null; live = null;
+  setStatus("Call ended");
+}
+
+$("talk").addEventListener("click", async () => {
+  const btn = $("talk");
+  if (pc) { stop(); btn.textContent = "Start talking"; btn.classList.remove("live"); $("scenario").disabled = false; return; }
+  $("transcript").innerHTML = ""; $("rows").innerHTML = ""; $("summary").innerHTML = "";
+  btn.textContent = "Hang up"; btn.classList.add("live"); $("scenario").disabled = true;
+  try { await start(); }
+  catch (err) { setStatus(`Error: ${err.message}`); stop(); btn.textContent = "Start talking"; btn.classList.remove("live"); $("scenario").disabled = false; }
+});
+</script>
+</body>
+</html>

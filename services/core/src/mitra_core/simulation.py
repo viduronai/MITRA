@@ -151,6 +151,23 @@ class Script:
     summary: str
 
 
+_AI_MENTION = re.compile(r"\bAI\b")
+
+
+def opening_line(business_name: str, employee_name: str, greeting: str | None) -> str:
+    """First thing the employee says. The AI disclosure and recording notice are mandatory
+    (docs/08 §4): an owner can reword the greeting but cannot remove the disclosure."""
+    disclosure = (
+        f"Namaste! This is {employee_name}, an AI assistant from {business_name}. "
+        "This call may be recorded to help serve you better."
+    )
+    if not greeting:
+        return f"{disclosure} How can I help you today?"
+    if _AI_MENTION.search(greeting):
+        return greeting
+    return f"{disclosure} {greeting}"
+
+
 def build_transcript(
     *,
     business_name: str,
@@ -162,12 +179,7 @@ def build_transcript(
 ) -> Script:
     questions, offer, accept = _SCRIPTS.get(industry, _SCRIPTS[None])
     turns: list[tuple[Literal["employee", "caller"], str]] = [
-        (
-            "employee",
-            greeting
-            or f"Namaste! Thank you for calling {business_name}. This is {employee_name}, "
-            "how can I help you today?",
-        )
+        ("employee", opening_line(business_name, employee_name, greeting))
     ]
     missing: list[str] = []
     for question in questions:
