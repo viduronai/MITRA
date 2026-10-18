@@ -1,0 +1,176 @@
+/* Scene 5 · WhatsApp Manager chat bubbles inside the phone (sizes in em of the screen). */
+.msg {
+  max-width: 86%;
+  padding: 0.55em 0.7em 0.45em;
+  border-radius: 0.75em;
+  background: #fff;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  line-height: 1.38;
+  color: #111b21;
+  animation: msgIn 0.55s var(--ease-out) both;
+  transform-origin: 0 100%;
+}
+
+.msg[data-side="out"] {
+  align-self: flex-end;
+  background: #d7f5dd;
+  transform-origin: 100% 100%;
+}
+
+@keyframes msgIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.msgTitle {
+  margin: 0 0 0.35em;
+  font-weight: 600;
+}
+
+.rows {
+  display: grid;
+  gap: 0.15em;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.2em;
+}
+
+.row dt {
+  color: #3b4a54;
+}
+
+.row dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0.4em 0 0;
+  font-weight: 600;
+  color: #c2410c;
+}
+
+.time {
+  display: block;
+  margin-top: 0.15em;
+  text-align: right;
+  font-size: 0.72em;
+  color: #667781;
+}
+
+.actions {
+  display: grid;
+  margin: 0.5em -0.7em -0.45em;
+  border-top: 1px solid #e9edef;
+}
+
+.action {
+  padding: 0.55em 0.4em;
+  border-top: 1px solid #e9edef;
+  text-align: center;
+  font-weight: 500;
+  color: #0a7cb8;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+.action:first-child {
+  border-top: 0;
+}
+
+.action[data-pressed] {
+  background: rgba(10, 124, 184, 0.1);
+}
+
+.voice {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  min-width: 12em;
+}
+
+.playBtn {
+  width: 1.6em;
+  height: 1.6em;
+  color: #54656f;
+  flex: none;
+}
+
+.wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 1.6em;
+  flex: 1;
+}
+
+.wave i {
+  display: block;
+  width: 2.5px;
+  border-radius: 2px;
+  background: #5c8d6a;
+}
+
+.vtext {
+  margin: 0.35em 0 0;
+  font-size: 0.86em;
+  font-style: italic;
+  color: #3b4a54;
+}
+
+.typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 0.75em 0.85em;
+  border-radius: 0.75em;
+  background: #fff;
+  align-self: flex-start;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+}
+
+.typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8696a0;
+  animation: dot 1.2s ease-in-out infinite;
+}
+
+.typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes dot {
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+  0%,
+  60%,
+  100% {
+    opacity: 0.5;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg,
+  .typing i {
+    animation: none;
+  }
+}

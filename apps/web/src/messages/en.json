@@ -22,7 +22,9 @@
   "header": {
     "isWorking": "{name} is working",
     "isPaused": "{name} is paused",
-    "callsLive": "{count, plural, =0 {no calls right now} one {# call live} other {# calls live}}"
+    "callsLive": "{count, plural, =0 {no calls right now} one {# call live} other {# calls live}}",
+    "isTraining": "{name} is getting ready",
+    "setupPending": "Finish setup to start"
   },
   "language": {
     "change": "Change language"
@@ -46,13 +48,17 @@
     "trendDown": "{value} fewer than yesterday",
     "trendSame": "Same as yesterday",
     "needsYouCount": "{count, plural, =0 {Nothing needs you right now} one {# thing needs your answer} other {# things need your answer}}",
-    "allClear": "You're all caught up. Priya will tell you if something comes up.",
+    "allClear": "You're all caught up. {employee} will tell you if something comes up.",
     "recentCalls": "Recent calls",
-    "seeAllCalls": "See all calls"
+    "seeAllCalls": "See all calls",
+    "greetingMorningPlain": "Good morning",
+    "greetingAfternoonPlain": "Good afternoon",
+    "greetingEveningPlain": "Good evening",
+    "sampleNote": "Sample numbers until real calls start."
   },
   "needs": {
-    "unknownQuestion": "{name} asked about Sunday timings. Priya didn't know the answer.",
-    "unknownQuestionAction": "Teach Priya",
+    "unknownQuestion": "{name} asked about Sunday timings. {employee} didn't know the answer.",
+    "unknownQuestionAction": "Teach {employee}",
     "upsetCaller": "{name} sounded upset about a long wait.",
     "upsetCallerAction": "Call back",
     "failedMessage": "The booking message to {name} didn't send.",
@@ -80,7 +86,11 @@
     "stopSample": "Stop sample",
     "receptionist": "Receptionist",
     "bookedToday": "{count, plural, =0 {No bookings yet today} one {# booked today} other {# booked today}}",
-    "callsToday": "{count, plural, one {# call} other {# calls}} today"
+    "callsToday": "{count, plural, one {# call} other {# calls}} today",
+    "training": "Getting ready",
+    "lead_caller": "Lead Caller",
+    "reminder_caller": "Reminder Caller",
+    "payment_caller": "Payment Caller"
   },
   "voice": {
     "play": "Play {name}'s voice",
@@ -92,29 +102,30 @@
     "title": "Finish setting up",
     "progress": "{percent}% done",
     "business": "Add your business details",
-    "teach": "Teach Priya about your clinic",
-    "voice": "Pick Priya's voice",
+    "teach": "Teach {name} about your business",
+    "voice": "Pick {name}'s voice",
     "testCall": "Make a test call",
-    "forward": "Forward your missed calls",
+    "forward": "Choose how to go live",
     "done": "Done",
     "todo": "To do",
-    "continue": "Continue setup"
+    "continue": "Continue setup",
+    "allDone": "Setup complete"
   },
   "calls": {
     "title": "Calls",
-    "subtitle": "Every call Priya answered or made today.",
+    "subtitle": "Every call {name} answered or made today.",
     "today": "Today"
   },
   "team": {
     "title": "Your team",
-    "subtitle": "Priya answers your calls, books appointments and sends reminders.",
+    "subtitle": "{name} answers your calls, books appointments and sends reminders.",
     "moreSoon": "More AI employees are coming soon — a follow-up caller and a payment caller."
   },
   "customers": {
     "title": "Customers",
-    "subtitle": "Everyone Priya has spoken with, and what she remembers about them.",
+    "subtitle": "Everyone {name} has spoken with, and what they remember about them.",
     "emptyTitle": "No customers yet",
-    "empty": "People Priya speaks with will appear here after their first call.",
+    "empty": "People {name} speaks with will appear here after their first call.",
     "emptyAction": "Add a customer"
   },
   "more": {
@@ -134,7 +145,241 @@
   },
   "empty": {
     "callsTitle": "No calls yet",
-    "calls": "Calls will appear here once Priya starts answering.",
+    "calls": "Calls will appear here once {name} starts answering.",
     "callsAction": "Make a test call"
+  },
+  "auth": {
+    "title": "Welcome to Mitra",
+    "subtitle": "Sign in with your mobile number. We'll send you a 6-digit code.",
+    "phoneLabel": "Mobile number",
+    "phoneHint": "10 digits, without 0 or +91",
+    "sendCode": "Send code",
+    "otpTitle": "Enter the code",
+    "otpSubtitle": "We sent a 6-digit code to {phone}.",
+    "otpLabel": "6-digit code",
+    "digitLabel": "Digit {n} of 6",
+    "verify": "Continue",
+    "changeNumber": "Change number",
+    "resendIn": "Resend code in {seconds}s",
+    "resend": "Resend code",
+    "resent": "We sent a new code.",
+    "devHint": "Dev only · your code is {code}",
+    "sending": "Sending…",
+    "checking": "Checking…",
+    "signedOut": "You've been signed out. Please sign in again.",
+    "trust": "We never share your number.",
+    "errors": {
+      "phoneInvalid": "Enter a 10-digit mobile number starting with 6, 7, 8 or 9.",
+      "codeIncomplete": "Enter all 6 digits.",
+      "codeWrong": "That code didn't match. Check the SMS and try again.",
+      "codeExpired": "This code has expired. Tap Resend to get a new one.",
+      "tooMany": "Too many tries. Please wait a few minutes and try again.",
+      "unreachable": "We couldn't connect right now. Check your internet and try again.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "onboarding": {
+    "metaTitle": "Set up",
+    "stepOf": "Step {current} of {total}",
+    "progressLabel": "Setup progress",
+    "back": "Back",
+    "continue": "Continue",
+    "saving": "Saving…",
+    "skip": "Skip for now",
+    "signOut": "Sign out",
+    "steps": {
+      "business": "Your business",
+      "role": "Choose a role",
+      "teach": "Teach Mitra",
+      "voice": "Pick a voice",
+      "test_call": "Test call",
+      "go_live": "Go live"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "unreachable": "We couldn't connect right now. Check your internet and try again.",
+      "needEmployee": "Choose a role first.",
+      "invalid": "Please check what you entered and try again."
+    },
+    "business": {
+      "title": "Tell us about your business",
+      "subtitle": "This helps your AI employee greet callers the right way.",
+      "name": "Business name",
+      "namePlaceholder": "e.g. Sunrise Clinic",
+      "nameRequired": "Add your business name.",
+      "industry": "What kind of business?",
+      "industries": {
+        "clinic": "Clinic or diagnostics",
+        "real_estate": "Real estate",
+        "education": "Coaching or education",
+        "other": "Something else"
+      },
+      "city": "City",
+      "cityPlaceholder": "e.g. Hyderabad",
+      "optional": "Optional",
+      "languages": "Languages your customers speak",
+      "languagesHint": "Pick up to 3.",
+      "languagesRequired": "Pick at least one language.",
+      "hours": "Working hours",
+      "hoursHint": "When should calls be answered? You can change this any time.",
+      "hoursPresets": {
+        "everyday9to9": "Every day, 9 am – 9 pm",
+        "monSat9to9": "Mon–Sat, 9 am – 9 pm",
+        "monSat10to7": "Mon–Sat, 10 am – 7 pm",
+        "allDay": "Open 24 hours"
+      }
+    },
+    "languages": {
+      "en": "English",
+      "te": "Telugu",
+      "hi": "Hindi"
+    },
+    "role": {
+      "title": "Choose a role",
+      "subtitle": "What should your AI employee do first? You can hire more later.",
+      "recommended": "Recommended for you",
+      "hearSample": "Hear sample",
+      "stopSample": "Stop sample",
+      "locked": "You've already hired a {role}. More roles can be added later from Team.",
+      "names": {
+        "receptionist": "Receptionist",
+        "lead_caller": "Lead Caller",
+        "reminder_caller": "Reminder Caller",
+        "payment_caller": "Payment Caller"
+      },
+      "descriptions": {
+        "receptionist": "Answers every call, books appointments and answers questions.",
+        "lead_caller": "Calls new enquiries within minutes and finds out what they need.",
+        "reminder_caller": "Reminds customers about appointments and visits a day before.",
+        "payment_caller": "Politely follows up on pending payments and fees."
+      },
+      "defaultNames": {
+        "receptionist": "Priya",
+        "lead_caller": "Ravi",
+        "reminder_caller": "Meena",
+        "payment_caller": "Arjun"
+      }
+    },
+    "teach": {
+      "title": "Teach {name} about your business",
+      "subtitle": "Share what you already have. {name} reads it, and you check the facts.",
+      "link": "Paste a link",
+      "linkHint": "Your website or Google Business page",
+      "type": "Type details",
+      "typeHint": "Prices, timings, address. One per line.",
+      "speak": "Speak",
+      "speakHint": "Talk for 2 minutes",
+      "comingSoon": "Coming soon",
+      "urlLabel": "Website or Google Business link",
+      "urlPlaceholder": "https://",
+      "urlInvalid": "Enter a full link, starting with https://",
+      "read": "Read this link",
+      "textLabel": "Details about your business",
+      "textPlaceholder": "Consultation fee: ₹500\nTimings: Mon–Sat, 9 am – 9 pm\nParking: Basement",
+      "textRequired": "Type a few details first.",
+      "addDetails": "Add these details",
+      "processingLink": "Reading your website…",
+      "processingText": "Reading your details…",
+      "failed": "We couldn't read that link. Check it, or type the details instead.",
+      "knowsTitle": "What they know",
+      "knowsEmpty": "Nothing yet. Add a link or type a few details above.",
+      "checkThese": "{count, plural, one {# fact to check} other {# facts to check}}",
+      "categories": {
+        "services": "Services",
+        "prices": "Prices & fees",
+        "timings": "Timings",
+        "location": "Location",
+        "contact": "Contact",
+        "faq": "Common questions",
+        "policy": "Policies"
+      },
+      "confirm": "Correct",
+      "confirmFact": "Mark “{key}” as correct",
+      "confirmed": "Checked",
+      "edit": "Edit",
+      "editFact": "Edit “{key}”",
+      "save": "Save",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "removeFact": "Remove “{key}”",
+      "removed": "Removed.",
+      "suggested": "Please check",
+      "valueLabel": "Answer for {key}",
+      "gapsTitle": "A few questions",
+      "gapsSubtitle": "Callers often ask these. Answer what you can.",
+      "answerPlaceholder": "Type your answer",
+      "saveAnswer": "Save answer",
+      "saved": "Saved.",
+      "confirmAll": "Looks right, continue",
+      "needOne": "Add at least one fact, or skip for now.",
+      "fromLink": "from your link",
+      "fromNotes": "from your notes"
+    },
+    "voice": {
+      "title": "Pick a voice",
+      "subtitle": "These voices speak {languages}. Tap ▶ to listen.",
+      "nameLabel": "Your employee's name",
+      "nameHint": "Callers will hear this name.",
+      "nameRequired": "Give your employee a name.",
+      "tiers": {
+        "smart": "Smart",
+        "natural": "Natural",
+        "signature": "Signature"
+      },
+      "perMin": "{price}/min",
+      "tierHint": "You pay only when they talk. Change the voice any time.",
+      "noVoices": "No voices for these languages yet. We'll add them soon."
+    },
+    "test": {
+      "title": "Make a test call",
+      "subtitle": "{name} will call you. Pretend you're a customer.",
+      "call": "Call my phone ({phone})",
+      "status": {
+        "queued": "Getting ready…",
+        "ringing": "Ringing your phone…",
+        "connected": "On the call",
+        "completed": "Call ended"
+      },
+      "simulatedNote": "Simulated preview, real calls coming soon.",
+      "whatWasSaid": "What was said",
+      "you": "You",
+      "summary": "Summary",
+      "fixTitle": "Anything to fix?",
+      "fixHint": "Tell {name} in your own words.",
+      "fixPlaceholder": "e.g. Say the consultation fee is ₹500",
+      "fixSubmit": "Fix it",
+      "fixRequired": "Type what to change first.",
+      "fixKnowledge": "Added to what they know.",
+      "fixBehaviour": "Noted for how they should behave.",
+      "testAgain": "Test again",
+      "looksGood": "Looks good, continue",
+      "failed": "The test call didn't go through. Please try again."
+    },
+    "live": {
+      "title": "Go live",
+      "subtitle": "Choose how {name} starts helping you.",
+      "forwardTitle": "Forward my missed calls",
+      "forwardDesc": "When you're busy or can't pick up, your calls go to {name}.",
+      "network": "Your network",
+      "busy": "When busy",
+      "noAnswer": "When you don't answer",
+      "unreachable": "When switched off",
+      "copyCode": "Copy code for “{label}”",
+      "copied": "Copied",
+      "dialHint": "Dial the code from your phone, like a normal call.",
+      "forwardSoon": "Coming soon: your Mitra number. We'll put it into these codes for you.",
+      "numberTitle": "Get a local business number",
+      "numberDesc": "A local number that shows your business name when calling.",
+      "leadsTitle": "Connect my leads",
+      "leadsDesc": "Facebook ads, your website form or a Google Sheet.",
+      "comingSoon": "Coming soon",
+      "finish": "Finish setup",
+      "successEyebrow": "Setup complete",
+      "successTitle": "You're all set",
+      "successBody": "{name} is set up. We'll message you on WhatsApp as soon as real calls can start.",
+      "goHome": "Go to Home",
+      "copyShort": "Copy"
+    },
+    "tryAgain": "Try again"
   }
 }

@@ -1,19 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Inter, Noto_Sans_Devanagari, Noto_Sans_Telugu } from "next/font/google";
+import { Geist_Mono, Host_Grotesk, Noto_Sans_Devanagari, Noto_Sans_Telugu } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AppProviders } from "@/components/providers/app-providers";
 import { themeInitScript } from "@/components/theme/theme-script";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+// v2 fonts follow viduronai.in: Host Grotesk for text and display,
+// Geist Mono for small uppercase labels.
+const hostGrotesk = Host_Grotesk({
+  variable: "--font-host-grotesk",
   subsets: ["latin"],
   display: "swap",
 });
 
-const geist = Geist({
-  variable: "--font-geist",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -46,14 +48,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FBFBFA" },
-    { media: "(prefers-color-scheme: dark)", color: "#0B0B0D" },
+    { media: "(prefers-color-scheme: light)", color: "#F4F3EF" },
+    { media: "(prefers-color-scheme: dark)", color: "#05070D" },
   ],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
-  const fontVariables = [inter, geist, notoTelugu, notoDevanagari]
+  const fontVariables = [hostGrotesk, geistMono, notoTelugu, notoDevanagari]
     .map((font) => font.variable)
     .join(" ");
 

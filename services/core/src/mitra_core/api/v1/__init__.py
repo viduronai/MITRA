@@ -1,6 +1,15 @@
 from fastapi import APIRouter
 
-from mitra_core.api.v1 import businesses, employees, me
+from mitra_core.api.v1 import (
+    auth,
+    businesses,
+    catalog,
+    employees,
+    knowledge,
+    me,
+    onboarding,
+    test_calls,
+)
 from mitra_core.schemas.common import ErrorResponse
 
 router = APIRouter(
@@ -12,6 +21,11 @@ router = APIRouter(
         422: {"model": ErrorResponse, "description": "Validation error"},
     },
 )
+router.include_router(auth.router)
 router.include_router(me.router)
 router.include_router(businesses.router)
 router.include_router(employees.router)
+router.include_router(catalog.router)
+router.include_router(knowledge.router)
+router.include_router(test_calls.router)
+router.include_router(onboarding.router)

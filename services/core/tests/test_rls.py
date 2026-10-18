@@ -161,3 +161,94 @@ async def test_unknown_business_in_token_is_forbidden(client: httpx.AsyncClient)
     actor = new_actor()
     resp = await client.get("/v1/employees", headers=actor.headers(uuid.uuid4()))
     assert resp.status_code == 403
+
+
+NEW_TENANT_TABLES = ("knowledge_source", "fact", "test_call")
+
+
+async def _tenant_with_knowledge(client: httpx.AsyncClient, name: str) -> dict[str, Any]:
+    owner = new_actor(name)
+    business = await create_business(client, owner, name=name)
+    employee = await create_employee(client, owner, business["id"])
+    headers = owner.headers(business["id"])
+    source = await client.post(
+        "/v1/knowledge/sources", json={"type": "text", "text": "Fee: 500"}, headers=headers
+    )
+    call = await client.post(
+        "/v1/test-calls", json={"employee_id": employee["id"]}, headers=headers
+    )
+    facts = (await client.get("/v1/knowledge/facts", headers=headers)).json()
+    return {
+        "headers": headers,
+        "business": business,
+        "ids": {
+            "knowledge_source": source.json()["id"],
+            "fact": facts[0]["id"],
+            "test_call": call.json()["id"],
+        },
+    }
+
+
+async def test_new_tables_are_isolated_per_tenant(
+    client: httpx.AsyncClient, app_engine: AsyncEngine
+) -> None:
+    a = await _tenant_with_knowledge(client, "Clinic A")
+    b = await _tenant_with_knowledge(client, "Clinic B")
+    async with app_engine.connect() as conn:
+        for table in NEW_TENANT_TABLES:
+            count = (await conn.execute(text(f"SELECT count(*) FROM {table}"))).scalar_one()
+            assert count == 0, f"{table}: visible without a tenant"
+    async with app_engine.begin() as conn:
+        await conn.execute(SET_TENANT, {"b": a["business"]["id"]})
+        for table in NEW_TENANT_TABLES:
+            rows = (await conn.execute(text(f"SELECT id::text FROM {table}"))).scalars().all()
+            assert rows == [a["ids"][table]], table
+            result = await conn.execute(
+                text(f"UPDATE {table} SET business_id = business_id WHERE id = :i"),
+                {"i": uuid.UUID(b["ids"][table])},
+            )
+            assert result.rowcount == 0, table
+
+
+async def test_app_role_cannot_insert_knowledge_into_another_tenant(
+    client: httpx.AsyncClient, app_engine: AsyncEngine
+) -> None:
+    a = await _tenant_with_knowledge(client, "Clinic A")
+    b = await _tenant_with_knowledge(client, "Clinic B")
+    async with app_engine.connect() as conn:
+        trans = await conn.begin()
+        await conn.execute(SET_TENANT, {"b": a["business"]["id"]})
+        with pytest.raises(DBAPIError, match="row-level security"):
+            await conn.execute(
+                text(
+                    "INSERT INTO fact (business_id, category, key, value, status) "
+                    "VALUES (:b, 'faq', 'k', 'v', 'confirmed')"
+                ),
+                {"b": b["business"]["id"]},
+            )
+        await trans.rollback()
+
+
+async def test_api_cannot_reach_other_tenants_knowledge_or_calls(
+    client: httpx.AsyncClient,
+) -> None:
+    a = await _tenant_with_knowledge(client, "Clinic A")
+    b = await _tenant_with_knowledge(client, "Clinic B")
+    h = a["headers"]
+    fact_b, call_b = b["ids"]["fact"], b["ids"]["test_call"]
+    assert (
+        await client.patch(f"/v1/knowledge/facts/{fact_b}", json={"value": "x"}, headers=h)
+    ).status_code == 404
+    assert (await client.delete(f"/v1/knowledge/facts/{fact_b}", headers=h)).status_code == 404
+    assert (await client.get(f"/v1/test-calls/{call_b}", headers=h)).status_code == 404
+    resp = await client.post(
+        f"/v1/test-calls/{call_b}/corrections", json={"text": "Fee is ₹1"}, headers=h
+    )
+    assert resp.status_code == 404
+    facts = (await client.get("/v1/knowledge/facts", headers=h)).json()
+    assert [f["id"] for f in facts] == [a["ids"]["fact"]]
+    sources = (await client.get("/v1/knowledge/sources", headers=h)).json()
+    assert [s["id"] for s in sources] == [a["ids"]["knowledge_source"]]
+    # B's fact is untouched.
+    b_facts = (await client.get("/v1/knowledge/facts", headers=b["headers"])).json()
+    assert b_facts[0]["value"] == "500"

@@ -1,0 +1,365 @@
+/*
+ * Scene 9 · Footer. Driftbar: chalk paper top (1440×672 canvas, sizes × --u),
+ * blue-hour meadow fading in below, giant frosted-glass "mitra" sinking into
+ * mist fog.
+ */
+.footer {
+  --u: min(calc(100vw / 1440), calc(100vh / 672));
+  --u: min(calc(100vw / 1440), calc(100svh / 672));
+  --paper: var(--chalk);
+  --body: #5e6168;
+  --muted: #73767c;
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  min-height: 560px;
+  background: var(--paper);
+  color: var(--ink);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(to bottom, transparent 40%, #8fa6d6 75%, var(--mist) 100%);
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 100%;
+  transform: translateY(9%);
+  /* Pull Driftbar's lavender toward Mitra blue hour. */
+  filter: hue-rotate(-22deg) saturate(0.9);
+}
+
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--paper) 0%, rgb(243 242 238 / 0.96) 26%, rgb(243 242 238 / 0.72) 44%, rgb(243 242 238 / 0) 70%);
+}
+
+.wordmark {
+  position: absolute;
+  left: 50%;
+  bottom: calc(-6 * var(--u));
+  z-index: 1;
+  margin: 0;
+  transform: translateX(-50%);
+  font-size: calc(470 * var(--u));
+  font-weight: 600;
+  line-height: 0.74;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  color: rgb(232 240 250 / 0.4);
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0.8), rgb(200 222 246 / 0.36) 48%, rgb(255 255 255 / 0.62));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 calc(-1 * var(--u)) 0 rgb(255 255 255 / 0.55)) drop-shadow(0 0 calc(18 * var(--u)) rgb(170 205 255 / 0.45));
+}
+
+.stem {
+  position: relative;
+  /* Keep the stem clear of the tightly tracked m and t. */
+  margin: 0 0.015em;
+}
+
+/* Sits just above the x-height, centred on the stem, same glass as the letters. */
+.tittle {
+  position: absolute;
+  left: 50%;
+  bottom: 0.845em;
+  width: 0.118em;
+  height: 0.118em;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0.85), rgb(206 226 248 / 0.5));
+  box-shadow: inset 0 0.01em 0 rgb(255 255 255 / 0.7);
+}
+
+.fog {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  height: 17%;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--mist) 0%, rgb(221 232 245 / 0.6) 30%, rgb(221 232 245 / 0) 100%);
+}
+
+.content {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: calc(440 * var(--u)) calc(240 * var(--u)) calc(240 * var(--u)) 1fr;
+  align-items: start;
+  width: calc(1440 * var(--u));
+  margin: 0 auto;
+  padding: calc(86 * var(--u)) calc(100 * var(--u)) 0 calc(160 * var(--u));
+}
+
+.logo {
+  display: inline-flex;
+  font-size: max(calc(19 * var(--u)), 16px);
+  color: var(--ink);
+  border-radius: 4px;
+}
+
+.title {
+  margin: calc(19 * var(--u)) 0 0;
+  font-size: max(calc(21 * var(--u)), 17px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.text {
+  max-width: calc(412 * var(--u));
+  margin: calc(16 * var(--u)) 0 0;
+  font-size: max(calc(14 * var(--u)), 13px);
+  line-height: 1.45;
+  letter-spacing: -0.012em;
+  color: var(--body);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(7 * var(--u));
+  height: max(calc(36 * var(--u)), 34px);
+  margin-top: calc(20 * var(--u));
+  padding: 0 calc(16 * var(--u)) 0 calc(14 * var(--u));
+  border-radius: calc(8 * var(--u));
+  background: var(--ink);
+  color: #fff;
+  font-size: max(calc(13 * var(--u)), 12.5px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cta:hover {
+  background: #1b2233;
+  transform: translateY(-1px);
+}
+
+.cta svg {
+  width: max(calc(13 * var(--u)), 12px);
+  height: max(calc(13 * var(--u)), 12px);
+  color: var(--sky);
+}
+
+.copy {
+  margin: calc(22 * var(--u)) 0 0;
+  font-size: max(calc(12.4 * var(--u)), 12px);
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.by {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  margin-top: calc(14 * var(--u));
+  font-size: max(calc(12.4 * var(--u)), 12px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.by a {
+  border-radius: 3px;
+}
+
+.ember {
+  width: max(calc(8 * var(--u)), 7px);
+  height: max(calc(8 * var(--u)), 7px);
+  border-radius: 50%;
+  background: var(--viduron-ember);
+  box-shadow: 0 0 0 calc(2.5 * var(--u)) rgb(255 106 31 / 0.18);
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--u));
+  margin: calc(16 * var(--u)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  height: max(calc(26 * var(--u)), 24px);
+  padding: 0 max(calc(10 * var(--u)), 9px);
+  border: 1px solid rgb(5 7 13 / 0.12);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.55);
+  font-size: max(calc(11.2 * var(--u)), 11px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.dot {
+  width: max(calc(6 * var(--u)), 6px);
+  height: max(calc(6 * var(--u)), 6px);
+  border-radius: 50%;
+  background: #1f9d5c;
+  box-shadow: 0 0 0 calc(2.5 * var(--u)) rgb(31 157 92 / 0.18);
+}
+
+.chip svg {
+  width: max(calc(11 * var(--u)), 11px);
+  height: max(calc(11 * var(--u)), 11px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.colTitle {
+  margin: 0;
+  font-size: max(calc(16 * var(--u)), 14px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.list {
+  display: grid;
+  gap: max(calc(17 * var(--u)), 12px);
+  margin: calc(22 * var(--u)) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: max(calc(13.7 * var(--u)), 13px);
+  line-height: 1.24;
+  letter-spacing: 0.01em;
+  color: #161616;
+}
+
+.list a {
+  border-radius: 3px;
+  transition: opacity 0.2s ease;
+}
+
+.list a:hover {
+  opacity: 0.55;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .footer {
+    --u: min(calc(100vw / 1040), calc(100svh / 672));
+  }
+
+  .content {
+    grid-template-columns: calc(400 * var(--u)) calc(190 * var(--u)) calc(210 * var(--u)) 1fr;
+    width: calc(1040 * var(--u));
+    padding: calc(64 * var(--u)) calc(40 * var(--u)) 0;
+  }
+
+  .text {
+    max-width: calc(350 * var(--u));
+  }
+
+  .wordmark {
+    font-size: calc(360 * var(--u));
+    bottom: calc(8 * var(--u));
+  }
+}
+
+@media (max-width: 767px) {
+  .footer {
+    --u: 1px;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .stage::after {
+    background: linear-gradient(to bottom, var(--paper) 0%, rgb(243 242 238 / 0.95) 50%, rgb(243 242 238 / 0.8) 68%, rgb(243 242 238 / 0) 90%);
+  }
+
+  .content {
+    grid-template-columns: auto auto auto;
+    justify-content: space-between;
+    column-gap: 12px;
+    row-gap: 36px;
+    width: 100%;
+    padding: 48px 20px 0;
+    margin-bottom: max(46vw, 180px);
+  }
+
+  .brand {
+    grid-column: 1 / -1;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+
+  .text {
+    max-width: 34em;
+    font-size: 14px;
+  }
+
+  .cta {
+    height: 40px;
+    padding: 0 18px 0 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+  }
+
+  .chip {
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .colTitle {
+    font-size: 15px;
+  }
+
+  .list {
+    gap: 14px;
+    margin-top: 18px;
+    font-size: 13px;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  .wordmark {
+    bottom: 4vw;
+    font-size: 40vw;
+  }
+
+  .fog {
+    height: 9%;
+  }
+}
+
+@media (max-width: 359.98px) {
+  .content {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta,
+  .list a {
+    transition: none;
+  }
+}

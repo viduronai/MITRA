@@ -1,0 +1,469 @@
+/*
+ * Scene 4 · One call becomes a team. Targo on chalk: staircase uppercase
+ * headline, last line in sky, chamfered CTA, hue-tinted video flush right,
+ * plus the team map with light beams between four role orbs.
+ */
+.team {
+  --indent: min(238px, 28vw);
+  --pad-left: clamp(20px, 9vw, 118px);
+  position: relative;
+  background: var(--chalk);
+  color: var(--text-on-chalk);
+  overflow: hidden;
+}
+
+/* ---------- A · Targo hero ---------- */
+.top {
+  position: relative;
+  /* Section ends where the video's dark panel ends, so the split reads as
+     deliberate instead of a block floating above the fold. */
+  min-height: max(calc(99vw * 9 / 16), 560px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.topMedia {
+  position: absolute;
+  top: 0;
+  right: -20%;
+  width: 99%;
+  aspect-ratio: 16 / 9;
+  pointer-events: none;
+  isolation: isolate;
+  /* Bottom edge dissolves into the chalk below. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 99%);
+  mask-image: linear-gradient(to bottom, #000 76%, transparent 99%);
+}
+
+/* The video's dark backdrop starts about halfway across the frame. A wide,
+   soft lighten band dissolves that internal edge into chalk: lighten only
+   lifts pixels darker than chalk, so the backdrop fades while the white
+   sphere crossing the edge barely changes. */
+.topMedia::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* Peak matches the video's own off-white (not chalk) so it never glows. */
+  background: linear-gradient(
+    90deg,
+    rgb(236 238 238 / 0) 46%,
+    rgb(236 238 238 / 1) 50.6%,
+    rgb(236 238 238 / 0.7) 56%,
+    rgb(236 238 238 / 0.3) 63%,
+    rgb(236 238 238 / 0) 72%
+  );
+  mix-blend-mode: lighten;
+  pointer-events: none;
+}
+
+.topMedia::after,
+.aboutMedia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--sky);
+  mix-blend-mode: hue;
+  pointer-events: none;
+}
+
+/* No video (Save-Data): drop the hue tint so it never shows as a flat block. */
+.topMedia:not(:has(video))::after,
+.aboutMedia:not(:has(video))::after {
+  display: none;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.topScrim {
+  position: absolute;
+  inset: 0 30% 0 0;
+  z-index: 1;
+  background: linear-gradient(90deg, var(--chalk) 0%, var(--chalk) 55%, rgba(243, 242, 238, 0.85) 78%, rgba(243, 242, 238, 0) 100%);
+  pointer-events: none;
+}
+
+.topCopy {
+  position: relative;
+  z-index: 2;
+  padding: min(clamp(40px, 9vw, 120px), 9vh) 20px min(clamp(24px, 4vw, 44px), 5vh) var(--pad-left);
+}
+
+.eyebrow {
+  margin: 0 0 22px;
+  color: var(--body-on-chalk);
+}
+
+.stair {
+  margin: 0;
+  font-weight: 700;
+  font-size: min(clamp(40px, 8vw, 124px), 12.5vh);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #1c2126;
+}
+
+.stair .indent {
+  padding-left: var(--indent);
+}
+
+.sky {
+  color: var(--sky-ink);
+}
+
+.ctaRow {
+  position: relative;
+  z-index: 2;
+  padding: 0 20px min(clamp(36px, 6vw, 80px), 7vh) calc(var(--pad-left) + var(--indent));
+}
+
+/* ---------- B · Targo about ---------- */
+.about {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 40px;
+  padding: clamp(48px, 5vw, 80px) 0 clamp(24px, 3vw, 40px) var(--pad-left);
+  background: linear-gradient(180deg, var(--chalk) 0%, #f6f6f4 18%, #f6f6f4 100%);
+}
+
+.aboutCopy {
+  flex: 1 1 420px;
+  min-width: 300px;
+  padding-right: 20px;
+}
+
+.h3 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(32px, 4.8vw, 68px);
+  white-space: nowrap;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #1c2126;
+}
+
+.h3 .indent {
+  padding-left: min(160px, 18vw);
+}
+
+.text {
+  max-width: 520px;
+  margin: 32px 0 0 min(160px, 18vw);
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.7;
+  color: var(--body-on-chalk);
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 0 min(160px, 18vw);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--blue);
+  border-bottom: 1px solid rgba(47, 107, 255, 0.35);
+  padding-bottom: 4px;
+  transition:
+    gap 0.3s var(--ease-soft),
+    border-color 0.3s ease;
+}
+
+.more:hover {
+  gap: 14px;
+  border-color: var(--blue);
+}
+
+.aboutMediaCol {
+  position: relative;
+  flex: 1 1 360px;
+  min-width: 280px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.aboutMedia {
+  position: relative;
+  width: 100%;
+  max-width: 644px;
+  aspect-ratio: 1;
+  isolation: isolate;
+  background: #f4f4f2;
+}
+
+/* ---------- C · Team map ---------- */
+.map {
+  position: relative;
+  padding: clamp(32px, 3.5vw, 56px) var(--gutter) clamp(80px, 10vw, 150px);
+  background: #f6f6f4;
+}
+
+.mapHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  margin-bottom: 28px;
+  color: var(--body-on-chalk);
+}
+
+.nodes {
+  --gap: clamp(28px, 3.4vw, 56px);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 22px 20px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
+  border: 1px solid var(--chalk-2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 24px 40px -28px rgba(18, 58, 158, 0.28);
+}
+
+.orb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #d9f5ff 0%, var(--sky) 38%, var(--blue) 78%, var(--blue-deep) 100%);
+  box-shadow:
+    0 0 0 6px rgba(56, 198, 244, 0.1),
+    0 10px 24px -6px rgba(47, 107, 255, 0.55);
+}
+
+.orb::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 198, 244, 0.5);
+  animation: orbPulse 4s var(--ease-out) infinite;
+  animation-delay: calc(var(--i) * 1s);
+}
+
+@keyframes orbPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  40%,
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.index {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--body-on-chalk);
+}
+
+.role {
+  margin: 0;
+  font-weight: 600;
+  font-size: clamp(19px, 1.5vw, 22px);
+  letter-spacing: -0.03em;
+}
+
+.duty {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--body-on-chalk);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(47, 107, 255, 0.07);
+  border: 1px solid rgba(47, 107, 255, 0.16);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #1d3f9c;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sky);
+  box-shadow: 0 0 0 2.5px rgba(56, 198, 244, 0.25);
+}
+
+/* Beam from this node's orb to the next one. */
+.beam {
+  position: absolute;
+  top: 43px;
+  left: calc(22px + 44px + 8px);
+  width: calc(100% - 22px - 44px - 8px + var(--gap) + 22px - 8px);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(47, 107, 255, 0.42), rgba(56, 198, 244, 0.55));
+  overflow: hidden;
+  z-index: 2;
+}
+
+.beam::after {
+  content: "";
+  position: absolute;
+  inset: -1px 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(47, 107, 255, 0) 15%, var(--blue) 55%, var(--sky) 78%, #ffffff 88%, transparent 100%);
+  filter: drop-shadow(0 0 5px rgba(56, 198, 244, 1));
+  transform: translateX(-100%);
+  animation: beam 4s var(--ease-inout) infinite;
+  animation-delay: calc(var(--i) * 1s + 0.2s);
+}
+
+@keyframes beam {
+  0% {
+    transform: translateX(-100%);
+  }
+  25%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 1100px) {
+  .nodes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .node:nth-child(2) .beam {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .topMedia {
+    right: auto;
+    left: -12%;
+    width: 119%;
+  }
+
+  .topScrim {
+    display: none;
+  }
+
+  .top {
+    justify-content: flex-start;
+    min-height: 0;
+  }
+
+  .top {
+    min-height: 0;
+  }
+
+  .topCopy {
+    margin-top: calc(119vw * 9 / 16 + 28px);
+    padding: 0 20px 28px;
+  }
+
+  .stair {
+    font-size: clamp(40px, 12.4vw, 60px);
+  }
+
+  .ctaRow {
+    padding: 0 20px 8px calc(20px + var(--indent));
+  }
+
+  .about {
+    padding: 64px 0 24px 20px;
+  }
+
+  .aboutCopy {
+    min-width: 0;
+  }
+
+  .text,
+  .more {
+    margin-left: 0;
+  }
+
+  .nodes {
+    grid-template-columns: 1fr;
+    --gap: 22px;
+  }
+
+  .node:nth-child(2) .beam {
+    display: block;
+  }
+
+  .beam {
+    top: calc(22px + 44px + 8px);
+    left: 43px;
+    width: 2px;
+    height: calc(100% - 22px - 44px - 8px + var(--gap) + 22px - 8px);
+  }
+
+  .beam::after {
+    inset: 0 -1px;
+    background: linear-gradient(180deg, transparent 0%, rgba(56, 198, 244, 0) 20%, var(--sky) 70%, #ffffff 82%, transparent 100%);
+    transform: translateY(-100%);
+    animation-name: beamDown;
+  }
+
+  .mapHead {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@keyframes beamDown {
+  0% {
+    transform: translateY(-100%);
+  }
+  25%,
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb::after,
+  .beam::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .beam {
+    background: linear-gradient(90deg, rgba(47, 107, 255, 0.45), rgba(56, 198, 244, 0.6));
+  }
+}

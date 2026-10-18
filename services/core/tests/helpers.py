@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -14,6 +15,7 @@ from mitra_core.models.enums import MemberRole
 from scripts.dev_token import mint
 
 _phone_counter = iter(range(10**8))
+FIXED_CODE = "246810"
 
 
 @dataclass
@@ -71,3 +73,48 @@ async def add_member(
             {"b": uuid.UUID(business_id), "u": actor.user_id, "r": role.value},
         )
     return actor
+
+
+class FakeClock:
+    """Injectable clock for time-dependent endpoints: ``app.dependency_overrides[get_clock]``."""
+
+    def __init__(self, start: datetime | None = None) -> None:
+        self.now = start or datetime(2026, 10, 18, 9, 0, tzinfo=UTC)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += timedelta(seconds=seconds)
+
+
+async def login(client: httpx.AsyncClient, phone: str, name: str | None = None) -> dict[str, Any]:
+    """OTP request + verify. Requires the code generator to be pinned to ``FIXED_CODE``."""
+    resp = await client.post("/v1/auth/otp/request", json={"phone": phone})
+    assert resp.status_code == 202, resp.text
+    body: dict[str, Any] = {"request_id": resp.json()["request_id"], "code": FIXED_CODE}
+    if name:
+        body["name"] = name
+    resp = await client.post("/v1/auth/otp/verify", json=body)
+    assert resp.status_code == 200, resp.text
+    return resp.json()  # type: ignore[no-any-return]
+
+
+def bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def add_fact(
+    client: httpx.AsyncClient,
+    headers: dict[str, str],
+    category: str,
+    key: str,
+    value: str,
+) -> dict[str, Any]:
+    resp = await client.post(
+        "/v1/knowledge/facts",
+        json={"category": category, "key": key, "value": value},
+        headers=headers,
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()  # type: ignore[no-any-return]

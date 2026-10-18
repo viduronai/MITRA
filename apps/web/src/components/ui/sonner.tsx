@@ -26,8 +26,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme}
       position={isDesktop ? "bottom-right" : "bottom-center"}
-      // Clear the mobile bottom tab bar.
-      mobileOffset={{ bottom: 88 }}
+      // Clear the mobile bottom tab bar, or the onboarding step footer (globals.css).
+      mobileOffset={{ bottom: "var(--toast-bottom, 88px)" }}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4 text-success" />,

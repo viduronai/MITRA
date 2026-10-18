@@ -45,7 +45,7 @@ Agency console (P3, separate shell)
 | **Google Antigravity** | A sense of **living, floating space**: soft particles and depth, calm dark canvas, elements that react gently to cursor and scroll |
 | **GitHub** homepage | **Glowing depth and real product UI**: dark gradients, light beams, real interface shots that animate in, a large showpiece visual (their globe → our "voice sphere") |
 
-**Signature concept: "The Voice Sphere."** A live, breathing 3D orb of particles in Marigold and indigo, made from sound. It ripples when Mitra "speaks" (sample audio playing), calms when idle, and follows the cursor slightly. It's the visual identity of a calm, human voice, and it appears across hero, demo and CTA moments.
+**Signature concept: "The Voice Sphere."** A live, breathing 3D orb of particles in sky blue and Mitra Blue, made from sound. It ripples when Mitra "speaks" (sample audio playing), calms when idle, and follows the cursor slightly. **v2: it now lives in the "Hear it" scene. The full scene plan is in [design/landing-direction.md](design/landing-direction.md).**
 
 **Scroll story (replaces the generic section list below as the primary structure):**
 1. **Silence → a phone rings** (dark screen, a single ringing sound visual) → *"Every missed call is a missed customer."*
@@ -70,7 +70,7 @@ Agency console (P3, separate shell)
 | # | Section | Content | Suggested source / effect |
 |---|---|---|---|
 | 1 | Sticky header | Logo · Industries · Pricing · Agencies · Login · **Try free** | Glass blur on scroll |
-| 2 | **Hero** | H1: "Hire an AI employee who sounds like your best staff." Sub: "Answers every call, calls every lead, does the follow-up — in Telugu, Hindi and English." **Primary: "Call me now"** (live demo) · Secondary: "Hear sample calls" | Aceternity spotlight / background beams, React Bits text reveal, Marigold sound-wave orb (MotionSites-style animated background prompt) |
+| 2 | **Hero** | H1: "Hire an AI employee who sounds like your best staff." Sub: "Answers every call, calls every lead, does the follow-up — in Telugu, Hindi and English." **Primary: "Call me now"** (live demo) · Secondary: "Hear sample calls" | Aceternity spotlight / background beams, React Bits text reveal, Vexel-style horizon video + masked headline (see design/landing-direction.md) |
 | 3 | **Live demo module** | Phone input + language chips + industry chips → "Mitra will call you in 30 seconds" + live status (Dialling… Connected… Call ended → see your summary) | Custom; shimmer button (Magic UI) |
 | 4 | Sample calls | 4 cards (Clinic · Real estate · Coaching · Payments) with waveform players + transcript toggle; language switch | Custom audio card |
 | 5 | Logo / proof strip | Early customers, partner logos, "Calls handled" ticker | Magic UI marquee + number ticker |

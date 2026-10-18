@@ -1,0 +1,357 @@
+/*
+ * Scene 5 · Run it from WhatsApp. Apple-style pinned story on chalk: a
+ * floating phone whose Manager chat advances with scroll.
+ */
+.wa {
+  position: relative;
+  height: 340vh;
+  background: linear-gradient(180deg, #f6f6f4 0%, var(--chalk) 12%);
+  color: var(--text-on-chalk);
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 96px);
+  padding: calc(var(--header-h) + 16px) var(--gutter) 24px;
+  overflow: hidden;
+}
+
+.copy {
+  max-width: 520px;
+  justify-self: end;
+  width: 100%;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--body-on-chalk);
+}
+
+.title {
+  margin: 18px 0 0;
+  font-weight: 600;
+  font-size: clamp(40px, 5vw, 80px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.title em {
+  font-weight: 400;
+  color: var(--blue);
+}
+
+.steps {
+  margin: clamp(28px, 4vh, 48px) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--chalk-2);
+}
+
+.step {
+  position: relative;
+  padding: 18px 0 18px 34px;
+  border-bottom: 1px solid var(--chalk-2);
+  opacity: 0.38;
+  transition: opacity 0.5s var(--ease-soft);
+}
+
+.step[data-active] {
+  opacity: 1;
+}
+
+.stepNo {
+  position: absolute;
+  left: 0;
+  top: 21px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--body-on-chalk);
+}
+
+.stepTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: clamp(18px, 1.5vw, 22px);
+  letter-spacing: -0.025em;
+}
+
+.stepBody {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--body-on-chalk);
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--sky));
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform 0.3s linear;
+}
+
+/* ---------- Phone ---------- */
+.phoneCol {
+  justify-self: start;
+  perspective: 1400px;
+}
+
+.phone {
+  --ph: min(680px, calc(100svh - var(--header-h) - 64px));
+  position: relative;
+  width: calc(var(--ph) * 0.49);
+  height: var(--ph);
+  padding: 10px;
+  border-radius: calc(var(--ph) * 0.085);
+  background: linear-gradient(145deg, #1d2333 0%, #05070d 40%, #141a28 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.12),
+    inset 0 0 0 4px #0a0d16,
+    0 50px 80px -30px rgba(5, 7, 13, 0.45),
+    0 30px 50px -40px rgba(18, 58, 158, 0.5);
+  transform-style: preserve-3d;
+  will-change: transform;
+  /* Eases the scroll-driven pose (stands in for a spring). */
+  transition: transform 0.5s var(--ease-soft);
+}
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--ph) * 0.07);
+  background: #e8edf1;
+  font-size: calc(var(--ph) * 0.0205);
+}
+
+.island {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  z-index: 3;
+  width: 30%;
+  height: 22px;
+  border-radius: 20px;
+  background: #000;
+  transform: translateX(-50%);
+}
+
+.chatHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 14px 10px;
+  background: #f7f8fa;
+  border-bottom: 1px solid #dfe4ea;
+}
+
+.back {
+  width: 9px;
+  height: 14px;
+  color: #0a7cb8;
+}
+
+.avatar {
+  width: 2.4em;
+  height: 2.4em;
+  flex: none;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.contact b {
+  font-weight: 600;
+  font-size: 1.05em;
+  letter-spacing: -0.01em;
+}
+
+.contact span {
+  font-size: 0.82em;
+  color: #5f6b76;
+}
+
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.55em;
+  padding: 0.8em 0.75em 0.6em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 2.2em);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 2.2em);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(56, 198, 244, 0.07), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(47, 107, 255, 0.06), transparent 45%),
+    #e8edf1;
+}
+
+.day {
+  align-self: center;
+  margin-bottom: 0.2em;
+  padding: 0.3em 0.8em;
+  border-radius: 0.6em;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 0.78em;
+  color: #5f6b76;
+}
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 16px;
+  background: #f7f8fa;
+}
+
+.field {
+  flex: 1;
+  padding: 0.6em 0.9em;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e3e7eb;
+  color: #5f6b76;
+  font-size: 0.95em;
+}
+
+.mic {
+  display: grid;
+  place-items: center;
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+}
+
+.mic svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.shadow {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(5, 7, 13, 0.18), transparent 70%);
+  filter: blur(6px);
+}
+
+@media (max-width: 900px) {
+  .wa {
+    height: 320vh;
+  }
+
+  .sticky {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: start;
+    justify-items: center;
+    gap: 14px;
+    padding: calc(var(--header-h) + 14px) 20px 16px;
+  }
+
+  .copy {
+    justify-self: stretch;
+    max-width: none;
+  }
+
+  .title {
+    margin-top: 8px;
+    font-size: clamp(32px, 9vw, 52px);
+  }
+
+  .steps {
+    position: relative;
+    height: 4.4em;
+    margin-top: 12px;
+    border: 0;
+  }
+
+  .step {
+    position: absolute;
+    inset: 0 auto auto 0;
+    padding: 0 0 0 30px;
+    border: 0;
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 0.4s ease,
+      transform 0.5s var(--ease-out);
+  }
+
+  .step[data-active] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .stepNo {
+    top: 3px;
+  }
+
+  .stepBody {
+    font-size: 14px;
+  }
+
+  .bar {
+    display: none;
+  }
+
+  .phoneCol {
+    justify-self: center;
+    align-self: start;
+  }
+
+  .phone {
+    --ph: min(620px, calc(100svh - var(--header-h) - 230px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa {
+    height: auto;
+  }
+
+  .sticky {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    padding-bottom: 64px;
+  }
+
+  .steps {
+    height: auto;
+  }
+
+  .step {
+    position: relative;
+    opacity: 1;
+    transform: none;
+    margin-bottom: 14px;
+  }
+
+  .phone {
+    --ph: min(680px, 86svh);
+  }
+}

@@ -36,7 +36,7 @@ export function StatTile({ label, value, trend, href, highlight, className }: St
 
   const classes = cn(
     "flex min-h-[132px] flex-col rounded-xl border bg-card p-4 text-card-foreground shadow-xs md:min-h-40 md:p-5",
-    highlight && "border-accent-400/60 bg-accent-100/40",
+    highlight && "border-sky-400/60 bg-sky-100/60",
     href && "focus-ring transition-[transform,box-shadow,border-color] motion-fast hover:-translate-y-0.5 hover:shadow-sm",
     className,
   );

@@ -9,6 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from mitra_core.models.base import Base, Timestamps, UUIDPrimaryKey, pg_enum
 from mitra_core.models.enums import EmployeeStatus, RoleTemplate, VoiceTier
 
+EMPTY_BEHAVIOUR_SQL = """'{"ask_for": [], "never_say": [], "transfer_when": []}'::jsonb"""
+
 
 class Employee(UUIDPrimaryKey, Timestamps, Base):
     """An AI voice employee belonging to one business."""
@@ -28,3 +30,7 @@ class Employee(UUIDPrimaryKey, Timestamps, Base):
     )
     languages: Mapped[list[str]] = mapped_column(server_default=text("'{}'::text[]"))
     working_hours: Mapped[dict[str, Any] | None]
+    voice_id: Mapped[str | None] = mapped_column(String(64))
+    greeting: Mapped[str | None] = mapped_column(String(300))
+    # {"ask_for": [...], "never_say": [...], "transfer_when": [...]}, validated by the API.
+    behaviour: Mapped[dict[str, Any]] = mapped_column(server_default=text(EMPTY_BEHAVIOUR_SQL))

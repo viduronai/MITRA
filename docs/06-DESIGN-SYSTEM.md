@@ -31,27 +31,32 @@ Built on **Tailwind CSS v4 tokens + shadcn/ui (Radix)**, extended with curated c
 
 Neutral-led palette with one confident brand colour and one warm accent.
 
+> **v2 (2026-10-18), founder direction:** cool and friendly. The palette is **black, blue, sky blue, white / chalk white**, and the fonts follow our parent company's site (viduronai.in). This replaces the earlier indigo + Marigold palette. The marketing-site specifics are in [design/landing-direction.md](design/landing-direction.md).
+
 ### 3.1 Brand
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--brand-50` | `#EEF0FF` | `#14152E` | subtle fills |
-| `--brand-100` | `#DCE0FF` | `#1C1E40` | selected rows |
-| `--brand-500` | `#4B4DED` | `#7C7EFF` | focus rings, links |
-| `--brand-600` | `#3B3BD6` | `#8E90FF` | **primary buttons** |
-| `--brand-700` | `#2F2FB0` | `#A7A9FF` | hover/pressed |
-| `--accent-400` | `#F7B84B` | `#F7B84B` | "Marigold" — highlights, live/voice moments, celebrations |
-| `--accent-100` | `#FFF3DC` | `#3A2C10` | accent backgrounds |
+| `--brand-50` | `#EEF3FF` | `#0B1430` | subtle fills |
+| `--brand-100` | `#DCE6FF` | `#122045` | selected rows, active nav |
+| `--brand-500` | `#2F6BFF` | `#6E97FF` | focus rings, links |
+| `--brand-600` | `#2459F5` | `#7FA3FF` | **primary buttons** ("Mitra Blue") |
+| `--brand-700` | `#1A46CC` | `#A3BEFF` | hover/pressed |
+| `--sky-400` | `#38C6F4` | `#4CCFF7` | **"Sky"**: signature accent for live/voice moments, waveforms, live dot, highlights |
+| `--sky-100` | `#E2F6FD` | `#0A2A38` | sky backgrounds (e.g. "Needs you" tile) |
+| `--sky-ink` | `#05506B` | `#BDEEFF` | text on sky-100 (contrast ≥ 4.5:1) |
 
-### 3.2 Neutrals (warm grey "Stone")
-| Token | Light | Dark |
+### 3.2 Neutrals: cool "Chalk" (light) and "Ink" (dark)
+| Token | Light (chalk) | Dark (ink) |
 |---|---|---|
-| `--bg` | `#FBFBFA` | `#0B0B0D` |
-| `--surface` | `#FFFFFF` | `#141417` |
-| `--surface-2` | `#F4F4F2` | `#1B1B1F` |
-| `--border` | `#E7E6E3` | `#2A2A30` |
-| `--text` | `#17171A` | `#F2F2F3` |
-| `--text-muted` | `#5F5E66` | `#A1A0A8` |
-| `--text-subtle` | `#8C8B93` | `#76757D` |
+| `--bg` | `#F4F3EF` | `#05070D` |
+| `--surface` | `#FFFFFF` | `#0B1020` |
+| `--surface-2` | `#ECEBE6` | `#121829` |
+| `--border` | `#E1E0DA` | `#1E2638` |
+| `--text` | `#0C0E14` | `#F2F4F8` |
+| `--text-muted` | `#585D6A` | `#A3ABBC` |
+| `--text-subtle` | `#868B97` | `#6F788B` |
+
+Brand-family nod: `--viduron-ember: #FF6A1F` is used **only** in the "A Viduron AI product" mark.
 
 ### 3.3 Semantic
 | Token | Light | Dark | Meaning |
@@ -67,10 +72,11 @@ Implementation (Tailwind v4):
 ```css
 @import "tailwindcss";
 @theme {
-  --color-brand-600: #3B3BD6;
-  --color-accent-400: #F7B84B;
-  --font-sans: "Inter Variable", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
-  --font-display: "Geist", "Inter Variable", sans-serif;
+  --color-brand-600: #2459F5;
+  --color-sky-400: #38C6F4;
+  --font-sans: "Host Grotesk", "Noto Sans Telugu", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-display: "Host Grotesk", sans-serif;
   --radius-card: 1rem;
 }
 :root { --bg: #FBFBFA; /* …all tokens… */ }
@@ -82,14 +88,16 @@ Implementation (Tailwind v4):
 
 | Role | Font | Size / line-height (mobile → desktop) | Weight |
 |---|---|---|---|
-| Display (marketing hero) | Geist | 40/44 → 72/76, tracking -2% | 600 |
-| H1 | Geist | 28/34 → 36/42 | 600 |
-| H2 | Geist | 22/28 → 28/34 | 600 |
-| H3 | Inter | 18/26 → 20/28 | 600 |
-| Body L | Inter | 17/26 | 400 |
-| Body (default) | Inter | 15/24 → 16/24 | 400 |
-| Small | Inter | 13/20 | 400–500 |
-| Numbers / stats | Inter (tabular-nums) | 32/36 → 44/48 | 600 |
+| Display (marketing hero) | Host Grotesk (+ Instrument Serif italic accent word) | 40/44 → 72/76, tracking -3% | 500 |
+| H1 | Host Grotesk | 28/34 → 36/42 | 600 |
+| H2 | Host Grotesk | 22/28 → 28/34 | 600 |
+| H3 | Host Grotesk | 18/26 → 20/28 | 600 |
+| Body L | Host Grotesk | 17/26 | 400 |
+| Body (default) | Host Grotesk | 15/24 → 16/24 | 400 |
+| Small | Host Grotesk | 13/20 | 400–500 |
+| Labels / chips / eyebrow | Geist Mono, uppercase, +0.14em | 11–12/16 | 400–500 |
+| Numbers / stats | Host Grotesk (tabular-nums) | 32/36 → 44/48 | 600 |
+| Statement numerals (marketing only) | Doto | 64 → 160 | 700 |
 
 - **Indic scripts:** Noto Sans Telugu / Devanagari / Tamil / Kannada / Malayalam with +10% line-height when script ≠ Latin (`:lang(te) { line-height: 1.7 }`).
 - Minimum body size on mobile: 15 px. Never all-caps for Indic.
@@ -112,7 +120,7 @@ Implementation (Tailwind v4):
 
 - **Icons:** Lucide (default shadcn) at 20 px / 1.75 stroke; Phosphor duotone for empty states.
 - **Avatars for AI employees:** soft gradient circles with initials + subtle animated sound ring when speaking (no fake human photos — honesty principle).
-- **Illustrations:** simple line + Marigold accent; Lottie for onboarding success, empty states.
+- **Illustrations:** simple line + Sky accent; Lottie for onboarding success, empty states.
 - **Logos of integrations:** official marks, monochrome until hovered.
 
 ## 7. Motion
@@ -154,7 +162,7 @@ Base: shadcn/ui. Each has light/dark, sizes, states (default, hover, focus-visib
 | Skeletons | For every async list/card; no spinners > 300 ms |
 | Tabs, Segmented control | Max 4 options |
 | Navigation | Mobile: bottom tab bar (Home, Calls, Team, Customers, More). Desktop: left sidebar collapsible |
-| Live indicator | Pulsing Marigold dot when an employee is on a call |
+| Live indicator | Pulsing Sky dot when an employee is on a call |
 
 ## 9. Component & inspiration sources (curated)
 

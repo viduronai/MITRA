@@ -23,6 +23,9 @@ _SENSITIVE_KEYS = frozenset(
         "phone",
         "phone_e164",
         "secret",
+        "code",
+        "dev_code",
+        "otp",
     }
 )
 

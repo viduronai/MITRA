@@ -1,0 +1,198 @@
+/*
+ * Scene 7 · Pricing as a statement. Doto dot-matrix numerals on night blue,
+ * Vesper stats strip underneath.
+ */
+.pricing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(110px, 12vw, 170px) var(--gutter) 0;
+  background:
+    radial-gradient(60% 50% at 50% 38%, rgba(47, 107, 255, 0.22), transparent 70%),
+    linear-gradient(180deg, var(--ink) 0%, var(--night) 30%, #020a2a 100%);
+  text-align: center;
+  overflow: hidden;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--sky);
+}
+
+.tiers {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(8px, 2vw, 36px);
+  margin: clamp(28px, 4vw, 56px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.num {
+  font-family: var(--font-dot);
+  font-weight: 700;
+  font-size: clamp(64px, 12.5vw, 220px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow:
+    0 0 24px rgba(56, 198, 244, 0.45),
+    0 0 60px rgba(47, 107, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tier[data-featured] .num {
+  color: var(--sky-soft);
+}
+
+.rupee {
+  display: inline-block;
+  width: calc(0.7em * 5 / 7);
+  height: 0.7em;
+  margin-right: 0.08em;
+  fill: currentColor;
+  filter: drop-shadow(0 0 12px rgba(56, 198, 244, 0.45));
+  vertical-align: baseline;
+}
+
+.sep {
+  font-family: var(--font-dot);
+  font-weight: 700;
+  font-size: clamp(64px, 12.5vw, 220px);
+  line-height: 0.9;
+  color: rgba(159, 227, 250, 0.35);
+}
+
+.name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim-on-dark);
+}
+
+.tier[data-featured] .name {
+  color: var(--sky);
+}
+
+.per {
+  margin: clamp(22px, 3vw, 40px) 0 0;
+  font-weight: 500;
+  font-size: clamp(30px, 3.6vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.line {
+  margin: 10px 0 0;
+  font-size: clamp(20px, 2.2vw, 34px);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: var(--body-on-dark);
+}
+
+.line em {
+  color: var(--sky-soft);
+}
+
+.fine {
+  max-width: 40em;
+  margin: 18px auto 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--dim-on-dark);
+}
+
+.cta {
+  margin-top: 30px;
+}
+
+.cta :global(.btn) {
+  height: 48px;
+  padding: 0 24px;
+}
+
+/* Vesper stats strip */
+.stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin: auto calc(-1 * var(--gutter)) 0;
+  padding: clamp(28px, 3vw, 44px) clamp(24px, 5vw, 80px) max(clamp(28px, 3vw, 44px), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--glass-edge);
+  list-style: none;
+  color: #d8e2f2;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.statsWrap {
+  margin-top: clamp(56px, 7vw, 100px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .tiers {
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .sep {
+    display: none;
+  }
+
+  .tier {
+    --n: clamp(60px, 20vw, 100px);
+    display: grid;
+    grid-template-columns: calc(var(--n) * 2.25) 7.5em;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .num {
+    font-size: var(--n);
+    text-align: right;
+  }
+
+  .name {
+    text-align: left;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .stat {
+    white-space: normal;
+  }
+}

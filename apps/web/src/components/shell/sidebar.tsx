@@ -34,7 +34,7 @@ export function Sidebar() {
         <Icon className="size-5 shrink-0" strokeWidth={1.75} aria-hidden />
         {!collapsed && <span className="flex-1 truncate">{label}</span>}
         {!collapsed && disabled && (
-          <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] leading-4 font-semibold text-on-accent-100">
+          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] leading-4 font-semibold text-sky-ink">
             {t("soon")}
           </span>
         )}

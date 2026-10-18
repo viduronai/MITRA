@@ -1,0 +1,337 @@
+/*
+ * Scene 6 · Your number. Your name. Dark ink, Vesper glass, a lock screen
+ * with a verified incoming call.
+ */
+.caller {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 110px);
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(96px, 10vw, 150px) var(--gutter);
+  background:
+    radial-gradient(50% 60% at 75% 50%, rgba(47, 107, 255, 0.2), transparent 70%),
+    radial-gradient(30% 40% at 72% 40%, rgba(56, 198, 244, 0.12), transparent 70%),
+    var(--ink);
+  overflow: hidden;
+}
+
+.copy {
+  max-width: 560px;
+  justify-self: end;
+  width: 100%;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--sky);
+}
+
+.title {
+  margin: 20px 0 0;
+  font-weight: 500;
+  font-size: clamp(42px, 5.4vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.title em {
+  color: var(--sky-soft);
+  font-size: 1.08em;
+}
+
+.body {
+  margin: 24px 0 0;
+  max-width: 30em;
+  font-size: clamp(16px, 1.2vw, 19px);
+  line-height: 1.55;
+  letter-spacing: -0.012em;
+  color: var(--body-on-dark);
+}
+
+.points {
+  display: grid;
+  gap: 0;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--glass-edge);
+}
+
+.point {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--glass-edge);
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.check {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(56, 198, 244, 0.14);
+  color: var(--sky);
+  flex: none;
+}
+
+.check svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---------- Lock screen ---------- */
+.phoneCol {
+  justify-self: start;
+}
+
+.phone {
+  --ph: min(660px, 78svh);
+  position: relative;
+  width: calc(var(--ph) * 0.49);
+  height: var(--ph);
+  padding: 10px;
+  border-radius: calc(var(--ph) * 0.085);
+  background: linear-gradient(145deg, #273049 0%, #070a12 40%, #1a2133 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.14),
+    inset 0 0 0 4px #05070d,
+    0 60px 100px -30px rgba(0, 0, 0, 0.8),
+    0 0 120px -20px rgba(47, 107, 255, 0.35);
+}
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--ph) * 0.07);
+  background:
+    radial-gradient(120% 60% at 50% 105%, rgba(56, 198, 244, 0.55) 0%, rgba(47, 107, 255, 0.35) 30%, transparent 62%),
+    linear-gradient(180deg, #020718 0%, #04123a 55%, #0a2c6e 100%);
+  font-size: calc(var(--ph) * 0.021);
+  text-align: center;
+}
+
+.island {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 30%;
+  height: 22px;
+  border-radius: 20px;
+  background: #000;
+  transform: translateX(-50%);
+}
+
+.date {
+  margin-top: 4.2em;
+  font-size: 1em;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.clock {
+  margin-top: 0.05em;
+  font-weight: 600;
+  font-size: 4.6em;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: calc(100% - 1.8em);
+  margin-top: 2.4em;
+  padding: 1.3em 1.1em 1.1em;
+  border-radius: 1.6em;
+  background: rgba(220, 235, 255, 0.1);
+  border: 1px solid rgba(220, 235, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 235, 255, 0.25),
+    0 20px 40px -20px rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+}
+
+.incoming {
+  font-family: var(--font-mono);
+  font-size: 0.72em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(226, 233, 255, 0.7);
+}
+
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.4em;
+  height: 4.4em;
+  margin: 1em auto 0;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #ffffff, #d5e9f7);
+  color: #0b3a66;
+  font-weight: 600;
+  font-size: 1.05em;
+  letter-spacing: -0.02em;
+}
+
+.avatar::before,
+.avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(159, 227, 250, 0.7);
+  animation: ring 2.4s var(--ease-out) infinite;
+}
+
+.avatar::after {
+  animation-delay: 1.2s;
+}
+
+@keyframes ring {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-top: 0.9em;
+  font-weight: 600;
+  font-size: 1.45em;
+  letter-spacing: -0.03em;
+}
+
+.tick {
+  width: 0.9em;
+  height: 0.9em;
+  color: var(--sky);
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-top: 0.4em;
+  padding: 0.3em 0.75em;
+  border-radius: 999px;
+  background: rgba(56, 198, 244, 0.16);
+  border: 1px solid rgba(56, 198, 244, 0.35);
+  font-size: 0.8em;
+  font-weight: 500;
+  color: #d8f4ff;
+}
+
+.sub {
+  margin-top: 0.7em;
+  font-size: 0.86em;
+  color: rgba(226, 233, 255, 0.7);
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: auto;
+  padding: 0 1.4em 3.2em;
+  width: 100%;
+}
+
+.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.round {
+  display: grid;
+  place-items: center;
+  width: 3.6em;
+  height: 3.6em;
+  border-radius: 50%;
+  font-size: 1.25em;
+}
+
+.round svg {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.decline {
+  background: #eb4d3d;
+}
+
+.decline svg {
+  transform: rotate(135deg);
+}
+
+.accept {
+  background: #31c45d;
+  animation: nudge 2.4s var(--ease-soft) infinite;
+}
+
+@keyframes nudge {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+  80% {
+    transform: translateY(-4px);
+  }
+  90% {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .caller {
+    grid-template-columns: 1fr;
+    padding: calc(var(--header-h) + 56px) 20px 80px;
+  }
+
+  .copy,
+  .phoneCol {
+    justify-self: center;
+  }
+
+  .phone {
+    --ph: min(600px, 150vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar::before,
+  .avatar::after,
+  .accept {
+    animation: none;
+  }
+
+  .avatar::before {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+}

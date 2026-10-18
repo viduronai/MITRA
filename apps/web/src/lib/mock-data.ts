@@ -18,8 +18,8 @@ export interface MockCall {
   direction: CallDirection;
   result: CallResult;
   durationSeconds: number;
-  /** Minutes before "now"; turned into a Date at request time. */
-  minutesAgo: number;
+  /** Fixed daytime clock time in India ("HH:MM"), so the mock never shows 2 am calls. */
+  at: string;
   employeeName: string;
 }
 
@@ -75,13 +75,13 @@ export const needs: MockNeed[] = [
 ];
 
 export const calls: MockCall[] = [
-  { id: "c1", contact: "Anjali Sharma", direction: "incoming", result: "booked", durationSeconds: 134, minutesAgo: 12, employeeName: "Priya" },
-  { id: "c2", contact: "Venkat Rao", direction: "incoming", result: "callBack", durationSeconds: 58, minutesAgo: 34, employeeName: "Priya" },
-  { id: "c3", contact: "+91 98xxx xx421", direction: "incoming", result: "interested", durationSeconds: 201, minutesAgo: 61, employeeName: "Priya" },
-  { id: "c4", contact: "Kavya Nair", direction: "outgoing", result: "booked", durationSeconds: 95, minutesAgo: 88, employeeName: "Priya" },
-  { id: "c5", contact: "Suresh Babu", direction: "outgoing", result: "notInterested", durationSeconds: 41, minutesAgo: 126, employeeName: "Priya" },
-  { id: "c6", contact: "Meena Iyer", direction: "incoming", result: "failed", durationSeconds: 9, minutesAgo: 170, employeeName: "Priya" },
-  { id: "c7", contact: "Arjun Patel", direction: "incoming", result: "booked", durationSeconds: 162, minutesAgo: 215, employeeName: "Priya" },
+  { id: "c1", contact: "Anjali Sharma", direction: "incoming", result: "booked", durationSeconds: 134, at: "17:40", employeeName: "Priya" },
+  { id: "c2", contact: "Venkat Rao", direction: "incoming", result: "callBack", durationSeconds: 58, at: "16:55", employeeName: "Priya" },
+  { id: "c3", contact: "+91 98xxx xx421", direction: "incoming", result: "interested", durationSeconds: 201, at: "15:20", employeeName: "Priya" },
+  { id: "c4", contact: "Kavya Nair", direction: "outgoing", result: "booked", durationSeconds: 95, at: "13:05", employeeName: "Priya" },
+  { id: "c5", contact: "Suresh Babu", direction: "outgoing", result: "notInterested", durationSeconds: 41, at: "11:30", employeeName: "Priya" },
+  { id: "c6", contact: "Meena Iyer", direction: "incoming", result: "failed", durationSeconds: 9, at: "10:15", employeeName: "Priya" },
+  { id: "c7", contact: "Arjun Patel", direction: "incoming", result: "booked", durationSeconds: 162, at: "09:25", employeeName: "Priya" },
 ];
 
 export const setupSteps: MockSetupStep[] = [
@@ -98,8 +98,15 @@ export const voices: MockVoice[] = [
   { id: "v3", name: "Arjun", personality: "Calm and respectful, good with elders.", languages: ["Hindi", "English"] },
 ];
 
-export function minutesAgoToDate(minutesAgo: number, now: Date = new Date()): Date {
-  return new Date(now.getTime() - minutesAgo * 60_000);
+/** Today's date in India at a mock call's fixed clock time. */
+export function mockCallDate(at: string, now: Date = new Date()): Date {
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(now); // YYYY-MM-DD
+  return new Date(`${day}T${at}:00+05:30`);
+}
+
+/** Mock calls that have "happened" by now (IST), newest first; empty before 9:25 am. */
+export function mockCallsSoFar(now: Date = new Date()): MockCall[] {
+  return calls.filter((call) => mockCallDate(call.at, now) <= now);
 }
 
 /** "Now" for mock timestamps. Real data will carry its own times. */

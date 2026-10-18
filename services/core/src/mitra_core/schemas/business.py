@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from functools import lru_cache
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, Literal
 from zoneinfo import available_timezones
 
 from pydantic import AfterValidator, Field
@@ -72,3 +72,7 @@ class MembershipOut(ResponseModel):
 class BusinessCreated(ResponseModel):
     business: BusinessOut
     membership: MembershipOut
+    # A token scoped to the new business (minted fresh on idempotent replays, never stored).
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"  # noqa: S105  (not a secret)
+    expires_in: int

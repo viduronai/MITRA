@@ -23,7 +23,9 @@
   "header": {
     "isWorking": "{name} काम कर रही है",
     "isPaused": "{name} रुकी हुई है",
-    "callsLive": "{count, plural, =0 {अभी कोई कॉल नहीं} one {# कॉल चल रही है} other {# कॉल चल रही हैं}}"
+    "callsLive": "{count, plural, =0 {अभी कोई कॉल नहीं} one {# कॉल चल रही है} other {# कॉल चल रही हैं}}",
+    "isTraining": "{name} तैयार हो रहे हैं",
+    "setupPending": "शुरू करने के लिए setup पूरा करें"
   },
   "language": {
     "change": "भाषा बदलें"
@@ -47,13 +49,17 @@
     "trendDown": "कल से {value} कम",
     "trendSame": "कल जितनी ही",
     "needsYouCount": "{count, plural, =0 {अभी आपकी ज़रूरत नहीं है} one {# बात पर आपका जवाब चाहिए} other {# बातों पर आपका जवाब चाहिए}}",
-    "allClear": "सब ठीक है। कुछ भी हुआ तो प्रिया आपको बताएगी।",
+    "allClear": "सब हो गया। कुछ आया तो {employee} आपको बताएँगे।",
     "recentCalls": "हाल की कॉल",
-    "seeAllCalls": "सभी कॉल देखें"
+    "seeAllCalls": "सभी कॉल देखें",
+    "greetingMorningPlain": "सुप्रभात",
+    "greetingAfternoonPlain": "नमस्ते",
+    "greetingEveningPlain": "शुभ संध्या",
+    "sampleNote": "असली calls शुरू होने तक ये sample आँकड़े हैं।"
   },
   "needs": {
-    "unknownQuestion": "{name} ने रविवार की टाइमिंग के बारे में पूछा। प्रिया को जवाब नहीं पता था।",
-    "unknownQuestionAction": "प्रिया को सिखाएँ",
+    "unknownQuestion": "{name} ने रविवार की timings के बारे में पूछा। {employee} को जवाब नहीं पता था।",
+    "unknownQuestionAction": "{employee} को सिखाएँ",
     "upsetCaller": "{name} लंबे इंतज़ार से नाराज़ लगे।",
     "upsetCallerAction": "वापस कॉल करें",
     "failedMessage": "{name} को booking मैसेज नहीं गया।",
@@ -81,7 +87,11 @@
     "stopSample": "सैंपल रोकें",
     "receptionist": "रिसेप्शनिस्ट",
     "bookedToday": "{count, plural, =0 {आज अभी कोई बुकिंग नहीं} one {आज # बुक हुआ} other {आज # बुक हुए}}",
-    "callsToday": "आज {count, plural, one {# कॉल} other {# कॉल}}"
+    "callsToday": "आज {count, plural, one {# कॉल} other {# कॉल}}",
+    "training": "तैयार हो रहे हैं",
+    "lead_caller": "Lead Caller",
+    "reminder_caller": "Reminder Caller",
+    "payment_caller": "Payment Caller"
   },
   "voice": {
     "play": "{name} की आवाज़ सुनें",
@@ -92,30 +102,31 @@
   "setup": {
     "title": "सेटअप पूरा करें",
     "progress": "{percent}% पूरा",
-    "business": "अपने बिज़नेस की जानकारी दें",
-    "teach": "प्रिया को अपने क्लिनिक के बारे में सिखाएँ",
-    "voice": "प्रिया की आवाज़ चुनें",
-    "testCall": "टेस्ट कॉल करें",
-    "forward": "अपनी मिस्ड कॉल फ़ॉरवर्ड करें",
+    "business": "अपने business की जानकारी दें",
+    "teach": "{name} को अपने business के बारे में सिखाएँ",
+    "voice": "{name} की आवाज़ चुनें",
+    "testCall": "Test call करें",
+    "forward": "Live होने का तरीका चुनें",
     "done": "हो गया",
     "todo": "करना है",
-    "continue": "सेटअप जारी रखें"
+    "continue": "सेटअप जारी रखें",
+    "allDone": "Setup पूरा हुआ"
   },
   "calls": {
     "title": "कॉल",
-    "subtitle": "आज प्रिया ने जो भी कॉल उठाईं या कीं।",
+    "subtitle": "आज {name} ने जो भी calls लीं या कीं।",
     "today": "आज"
   },
   "team": {
     "title": "आपकी टीम",
-    "subtitle": "प्रिया आपकी कॉल का जवाब देती है, appointment बुक करती है और रिमाइंडर भेजती है।",
+    "subtitle": "{name} आपकी calls लेते हैं, appointments बुक करते हैं और reminders भेजते हैं।",
     "moreSoon": "और AI कर्मचारी जल्द आ रहे हैं — follow-up कॉलर और payment कॉलर।"
   },
   "customers": {
     "title": "ग्राहक",
-    "subtitle": "प्रिया ने जिनसे भी बात की, और उसे उनके बारे में क्या याद है।",
+    "subtitle": "{name} ने जिनसे भी बात की, और उनके बारे में क्या याद है।",
     "emptyTitle": "अभी कोई ग्राहक नहीं",
-    "empty": "प्रिया जिनसे बात करेगी, वे पहली कॉल के बाद यहाँ दिखेंगे।",
+    "empty": "{name} जिनसे बात करेंगे, वे पहली call के बाद यहाँ दिखेंगे।",
     "emptyAction": "ग्राहक जोड़ें"
   },
   "more": {
@@ -135,7 +146,241 @@
   },
   "empty": {
     "callsTitle": "अभी कोई कॉल नहीं",
-    "calls": "प्रिया जवाब देना शुरू करेगी तो कॉल यहाँ दिखेंगी।",
+    "calls": "{name} के calls लेना शुरू करते ही वे यहाँ दिखेंगी।",
     "callsAction": "टेस्ट कॉल करें"
+  },
+  "auth": {
+    "title": "Mitra में आपका स्वागत है",
+    "subtitle": "अपने mobile number से sign in करें। हम 6 अंकों का code भेजेंगे।",
+    "phoneLabel": "Mobile number",
+    "phoneHint": "10 अंक, 0 या +91 के बिना",
+    "sendCode": "Code भेजें",
+    "otpTitle": "Code डालें",
+    "otpSubtitle": "हमने {phone} पर 6 अंकों का code भेजा है।",
+    "otpLabel": "6 अंकों का code",
+    "digitLabel": "6 में से अंक {n}",
+    "verify": "आगे बढ़ें",
+    "changeNumber": "Number बदलें",
+    "resendIn": "{seconds} सेकंड में दोबारा भेज सकते हैं",
+    "resend": "Code दोबारा भेजें",
+    "resent": "नया code भेज दिया है।",
+    "devHint": "सिर्फ़ dev · आपका code {code} है",
+    "sending": "भेज रहे हैं…",
+    "checking": "जाँच रहे हैं…",
+    "signedOut": "आप sign out हो गए हैं। कृपया फिर से sign in करें।",
+    "trust": "हम आपका number किसी से साझा नहीं करते।",
+    "errors": {
+      "phoneInvalid": "6, 7, 8 या 9 से शुरू होने वाला 10 अंकों का mobile number डालें।",
+      "codeIncomplete": "सभी 6 अंक डालें।",
+      "codeWrong": "Code मेल नहीं खाया। SMS देखकर फिर से कोशिश करें।",
+      "codeExpired": "इस code का समय खत्म हो गया। नया code पाने के लिए 'दोबारा भेजें' दबाएँ।",
+      "tooMany": "बहुत बार कोशिश हुई। कुछ मिनट रुककर फिर कोशिश करें।",
+      "unreachable": "अभी connect नहीं हो पाए। Internet जाँचकर फिर कोशिश करें।",
+      "generic": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।"
+    }
+  },
+  "onboarding": {
+    "metaTitle": "Setup",
+    "stepOf": "{total} में से step {current}",
+    "progressLabel": "Setup की प्रगति",
+    "back": "पीछे",
+    "continue": "आगे बढ़ें",
+    "saving": "सेव कर रहे हैं…",
+    "skip": "अभी छोड़ें",
+    "signOut": "Sign out",
+    "steps": {
+      "business": "आपका business",
+      "role": "भूमिका चुनें",
+      "teach": "Mitra को सिखाएँ",
+      "voice": "आवाज़ चुनें",
+      "test_call": "Test call",
+      "go_live": "Live हों"
+    },
+    "errors": {
+      "generic": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।",
+      "unreachable": "अभी connect नहीं हो पाए। Internet जाँचकर फिर कोशिश करें।",
+      "needEmployee": "पहले एक भूमिका चुनें।",
+      "invalid": "आपने जो डाला है उसे जाँचकर फिर कोशिश करें।"
+    },
+    "business": {
+      "title": "अपने business के बारे में बताएँ",
+      "subtitle": "इससे आपका AI कर्मचारी callers का सही तरीके से स्वागत करेगा।",
+      "name": "Business का नाम",
+      "namePlaceholder": "जैसे Sunrise Clinic",
+      "nameRequired": "अपने business का नाम डालें।",
+      "industry": "आपका business किस तरह का है?",
+      "industries": {
+        "clinic": "Clinic या diagnostics",
+        "real_estate": "Real estate",
+        "education": "Coaching या education",
+        "other": "कुछ और"
+      },
+      "city": "शहर",
+      "cityPlaceholder": "जैसे हैदराबाद",
+      "optional": "वैकल्पिक",
+      "languages": "आपके customers कौन-सी भाषाएँ बोलते हैं",
+      "languagesHint": "3 तक चुनें।",
+      "languagesRequired": "कम से कम एक भाषा चुनें।",
+      "hours": "काम के घंटे",
+      "hoursHint": "Calls कब ली जाएँ? इसे कभी भी बदल सकते हैं।",
+      "hoursPresets": {
+        "everyday9to9": "हर दिन, सुबह 9 – रात 9",
+        "monSat9to9": "सोम–शनि, सुबह 9 – रात 9",
+        "monSat10to7": "सोम–शनि, सुबह 10 – शाम 7",
+        "allDay": "24 घंटे खुला"
+      }
+    },
+    "languages": {
+      "en": "English",
+      "te": "తెలుగు",
+      "hi": "हिंदी"
+    },
+    "role": {
+      "title": "भूमिका चुनें",
+      "subtitle": "आपका AI कर्मचारी पहले क्या करे? बाद में और लोग जोड़ सकते हैं।",
+      "recommended": "आपके लिए सही",
+      "hearSample": "Sample सुनें",
+      "stopSample": "Sample रोकें",
+      "locked": "आपने पहले ही {role} रख लिया है। और भूमिकाएँ बाद में Team से जोड़ सकते हैं।",
+      "names": {
+        "receptionist": "Receptionist",
+        "lead_caller": "Lead Caller",
+        "reminder_caller": "Reminder Caller",
+        "payment_caller": "Payment Caller"
+      },
+      "descriptions": {
+        "receptionist": "हर call उठाते हैं, appointments बुक करते हैं और सवालों के जवाब देते हैं।",
+        "lead_caller": "नई enquiries को कुछ ही मिनटों में call करके उनकी ज़रूरत समझते हैं।",
+        "reminder_caller": "Appointments और visits के बारे में एक दिन पहले याद दिलाते हैं।",
+        "payment_caller": "बाकी payments और fees के लिए विनम्रता से follow-up करते हैं।"
+      },
+      "defaultNames": {
+        "receptionist": "Priya",
+        "lead_caller": "Ravi",
+        "reminder_caller": "Meena",
+        "payment_caller": "Arjun"
+      }
+    },
+    "teach": {
+      "title": "{name} को अपने business के बारे में सिखाएँ",
+      "subtitle": "जो आपके पास है वो दें। {name} पढ़ेंगे, आप जानकारी जाँच लें।",
+      "link": "Link पेस्ट करें",
+      "linkHint": "आपकी website या Google Business page",
+      "type": "जानकारी टाइप करें",
+      "typeHint": "दाम, timings, पता। हर line में एक।",
+      "speak": "बोलकर बताएँ",
+      "speakHint": "2 मिनट बोलें",
+      "comingSoon": "जल्द आ रहा है",
+      "urlLabel": "Website या Google Business link",
+      "urlPlaceholder": "https://",
+      "urlInvalid": "https:// से शुरू होने वाला पूरा link डालें",
+      "read": "यह link पढ़ें",
+      "textLabel": "आपके business की जानकारी",
+      "textPlaceholder": "Consultation fee: ₹500\nTimings: सोम–शनि, सुबह 9 – रात 9\nParking: Basement",
+      "textRequired": "पहले कुछ जानकारी टाइप करें।",
+      "addDetails": "यह जानकारी जोड़ें",
+      "processingLink": "आपकी website पढ़ रहे हैं…",
+      "processingText": "आपकी जानकारी पढ़ रहे हैं…",
+      "failed": "वह link नहीं पढ़ पाए। Link जाँचें, या जानकारी टाइप करें।",
+      "knowsTitle": "उन्हें क्या पता है",
+      "knowsEmpty": "अभी कुछ नहीं। ऊपर link दें या थोड़ी जानकारी टाइप करें।",
+      "checkThese": "{count, plural, one {# जानकारी जाँचनी है} other {# जानकारियाँ जाँचनी हैं}}",
+      "categories": {
+        "services": "सेवाएँ",
+        "prices": "दाम और fees",
+        "timings": "Timings",
+        "location": "पता",
+        "contact": "Contact",
+        "faq": "अक्सर पूछे जाने वाले सवाल",
+        "policy": "नियम"
+      },
+      "confirm": "सही है",
+      "confirmFact": "“{key}” को सही मानें",
+      "confirmed": "जाँच लिया",
+      "edit": "बदलें",
+      "editFact": "“{key}” बदलें",
+      "save": "सेव करें",
+      "cancel": "रद्द करें",
+      "remove": "हटाएँ",
+      "removeFact": "“{key}” हटाएँ",
+      "removed": "हटा दिया।",
+      "suggested": "कृपया जाँचें",
+      "valueLabel": "{key} का जवाब",
+      "gapsTitle": "कुछ सवाल",
+      "gapsSubtitle": "Callers अक्सर ये पूछते हैं। जो पता हो, बताएँ।",
+      "answerPlaceholder": "अपना जवाब लिखें",
+      "saveAnswer": "जवाब सेव करें",
+      "saved": "सेव हो गया।",
+      "confirmAll": "सब सही है, आगे बढ़ें",
+      "needOne": "कम से कम एक जानकारी जोड़ें, या अभी छोड़ें।",
+      "fromLink": "आपके link से",
+      "fromNotes": "आपके notes से"
+    },
+    "voice": {
+      "title": "आवाज़ चुनें",
+      "subtitle": "ये आवाज़ें {languages} बोलती हैं। सुनने के लिए ▶ दबाएँ।",
+      "nameLabel": "आपके कर्मचारी का नाम",
+      "nameHint": "Callers को यही नाम सुनाई देगा।",
+      "nameRequired": "अपने कर्मचारी को एक नाम दें।",
+      "tiers": {
+        "smart": "Smart",
+        "natural": "Natural",
+        "signature": "Signature"
+      },
+      "perMin": "{price}/मिनट",
+      "tierHint": "सिर्फ़ बात करने पर भुगतान। आवाज़ कभी भी बदल सकते हैं।",
+      "noVoices": "इन भाषाओं के लिए अभी आवाज़ें नहीं हैं। जल्द जोड़ेंगे।"
+    },
+    "test": {
+      "title": "Test call करें",
+      "subtitle": "{name} आपको call करेंगे। आप customer की तरह बात करें।",
+      "call": "मेरे phone पर call करें ({phone})",
+      "status": {
+        "queued": "तैयारी हो रही है…",
+        "ringing": "आपका phone बज रहा है…",
+        "connected": "Call पर हैं",
+        "completed": "Call खत्म हुई"
+      },
+      "simulatedNote": "यह simulated preview है, असली calls जल्द आ रही हैं।",
+      "whatWasSaid": "क्या बात हुई",
+      "you": "आप",
+      "summary": "सारांश",
+      "fixTitle": "कुछ ठीक करना है?",
+      "fixHint": "अपने शब्दों में {name} को बताएँ।",
+      "fixPlaceholder": "जैसे बोलें कि consultation fee ₹500 है",
+      "fixSubmit": "ठीक करें",
+      "fixRequired": "पहले लिखें कि क्या बदलना है।",
+      "fixKnowledge": "उनकी जानकारी में जोड़ दिया।",
+      "fixBehaviour": "कैसे बात करनी है, इसमें नोट कर लिया।",
+      "testAgain": "फिर से test करें",
+      "looksGood": "ठीक है, आगे बढ़ें",
+      "failed": "Test call नहीं हो पाई। कृपया फिर से कोशिश करें।"
+    },
+    "live": {
+      "title": "Live हों",
+      "subtitle": "चुनें कि {name} आपकी मदद कैसे शुरू करें।",
+      "forwardTitle": "मेरी missed calls forward करें",
+      "forwardDesc": "जब आप busy हों या call न उठा पाएँ, आपकी calls {name} के पास जाएँगी।",
+      "network": "आपका network",
+      "busy": "Busy होने पर",
+      "noAnswer": "Call न उठाने पर",
+      "unreachable": "Phone बंद होने पर",
+      "copyCode": "“{label}” का code कॉपी करें",
+      "copied": "कॉपी हो गया",
+      "dialHint": "आम call की तरह अपने phone से यह code डायल करें।",
+      "forwardSoon": "जल्द आ रहा है: आपका Mitra number। हम उसे इन codes में खुद भर देंगे।",
+      "numberTitle": "Local business number लें",
+      "numberDesc": "एक local number, जिससे call करने पर आपके business का नाम दिखे।",
+      "leadsTitle": "मेरी leads connect करें",
+      "leadsDesc": "Facebook ads, आपकी website का form या Google Sheet।",
+      "comingSoon": "जल्द आ रहा है",
+      "finish": "Setup पूरा करें",
+      "successEyebrow": "Setup पूरा हुआ",
+      "successTitle": "सब तैयार है",
+      "successBody": "{name} तैयार हैं। असली calls शुरू होते ही हम आपको WhatsApp पर बताएँगे।",
+      "goHome": "Home पर जाएँ",
+      "copyShort": "कॉपी"
+    },
+    "tryAgain": "फिर से कोशिश करें"
   }
 }

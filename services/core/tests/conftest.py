@@ -27,13 +27,19 @@ from alembic.config import Config  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine  # noqa: E402
 
+from mitra_core.clock import get_clock  # noqa: E402
 from mitra_core.config import get_settings  # noqa: E402
 from mitra_core.db import dispose_engine  # noqa: E402
 from mitra_core.main import app  # noqa: E402
-from tests.helpers import Actor, new_actor  # noqa: E402
+from mitra_core.otp import get_code_generator  # noqa: E402
+from tests.helpers import FIXED_CODE, Actor, FakeClock, new_actor  # noqa: E402
 
 CORE_DIR = Path(__file__).resolve().parents[1]
 TABLES = (
+    "otp_request",
+    "test_call",
+    "fact",
+    "knowledge_source",
     "idempotency_record",
     "contact",
     "employee",
@@ -102,3 +108,18 @@ async def client() -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def fixed_code() -> str:
+    """Pin OTP codes so tests can log in (codes are random and never returned in env=test)."""
+    app.dependency_overrides[get_code_generator] = lambda: lambda: FIXED_CODE
+    return FIXED_CODE
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    fake = FakeClock()
+    app.dependency_overrides[get_clock] = lambda: fake
+    return fake

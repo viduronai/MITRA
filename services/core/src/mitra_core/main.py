@@ -10,11 +10,12 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from mitra_core.api.v1 import health
 from mitra_core.api.v1 import router as v1_router
-from mitra_core.config import get_settings
+from mitra_core.config import Settings, get_settings
 from mitra_core.db import dispose_engine
 from mitra_core.errors import register_error_handlers
 from mitra_core.logging import configure_logging, get_logger
@@ -76,8 +77,8 @@ async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     await dispose_engine()
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
     configure_logging(settings.log_level)
     app = FastAPI(
         title="Mitra Core API",
@@ -87,6 +88,16 @@ def create_app() -> FastAPI:
     )
     register_error_handlers(app)
     app.add_middleware(RequestContextMiddleware)
+    if settings.env == "local":
+        # Browser dev servers only; deployed environments sit behind a same-origin proxy.
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Request-ID"],
+            expose_headers=["X-Request-ID", "Idempotent-Replayed", "Retry-After"],
+            max_age=600,
+        )
     app.include_router(health.router)
     app.include_router(v1_router)
     return app

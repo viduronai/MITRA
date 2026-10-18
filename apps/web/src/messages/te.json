@@ -23,7 +23,9 @@
   "header": {
     "isWorking": "{name} పని చేస్తోంది",
     "isPaused": "{name} ఆగి ఉంది",
-    "callsLive": "{count, plural, =0 {ఇప్పుడు కాల్స్ లేవు} one {# కాల్ జరుగుతోంది} other {# కాల్స్ జరుగుతున్నాయి}}"
+    "callsLive": "{count, plural, =0 {ఇప్పుడు కాల్స్ లేవు} one {# కాల్ జరుగుతోంది} other {# కాల్స్ జరుగుతున్నాయి}}",
+    "isTraining": "{name} సిద్ధమవుతున్నారు",
+    "setupPending": "మొదలుపెట్టడానికి setup పూర్తి చేయండి"
   },
   "language": {
     "change": "భాష మార్చండి"
@@ -47,13 +49,17 @@
     "trendDown": "నిన్నటి కంటే {value} తక్కువ",
     "trendSame": "నిన్నటి లాగే",
     "needsYouCount": "{count, plural, =0 {ఇప్పుడు మీ సహాయం అవసరం లేదు} one {# విషయానికి మీ జవాబు కావాలి} other {# విషయాలకు మీ జవాబు కావాలి}}",
-    "allClear": "అన్నీ సరిగ్గా ఉన్నాయి. ఏదైనా వస్తే ప్రియ మీకు చెబుతుంది.",
+    "allClear": "అన్నీ పూర్తయ్యాయి. ఏదైనా వస్తే {employee} మీకు చెప్తారు.",
     "recentCalls": "ఇటీవలి కాల్స్",
-    "seeAllCalls": "అన్ని కాల్స్ చూడండి"
+    "seeAllCalls": "అన్ని కాల్స్ చూడండి",
+    "greetingMorningPlain": "శుభోదయం",
+    "greetingAfternoonPlain": "నమస్కారం",
+    "greetingEveningPlain": "శుభ సాయంత్రం",
+    "sampleNote": "నిజమైన calls మొదలయ్యే వరకు ఇవి sample సంఖ్యలు."
   },
   "needs": {
-    "unknownQuestion": "{name} ఆదివారం టైమింగ్స్ గురించి అడిగారు. ప్రియకు జవాబు తెలియలేదు.",
-    "unknownQuestionAction": "ప్రియకు నేర్పండి",
+    "unknownQuestion": "{name} ఆదివారం timings గురించి అడిగారు. {employee}కి సమాధానం తెలియలేదు.",
+    "unknownQuestionAction": "{employee}కి నేర్పించండి",
     "upsetCaller": "ఎక్కువసేపు వేచి ఉండటం వల్ల {name} కోపంగా ఉన్నారు.",
     "upsetCallerAction": "తిరిగి కాల్ చేయండి",
     "failedMessage": "{name} కి booking మెసేజ్ వెళ్ళలేదు.",
@@ -71,7 +77,7 @@
     "duration": "{minutes, plural, =0 {} other {#ని }}{seconds}సె",
     "incoming": "వచ్చిన కాల్",
     "outgoing": "చేసిన కాల్",
-    "handledBy": "{name} మాట్లాడింది",
+    "handledBy": "{name} మాట్లాడారు",
     "open": "{name} తో కాల్ తెరవండి"
   },
   "employee": {
@@ -81,7 +87,11 @@
     "stopSample": "శాంపిల్ ఆపండి",
     "receptionist": "రిసెప్షనిస్ట్",
     "bookedToday": "{count, plural, =0 {ఈరోజు ఇంకా బుకింగ్స్ లేవు} one {ఈరోజు # బుక్ అయింది} other {ఈరోజు # బుక్ అయ్యాయి}}",
-    "callsToday": "ఈరోజు {count, plural, one {# కాల్} other {# కాల్స్}}"
+    "callsToday": "ఈరోజు {count, plural, one {# కాల్} other {# కాల్స్}}",
+    "training": "సిద్ధమవుతున్నారు",
+    "lead_caller": "Lead Caller",
+    "reminder_caller": "Reminder Caller",
+    "payment_caller": "Payment Caller"
   },
   "voice": {
     "play": "{name} గొంతు వినండి",
@@ -92,30 +102,31 @@
   "setup": {
     "title": "సెటప్ పూర్తి చేయండి",
     "progress": "{percent}% పూర్తయింది",
-    "business": "మీ బిజినెస్ వివరాలు ఇవ్వండి",
-    "teach": "మీ క్లినిక్ గురించి ప్రియకు నేర్పండి",
-    "voice": "ప్రియ గొంతు ఎంచుకోండి",
-    "testCall": "టెస్ట్ కాల్ చేయండి",
-    "forward": "మీ మిస్డ్ కాల్స్ ఫార్వర్డ్ చేయండి",
+    "business": "మీ business వివరాలు ఇవ్వండి",
+    "teach": "మీ business గురించి {name}కి నేర్పించండి",
+    "voice": "{name} గొంతు ఎంచుకోండి",
+    "testCall": "Test call చేయండి",
+    "forward": "ఎలా live అవ్వాలో ఎంచుకోండి",
     "done": "పూర్తయింది",
     "todo": "చేయాలి",
-    "continue": "సెటప్ కొనసాగించండి"
+    "continue": "సెటప్ కొనసాగించండి",
+    "allDone": "Setup పూర్తయింది"
   },
   "calls": {
     "title": "కాల్స్",
-    "subtitle": "ఈరోజు ప్రియ మాట్లాడిన ప్రతి కాల్.",
+    "subtitle": "ఈరోజు {name} తీసుకున్న, చేసిన ప్రతి call.",
     "today": "ఈరోజు"
   },
   "team": {
     "title": "మీ టీమ్",
-    "subtitle": "ప్రియ మీ కాల్స్‌కి జవాబిస్తుంది, appointments బుక్ చేస్తుంది, రిమైండర్లు పంపుతుంది.",
+    "subtitle": "{name} మీ calls తీసుకుంటారు, appointments బుక్ చేస్తారు, reminders పంపుతారు.",
     "moreSoon": "ఇంకా AI ఉద్యోగులు త్వరలో వస్తున్నారు — follow-up కాలర్, payment కాలర్."
   },
   "customers": {
     "title": "కస్టమర్లు",
-    "subtitle": "ప్రియ మాట్లాడిన ప్రతి ఒక్కరూ, వారి గురించి ఆమెకు గుర్తున్నవి.",
+    "subtitle": "{name} మాట్లాడిన అందరూ, వారి గురించి గుర్తున్న విషయాలు.",
     "emptyTitle": "ఇంకా కస్టమర్లు లేరు",
-    "empty": "ప్రియ మాట్లాడిన వారు వారి మొదటి కాల్ తర్వాత ఇక్కడ కనిపిస్తారు.",
+    "empty": "{name}తో మాట్లాడిన వారు, మొదటి call తర్వాత ఇక్కడ కనిపిస్తారు.",
     "emptyAction": "కస్టమర్‌ని జోడించండి"
   },
   "more": {
@@ -135,7 +146,241 @@
   },
   "empty": {
     "callsTitle": "ఇంకా కాల్స్ లేవు",
-    "calls": "ప్రియ జవాబివ్వడం మొదలుపెట్టాక కాల్స్ ఇక్కడ కనిపిస్తాయి.",
+    "calls": "{name} calls తీసుకోవడం మొదలుపెట్టగానే ఇక్కడ కనిపిస్తాయి.",
     "callsAction": "టెస్ట్ కాల్ చేయండి"
+  },
+  "auth": {
+    "title": "Mitraకి స్వాగతం",
+    "subtitle": "మీ mobile numberతో sign in అవ్వండి. మేము 6 అంకెల code పంపుతాం.",
+    "phoneLabel": "Mobile number",
+    "phoneHint": "10 అంకెలు, 0 లేదా +91 లేకుండా",
+    "sendCode": "Code పంపండి",
+    "otpTitle": "Code ఎంటర్ చేయండి",
+    "otpSubtitle": "{phone}కి 6 అంకెల code పంపాం.",
+    "otpLabel": "6 అంకెల code",
+    "digitLabel": "6లో {n}వ అంకె",
+    "verify": "కొనసాగించండి",
+    "changeNumber": "Number మార్చండి",
+    "resendIn": "{seconds} సెకన్లలో మళ్ళీ పంపవచ్చు",
+    "resend": "Code మళ్ళీ పంపండి",
+    "resent": "కొత్త code పంపాం.",
+    "devHint": "Dev మాత్రమే · మీ code {code}",
+    "sending": "పంపుతున్నాం…",
+    "checking": "చెక్ చేస్తున్నాం…",
+    "signedOut": "మీరు sign out అయ్యారు. దయచేసి మళ్ళీ sign in అవ్వండి.",
+    "trust": "మీ numberని ఎవరితోనూ పంచుకోము.",
+    "errors": {
+      "phoneInvalid": "6, 7, 8 లేదా 9తో మొదలయ్యే 10 అంకెల mobile number ఇవ్వండి.",
+      "codeIncomplete": "6 అంకెలూ ఎంటర్ చేయండి.",
+      "codeWrong": "Code సరిపోలలేదు. SMS చూసి మళ్ళీ ప్రయత్నించండి.",
+      "codeExpired": "ఈ code గడువు ముగిసింది. కొత్తది కోసం 'మళ్ళీ పంపండి' నొక్కండి.",
+      "tooMany": "చాలా సార్లు ప్రయత్నించారు. కొన్ని నిమిషాలు ఆగి మళ్ళీ ప్రయత్నించండి.",
+      "unreachable": "ఇప్పుడు connect అవ్వలేకపోయాం. Internet చెక్ చేసి మళ్ళీ ప్రయత్నించండి.",
+      "generic": "ఏదో తప్పు జరిగింది. దయచేసి మళ్ళీ ప్రయత్నించండి."
+    }
+  },
+  "onboarding": {
+    "metaTitle": "Setup",
+    "stepOf": "{total}లో {current}వ step",
+    "progressLabel": "Setup ప్రగతి",
+    "back": "వెనక్కి",
+    "continue": "కొనసాగించండి",
+    "saving": "సేవ్ చేస్తున్నాం…",
+    "skip": "ఇప్పటికి వదిలేయండి",
+    "signOut": "Sign out",
+    "steps": {
+      "business": "మీ business",
+      "role": "పాత్ర ఎంచుకోండి",
+      "teach": "Mitraకి నేర్పించండి",
+      "voice": "గొంతు ఎంచుకోండి",
+      "test_call": "Test call",
+      "go_live": "Live అవ్వండి"
+    },
+    "errors": {
+      "generic": "ఏదో తప్పు జరిగింది. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+      "unreachable": "ఇప్పుడు connect అవ్వలేకపోయాం. Internet చెక్ చేసి మళ్ళీ ప్రయత్నించండి.",
+      "needEmployee": "ముందు ఒక పాత్ర ఎంచుకోండి.",
+      "invalid": "మీరు ఇచ్చిన వివరాలు చెక్ చేసి మళ్ళీ ప్రయత్నించండి."
+    },
+    "business": {
+      "title": "మీ business గురించి చెప్పండి",
+      "subtitle": "దీనివల్ల మీ AI ఉద్యోగి callersని సరిగ్గా పలకరిస్తారు.",
+      "name": "Business పేరు",
+      "namePlaceholder": "ఉదా. Sunrise Clinic",
+      "nameRequired": "మీ business పేరు ఇవ్వండి.",
+      "industry": "మీది ఎలాంటి business?",
+      "industries": {
+        "clinic": "Clinic లేదా diagnostics",
+        "real_estate": "Real estate",
+        "education": "Coaching లేదా education",
+        "other": "ఇంకేదైనా"
+      },
+      "city": "నగరం",
+      "cityPlaceholder": "ఉదా. హైదరాబాద్",
+      "optional": "ఐచ్ఛికం",
+      "languages": "మీ customers మాట్లాడే భాషలు",
+      "languagesHint": "3 వరకు ఎంచుకోండి.",
+      "languagesRequired": "కనీసం ఒక భాష ఎంచుకోండి.",
+      "hours": "పని వేళలు",
+      "hoursHint": "Calls ఎప్పుడు తీసుకోవాలి? ఎప్పుడైనా మార్చవచ్చు.",
+      "hoursPresets": {
+        "everyday9to9": "ప్రతిరోజూ, ఉదయం 9 – రాత్రి 9",
+        "monSat9to9": "సోమ–శని, ఉదయం 9 – రాత్రి 9",
+        "monSat10to7": "సోమ–శని, ఉదయం 10 – సాయంత్రం 7",
+        "allDay": "24 గంటలూ"
+      }
+    },
+    "languages": {
+      "en": "English",
+      "te": "తెలుగు",
+      "hi": "हिंदी"
+    },
+    "role": {
+      "title": "పాత్ర ఎంచుకోండి",
+      "subtitle": "మీ AI ఉద్యోగి ముందుగా ఏం చేయాలి? తర్వాత ఇంకా మందిని పెట్టుకోవచ్చు.",
+      "recommended": "మీకు సరిపోతుంది",
+      "hearSample": "Sample వినండి",
+      "stopSample": "Sample ఆపండి",
+      "locked": "మీరు ఇప్పటికే {role}ని పెట్టుకున్నారు. ఇంకా పాత్రలు తర్వాత Team నుంచి జోడించవచ్చు.",
+      "names": {
+        "receptionist": "Receptionist",
+        "lead_caller": "Lead Caller",
+        "reminder_caller": "Reminder Caller",
+        "payment_caller": "Payment Caller"
+      },
+      "descriptions": {
+        "receptionist": "ప్రతి call తీసుకుంటారు, appointments బుక్ చేస్తారు, ప్రశ్నలకు జవాబిస్తారు.",
+        "lead_caller": "కొత్త enquiriesకి నిమిషాల్లో call చేసి, వారికి ఏం కావాలో తెలుసుకుంటారు.",
+        "reminder_caller": "Appointments, visits గురించి ఒక రోజు ముందు customersకి గుర్తు చేస్తారు.",
+        "payment_caller": "Pending payments, fees గురించి మర్యాదగా follow-up చేస్తారు."
+      },
+      "defaultNames": {
+        "receptionist": "Priya",
+        "lead_caller": "Ravi",
+        "reminder_caller": "Meena",
+        "payment_caller": "Arjun"
+      }
+    },
+    "teach": {
+      "title": "మీ business గురించి {name}కి నేర్పించండి",
+      "subtitle": "మీ దగ్గర ఉన్నది ఇవ్వండి. {name} చదువుతారు, మీరు వివరాలు చెక్ చేయండి.",
+      "link": "Link పేస్ట్ చేయండి",
+      "linkHint": "మీ website లేదా Google Business page",
+      "type": "వివరాలు టైప్ చేయండి",
+      "typeHint": "ధరలు, timings, చిరునామా. ఒక్కో line లో ఒకటి.",
+      "speak": "మాట్లాడండి",
+      "speakHint": "2 నిమిషాలు మాట్లాడండి",
+      "comingSoon": "త్వరలో",
+      "urlLabel": "Website లేదా Google Business link",
+      "urlPlaceholder": "https://",
+      "urlInvalid": "https://తో మొదలయ్యే పూర్తి link ఇవ్వండి",
+      "read": "ఈ link చదవండి",
+      "textLabel": "మీ business వివరాలు",
+      "textPlaceholder": "Consultation fee: ₹500\nTimings: సోమ–శని, ఉదయం 9 – రాత్రి 9\nParking: Basement",
+      "textRequired": "ముందు కొన్ని వివరాలు టైప్ చేయండి.",
+      "addDetails": "ఈ వివరాలు జోడించండి",
+      "processingLink": "మీ website చదువుతున్నాం…",
+      "processingText": "మీ వివరాలు చదువుతున్నాం…",
+      "failed": "ఆ link చదవలేకపోయాం. Link చెక్ చేయండి, లేదా వివరాలు టైప్ చేయండి.",
+      "knowsTitle": "వారికి తెలిసినవి",
+      "knowsEmpty": "ఇంకా ఏమీ లేదు. పైన link ఇవ్వండి లేదా కొన్ని వివరాలు టైప్ చేయండి.",
+      "checkThese": "{count, plural, one {చెక్ చేయాల్సినది # ఉంది} other {చెక్ చేయాల్సినవి # ఉన్నాయి}}",
+      "categories": {
+        "services": "సేవలు",
+        "prices": "ధరలు & fees",
+        "timings": "Timings",
+        "location": "చిరునామా",
+        "contact": "Contact",
+        "faq": "తరచుగా అడిగేవి",
+        "policy": "నియమాలు"
+      },
+      "confirm": "సరైనది",
+      "confirmFact": "“{key}” సరైనదిగా గుర్తించండి",
+      "confirmed": "చెక్ అయింది",
+      "edit": "మార్చండి",
+      "editFact": "“{key}” మార్చండి",
+      "save": "సేవ్ చేయండి",
+      "cancel": "రద్దు",
+      "remove": "తీసేయండి",
+      "removeFact": "“{key}” తీసేయండి",
+      "removed": "తీసేశాం.",
+      "suggested": "దయచేసి చెక్ చేయండి",
+      "valueLabel": "{key}కి సమాధానం",
+      "gapsTitle": "కొన్ని ప్రశ్నలు",
+      "gapsSubtitle": "Callers తరచుగా ఇవి అడుగుతారు. తెలిసినవి జవాబివ్వండి.",
+      "answerPlaceholder": "మీ సమాధానం టైప్ చేయండి",
+      "saveAnswer": "సమాధానం సేవ్ చేయండి",
+      "saved": "సేవ్ అయింది.",
+      "confirmAll": "అన్నీ సరైనవే, కొనసాగించండి",
+      "needOne": "కనీసం ఒక వివరం జోడించండి, లేదా ఇప్పటికి వదిలేయండి.",
+      "fromLink": "మీ link నుంచి",
+      "fromNotes": "మీ notes నుంచి"
+    },
+    "voice": {
+      "title": "గొంతు ఎంచుకోండి",
+      "subtitle": "ఈ గొంతులు {languages} మాట్లాడతాయి. వినడానికి ▶ నొక్కండి.",
+      "nameLabel": "మీ ఉద్యోగి పేరు",
+      "nameHint": "Callersకి ఈ పేరు వినిపిస్తుంది.",
+      "nameRequired": "మీ ఉద్యోగికి ఒక పేరు ఇవ్వండి.",
+      "tiers": {
+        "smart": "Smart",
+        "natural": "Natural",
+        "signature": "Signature"
+      },
+      "perMin": "{price}/నిమిషం",
+      "tierHint": "వారు మాట్లాడినప్పుడు మాత్రమే చెల్లించండి. గొంతు ఎప్పుడైనా మార్చవచ్చు.",
+      "noVoices": "ఈ భాషలకు ఇంకా గొంతులు లేవు. త్వరలో జోడిస్తాం."
+    },
+    "test": {
+      "title": "Test call చేయండి",
+      "subtitle": "{name} మీకు call చేస్తారు. మీరు customer లాగా మాట్లాడండి.",
+      "call": "నా phoneకి call చేయండి ({phone})",
+      "status": {
+        "queued": "సిద్ధమవుతోంది…",
+        "ringing": "మీ phone మోగుతోంది…",
+        "connected": "Call లో ఉన్నారు",
+        "completed": "Call ముగిసింది"
+      },
+      "simulatedNote": "ఇది simulated preview, నిజమైన calls త్వరలో.",
+      "whatWasSaid": "ఏం మాట్లాడారు",
+      "you": "మీరు",
+      "summary": "సారాంశం",
+      "fixTitle": "ఏదైనా సరిచేయాలా?",
+      "fixHint": "మీ మాటల్లోనే {name}కి చెప్పండి.",
+      "fixPlaceholder": "ఉదా. Consultation fee ₹500 అని చెప్పండి",
+      "fixSubmit": "సరిచేయండి",
+      "fixRequired": "ముందు ఏం మార్చాలో టైప్ చేయండి.",
+      "fixKnowledge": "వారికి తెలిసిన వాటిలో జోడించాం.",
+      "fixBehaviour": "ఎలా ప్రవర్తించాలో గుర్తు పెట్టుకున్నాం.",
+      "testAgain": "మళ్ళీ test చేయండి",
+      "looksGood": "బాగుంది, కొనసాగించండి",
+      "failed": "Test call జరగలేదు. దయచేసి మళ్ళీ ప్రయత్నించండి."
+    },
+    "live": {
+      "title": "Live అవ్వండి",
+      "subtitle": "{name} మీకు ఎలా సహాయం మొదలుపెట్టాలో ఎంచుకోండి.",
+      "forwardTitle": "నా missed calls forward చేయండి",
+      "forwardDesc": "మీరు busyగా ఉన్నప్పుడు లేదా ఎత్తలేనప్పుడు, మీ calls {name}కి వెళ్తాయి.",
+      "network": "మీ network",
+      "busy": "Busyగా ఉన్నప్పుడు",
+      "noAnswer": "మీరు ఎత్తనప్పుడు",
+      "unreachable": "Switch off అయినప్పుడు",
+      "copyCode": "“{label}” code కాపీ చేయండి",
+      "copied": "కాపీ అయింది",
+      "dialHint": "మామూలు call లాగానే మీ phone నుంచి ఈ code డయల్ చేయండి.",
+      "forwardSoon": "త్వరలో: మీ Mitra number. దాన్ని మేమే ఈ codesలో పెడతాం.",
+      "numberTitle": "Local business number పొందండి",
+      "numberDesc": "Call చేసినప్పుడు మీ business పేరు కనిపించే local number.",
+      "leadsTitle": "నా leads connect చేయండి",
+      "leadsDesc": "Facebook ads, మీ website form లేదా Google Sheet.",
+      "comingSoon": "త్వరలో",
+      "finish": "Setup పూర్తి చేయండి",
+      "successEyebrow": "Setup పూర్తయింది",
+      "successTitle": "అంతా సిద్ధం",
+      "successBody": "{name} సిద్ధంగా ఉన్నారు. నిజమైన calls మొదలవ్వగానే WhatsAppలో మీకు మెసేజ్ చేస్తాం.",
+      "goHome": "Homeకి వెళ్ళండి",
+      "copyShort": "కాపీ"
+    },
+    "tryAgain": "మళ్ళీ ప్రయత్నించండి"
   }
 }

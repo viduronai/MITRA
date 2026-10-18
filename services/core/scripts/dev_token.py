@@ -5,48 +5,20 @@ Examples:
     uv run python scripts/dev_token.py --sub <user-uuid> --business-id <uuid> --role owner
 
 A new --sub is generated when omitted; pass --phone so the API can create the user on first
-use. Temporary until Better Auth issues real tokens (TRD §3).
+use. The normal way to get a token is now the OTP login (see README); this script remains for
+quick experiments. Temporary until Better Auth issues real tokens (TRD §3).
 """
 
 from __future__ import annotations
 
 import argparse
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
-import jwt
-
-from mitra_core.config import get_settings
 from mitra_core.models.enums import MemberRole
+from mitra_core.tokens import mint
 
-
-def mint(
-    sub: uuid.UUID,
-    *,
-    business_id: uuid.UUID | None = None,
-    role: MemberRole | None = None,
-    phone: str | None = None,
-    name: str | None = None,
-    ttl: timedelta = timedelta(hours=12),
-) -> str:
-    settings = get_settings()
-    now = datetime.now(UTC)
-    claims: dict[str, object] = {
-        "sub": str(sub),
-        "iss": settings.jwt_issuer,
-        "aud": settings.jwt_audience,
-        "iat": now,
-        "exp": now + ttl,
-    }
-    if business_id:
-        claims["business_id"] = str(business_id)
-    if role:
-        claims["role"] = role.value
-    if phone:
-        claims["phone"] = phone
-    if name:
-        claims["name"] = name
-    return jwt.encode(claims, settings.jwt_secret.get_secret_value(), settings.jwt_algorithm)
+__all__ = ["mint"]
 
 
 def main() -> None:

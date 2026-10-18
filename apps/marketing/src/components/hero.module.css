@@ -1,0 +1,404 @@
+/*
+ * Scene 1 · Hero. Vexel layout (1280×800 reference frame, every number × --u),
+ * Vesper badge and buttons, Mitra copy and colours.
+ */
+.hero {
+  --u: min(calc(100vh / 800), max(calc(100vw / 1280), min(calc(100vw / 640), 0.75px)));
+  --u: min(calc(100dvh / 800), max(calc(100vw / 1280), min(calc(100vw / 640), 0.75px)));
+  --c-nav: rgba(238, 242, 255, 0.9);
+  --c-sub: rgba(226, 233, 255, 0.74);
+  --c-hair: rgba(255, 255, 255, 0.19);
+  --rail: max(calc(340 * var(--u)), 300px);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+  text-align: center;
+  background-color: #01061a;
+  background-image: linear-gradient(90deg, #00061a 0%, #01071b 22%, #01071a 45%, #010718 62%, #010614 80%, #020511 100%);
+}
+
+/* ---------- Masthead ---------- */
+.masthead {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 40.5 * var(--u));
+}
+
+.wordmark {
+  display: inline-flex;
+  font-size: max(calc(26 * var(--u)), 19px);
+  color: #fff;
+  transform: translateX(calc(-0.5 * var(--u)));
+  border-radius: 4px;
+}
+
+.wordmark:focus-visible,
+.navLink:focus-visible {
+  outline: 2px solid var(--sky-focus);
+  outline-offset: 4px;
+}
+
+.hairline {
+  width: var(--rail);
+  height: 1px;
+  margin-top: calc(24 * var(--u));
+  background: var(--c-hair);
+  transform-origin: 50% 50%;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  width: var(--rail);
+  margin-top: calc(17.4 * var(--u));
+  padding: 0 calc(8.9 * var(--u));
+}
+
+.navLink {
+  display: inline-block;
+  font-size: max(calc(15 * var(--u)), 13px);
+  letter-spacing: -0.033em;
+  color: var(--c-nav);
+  transition: color 0.25s ease;
+  border-radius: 3px;
+}
+
+.navLink:hover {
+  color: #fff;
+}
+
+/* ---------- Copy ---------- */
+.gap {
+  flex: 82.98 1 0;
+  min-height: calc(24 * var(--u));
+}
+
+.copy {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: calc(24 * var(--u));
+  padding: 8px 14px 8px 11px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #3c5c92 0%, #14274c 52%, #060c1c 100%);
+  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.18);
+  color: #eef4ff;
+  font-size: max(calc(13 * var(--u)), 12.5px);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.star {
+  width: 17px;
+  height: 19px;
+  color: var(--sky-soft);
+  filter: drop-shadow(0 0 4px rgba(127, 212, 255, 0.7));
+}
+
+.h1 {
+  margin: 0;
+  font-weight: 400;
+  font-size: max(calc(70 * var(--u)), 34px);
+  line-height: 0.9559;
+  letter-spacing: -0.0379em;
+  white-space: nowrap;
+}
+
+.line {
+  display: block;
+  overflow: hidden;
+  /* Clip at the baseline, leave room for descenders and the serif's swash. */
+  padding: 0 0.12em 0.12em;
+  margin: 0 -0.12em -0.12em;
+}
+
+.line2 {
+  letter-spacing: -0.0394em;
+  transform: translateX(calc(2.6 * var(--u)));
+}
+
+.lineInner {
+  display: block;
+}
+
+.hello {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.1em;
+  letter-spacing: -0.02em;
+  color: var(--sky-soft);
+  padding-right: 0.04em;
+}
+
+.sub {
+  margin: calc(20 * var(--u)) 0 0;
+  max-width: 34em;
+  font-size: max(calc(20 * var(--u)), 15px);
+  line-height: 1.32;
+  letter-spacing: -0.012em;
+  color: var(--c-sub);
+  text-wrap: balance;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(12 * var(--u));
+  margin-top: calc(28 * var(--u));
+}
+
+.primary,
+.secondary {
+  height: max(calc(48 * var(--u)), 44px);
+  min-width: max(calc(178 * var(--u)), 156px);
+  padding: 0 calc(22 * var(--u));
+  font-size: max(calc(16 * var(--u)), 14.5px);
+  letter-spacing: -0.0265em;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid var(--sky-focus);
+  outline-offset: 3px;
+}
+
+.play {
+  width: 9px;
+  height: 10px;
+  fill: currentColor;
+}
+
+/* ---------- Horizon video field ---------- */
+.field {
+  position: relative;
+  z-index: 1;
+  flex: 318.68 1 0;
+  min-height: calc(160 * var(--u));
+  width: 100%;
+  container-type: size;
+}
+
+/* Static gradient fallback: the horizon glow, visible before/without video. */
+.field::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 160vw;
+  height: calc(100% + 36.4 * var(--u));
+  transform: translateX(-50%);
+  background:
+    radial-gradient(60% 70% at 50% 100%, rgba(56, 198, 244, 0.42) 0%, rgba(47, 107, 255, 0.18) 38%, transparent 70%),
+    radial-gradient(40% 30% at 50% 100%, rgba(159, 227, 250, 0.35), transparent 70%);
+  pointer-events: none;
+}
+
+.video {
+  /* Horizon (50.463% down the frame) sits 36.4u above the field top, i.e. just
+     behind the buttons, whatever the copy height. The height formula still
+     guarantees the frame reaches the bottom edge. */
+  position: absolute;
+  left: 50%;
+  top: calc(-36.4 * var(--u));
+  width: auto;
+  height: max(60vw, 105vh);
+  height: max(calc(100cqw * 971 / 1619), calc((100cqh + 36.4 * var(--u)) / 0.49537 + 1px));
+  max-width: none;
+  transform: translate(-50%, -50.463%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s var(--ease-soft);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 4%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 4%);
+}
+
+.video[data-ready],
+.poster {
+  opacity: 1;
+}
+
+/* ---------- Entrance pre-state (Vexel). Only while html.intro is set. ---------- */
+:global(.intro) .wordmark,
+:global(.intro) .navLink,
+:global(.intro) .badge,
+:global(.intro) .sub,
+:global(.intro) .actions > *,
+:global(.intro) .scrollCue {
+  opacity: 0;
+}
+
+:global(.intro) .hairline {
+  transform: scaleX(0);
+}
+
+:global(.intro) .lineInner {
+  transform: translateY(104%);
+}
+
+/* ---------- Scroll cue ---------- */
+.scrollCue {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: 1px;
+  height: 36px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.scrollCue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--sky-soft));
+  animation: cue 2.4s var(--ease-inout) infinite;
+}
+
+@keyframes cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  60%,
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* ---------- Tablet ---------- */
+@media (min-width: 600px) and (max-width: 1099.98px) and (min-height: 541px) {
+  .hero {
+    --u: min(calc(100vh / 800), 1px, max(calc(100vw / 1280), calc(100vh / 1190), 0.86px));
+    --u: min(calc(100dvh / 800), 1px, max(calc(100vw / 1280), calc(100dvh / 1190), 0.86px));
+  }
+
+  .field {
+    max-height: 48%;
+  }
+
+  .navLink {
+    padding: 14px 8px;
+    margin: -14px -8px;
+  }
+}
+
+/* ---------- Portrait phones ---------- */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  .hero {
+    --u: min(calc(100vh / 800), max(calc(100vw / 1280), min(calc(100vw / 640), 0.75px)));
+    --u: min(calc(100svh / 800), max(calc(100vw / 1280), min(calc(100vw / 640), 0.75px)));
+    --rail: min(max(calc(340 * var(--u)), 300px), calc(100vw - 32px));
+  }
+
+  .copy {
+    padding: 0 24px;
+  }
+
+  .h1 {
+    font-size: max(26px, min(calc(70 * var(--u)), calc((100vw - 48px) / 7.9)));
+  }
+
+  .sub {
+    font-size: max(16px, min(calc(20 * var(--u)), 4.1vw));
+    line-height: 1.3;
+    overflow-wrap: break-word;
+  }
+
+  .field {
+    max-height: 56%;
+  }
+
+  .navLink {
+    padding: 14px 8px;
+    margin: -14px -8px;
+  }
+
+  .scrollCue {
+    display: none;
+  }
+}
+
+/* ---------- Short landscape ---------- */
+@media (max-height: 540px) and (orientation: landscape) {
+  .wordmark {
+    font-size: 15px;
+  }
+
+  .hairline,
+  .nav {
+    width: 240px;
+  }
+
+  .navLink {
+    font-size: 11px;
+  }
+
+  .h1 {
+    font-size: 30px;
+  }
+
+  .sub {
+    font-size: 12.5px;
+  }
+
+  .badge {
+    display: none;
+  }
+
+  .primary,
+  .secondary {
+    height: 34px;
+    min-width: 140px;
+    font-size: 12.5px;
+  }
+
+  .gap {
+    min-height: calc(14 * var(--u));
+  }
+
+  .field {
+    min-height: calc(120 * var(--u));
+  }
+
+  .scrollCue {
+    display: none;
+  }
+}
+
+@media (max-width: 359.98px) and (orientation: landscape) {
+  .h1 {
+    white-space: normal;
+    font-size: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video:not(.poster) {
+    display: none;
+  }
+
+  .scrollCue::after {
+    animation: none;
+  }
+}

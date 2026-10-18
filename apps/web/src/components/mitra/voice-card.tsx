@@ -22,13 +22,15 @@ interface VoiceCardProps {
   playing: boolean;
   onSelect: () => void;
   onTogglePlay: () => void;
+  /** e.g. the price tier, shown beside the name. */
+  badge?: React.ReactNode;
 }
 
 /**
  * One selectable voice. The radio and the play button are siblings (not
  * nested) so both stay valid, separately focusable controls.
  */
-export function VoiceCard({ voice, groupName, selected, playing, onSelect, onTogglePlay }: VoiceCardProps) {
+export function VoiceCard({ voice, groupName, selected, playing, onSelect, onTogglePlay, badge }: VoiceCardProps) {
   const t = useTranslations("voice");
 
   return (
@@ -57,7 +59,10 @@ export function VoiceCard({ voice, groupName, selected, playing, onSelect, onTog
           {selected && <span className="size-2.5 rounded-full bg-brand-600" />}
         </span>
         <span className="flex min-w-0 flex-col gap-1">
-          <span className="text-base leading-6 font-semibold">{voice.name}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-base leading-6 font-semibold">{voice.name}</span>
+            {badge}
+          </span>
           <span className="text-sm leading-5 text-text-muted">{voice.personality}</span>
           <span className="mt-2 flex flex-wrap gap-1.5">
             {voice.languages.map((language) => (

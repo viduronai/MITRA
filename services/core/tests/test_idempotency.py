@@ -63,7 +63,11 @@ async def test_business_post_replays_with_same_key(client: httpx.AsyncClient) ->
     first = await client.post("/v1/businesses", json=body, headers=headers)
     second = await client.post("/v1/businesses", json=body, headers=headers)
     assert first.status_code == second.status_code == 201
-    assert second.json() == first.json()
+    # The token is minted per response (never stored), so compare everything else.
+    replayed, original = second.json(), first.json()
+    assert replayed.pop("access_token")
+    assert original.pop("access_token")
+    assert replayed == original
     assert second.headers.get("idempotent-replayed") == "true"
 
     me = (await client.get("/v1/me", headers=owner.headers())).json()

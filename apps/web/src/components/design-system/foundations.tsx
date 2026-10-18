@@ -11,27 +11,27 @@ interface Swatch {
 // Values mirror docs/06 §3; swatches render the live variable, so they follow the theme.
 const colourGroups: { title: string; swatches: Swatch[] }[] = [
   {
-    title: "Brand",
+    title: "Brand · Mitra Blue & Sky",
     swatches: [
-      { token: "--brand-50", light: "#EEF0FF", dark: "#14152E", use: "Subtle fills" },
-      { token: "--brand-100", light: "#DCE0FF", dark: "#1C1E40", use: "Selected rows" },
-      { token: "--brand-500", light: "#4B4DED", dark: "#7C7EFF", use: "Focus rings, links" },
-      { token: "--brand-600", light: "#3B3BD6", dark: "#8E90FF", use: "Primary buttons" },
-      { token: "--brand-700", light: "#2F2FB0", dark: "#A7A9FF", use: "Hover / pressed" },
-      { token: "--accent-400", light: "#F7B84B", dark: "#F7B84B", use: "Marigold — live, voice" },
-      { token: "--accent-100", light: "#FFF3DC", dark: "#3A2C10", use: "Accent backgrounds" },
+      { token: "--brand-50", light: "#EEF3FF", dark: "#0B1430", use: "Subtle fills" },
+      { token: "--brand-100", light: "#DCE6FF", dark: "#122045", use: "Selected rows" },
+      { token: "--brand-500", light: "#2F6BFF", dark: "#6E97FF", use: "Focus rings, links" },
+      { token: "--brand-600", light: "#2459F5", dark: "#7FA3FF", use: "Primary buttons" },
+      { token: "--brand-700", light: "#1A46CC", dark: "#A3BEFF", use: "Hover / pressed" },
+      { token: "--sky-400", light: "#38C6F4", dark: "#4CCFF7", use: "Sky — live, voice, waveforms" },
+      { token: "--sky-100", light: "#E2F6FD", dark: "#0A2A38", use: "Sky backgrounds" },
     ],
   },
   {
-    title: "Neutrals · Stone",
+    title: "Neutrals · Chalk (light) & Ink (dark)",
     swatches: [
-      { token: "--bg", light: "#FBFBFA", dark: "#0B0B0D" },
-      { token: "--surface", light: "#FFFFFF", dark: "#141417" },
-      { token: "--surface-2", light: "#F4F4F2", dark: "#1B1B1F" },
-      { token: "--border", light: "#E7E6E3", dark: "#2A2A30" },
-      { token: "--text", light: "#17171A", dark: "#F2F2F3" },
-      { token: "--text-muted", light: "#5F5E66", dark: "#A1A0A8" },
-      { token: "--text-subtle", light: "#8C8B93", dark: "#76757D" },
+      { token: "--bg", light: "#F4F3EF", dark: "#05070D" },
+      { token: "--surface", light: "#FFFFFF", dark: "#0B1020" },
+      { token: "--surface-2", light: "#ECEBE6", dark: "#121829" },
+      { token: "--border", light: "#E1E0DA", dark: "#1E2638" },
+      { token: "--text", light: "#0C0E14", dark: "#F2F4F8" },
+      { token: "--text-muted", light: "#585D6A", dark: "#A3ABBC" },
+      { token: "--text-subtle", light: "#868B97", dark: "#6F788B" },
     ],
   },
   {
@@ -45,15 +45,24 @@ const colourGroups: { title: string; swatches: Swatch[] }[] = [
   },
 ];
 
+// Text-on-fill pairs that must stay ≥ 4.5:1 (computed for both themes).
+const contrastPairs = [
+  { label: "On brand", fg: "--on-brand", bg: "--brand-600", ratio: "5.5 / 8.2" },
+  { label: "Brand on brand-50", fg: "--brand-700", bg: "--brand-50", ratio: "6.8 / 9.8" },
+  { label: "Sky ink on sky-100", fg: "--sky-ink", bg: "--sky-100", ratio: "8.0 / 12.0" },
+  { label: "Muted on bg", fg: "--text-muted", bg: "--bg", ratio: "5.9 / 8.7" },
+];
+
 const typeScale = [
-  { role: "Display", spec: "Geist 40/44 → 72/76 · 600", className: "font-display text-[40px] leading-[44px] tracking-[-0.02em] md:text-[72px] md:leading-[76px]", sample: "Your phone rings." },
-  { role: "H1", spec: "Geist 28/34 → 36/42 · 600", className: "font-display text-[28px] leading-[34px] md:text-4xl md:leading-[42px]", sample: "Good morning, Lakshmi" },
-  { role: "H2", spec: "Geist 22/28 → 28/34 · 600", className: "font-display text-[22px] leading-7 md:text-[28px] md:leading-[34px]", sample: "Recent calls" },
-  { role: "H3", spec: "Inter 18/26 → 20/28 · 600", className: "text-lg leading-[26px] md:text-xl md:leading-7", sample: "Finish setting up" },
-  { role: "Body L", spec: "Inter 17/26 · 400", className: "text-[17px] leading-[26px] font-normal", sample: "Priya booked 9 appointments today." },
-  { role: "Body", spec: "Inter 15/24 → 16/24 · 400", className: "text-[15px] leading-6 font-normal md:text-base", sample: "Calls will appear here once Priya starts answering." },
-  { role: "Small", spec: "Inter 13/20 · 400–500", className: "text-[13px] leading-5 font-medium", sample: "6:15 pm · 2m 14s" },
-  { role: "Numbers", spec: "Inter tabular 32/36 → 44/48 · 600", className: "text-[32px] leading-9 tabular-nums md:text-[44px] md:leading-[48px]", sample: "₹1,20,000" },
+  { role: "Display", spec: "Host Grotesk 40/44 → 72/76 · 500 · −3%", className: "font-display text-[40px] leading-[44px] font-medium tracking-[-0.03em] md:text-[72px] md:leading-[76px]", sample: "Your phone rings." },
+  { role: "H1", spec: "Host Grotesk 28/34 → 36/42 · 600", className: "font-display text-[28px] leading-[34px] md:text-4xl md:leading-[42px]", sample: "Good morning, Lakshmi" },
+  { role: "H2", spec: "Host Grotesk 22/28 → 28/34 · 600", className: "font-display text-[22px] leading-7 md:text-[28px] md:leading-[34px]", sample: "Recent calls" },
+  { role: "H3", spec: "Host Grotesk 18/26 → 20/28 · 600", className: "text-lg leading-[26px] md:text-xl md:leading-7", sample: "Finish setting up" },
+  { role: "Body L", spec: "Host Grotesk 17/26 · 400", className: "text-[17px] leading-[26px] font-normal", sample: "Priya booked 9 appointments today." },
+  { role: "Body", spec: "Host Grotesk 15/24 → 16/24 · 400", className: "text-[15px] leading-6 font-normal md:text-base", sample: "Calls will appear here once Priya starts answering." },
+  { role: "Small", spec: "Host Grotesk 13/20 · 400–500", className: "text-[13px] leading-5 font-medium", sample: "6:15 pm · 2m 14s" },
+  { role: "Eyebrow", spec: "Geist Mono 11–12/16 · uppercase · +0.14em", className: "eyebrow text-text-muted", sample: "Step 2 of 6" },
+  { role: "Numbers", spec: "Host Grotesk tabular 32/36 → 44/48 · 600", className: "text-[32px] leading-9 tabular-nums md:text-[44px] md:leading-[48px]", sample: "₹1,20,000" },
 ];
 
 const radii = [
@@ -79,7 +88,7 @@ const motion = [
 export function Foundations() {
   return (
     <>
-      <DsSection id="colour" title="Colour" description="Neutral-led, one confident brand colour and one warm accent. Toggle the theme to see dark values.">
+      <DsSection id="colour" title="Colour" description="Black, Mitra Blue, Sky and chalk white. One confident brand colour; Sky only for live and voice moments. Toggle the theme to see dark values.">
         <div className="flex flex-col gap-8">
           {colourGroups.map((group) => (
             <div key={group.title}>
@@ -100,10 +109,25 @@ export function Foundations() {
               </ul>
             </div>
           ))}
+          <div>
+            <h3 className="mb-3 text-base font-semibold">Contrast pairs (light / dark)</h3>
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {contrastPairs.map((pair) => (
+                <li
+                  key={pair.label}
+                  className="flex items-center justify-between gap-3 rounded-xl border p-4"
+                  style={{ background: `var(${pair.bg})`, color: `var(${pair.fg})` }}
+                >
+                  <span className="font-medium">{pair.label}</span>
+                  <span className="font-mono text-sm tabular-nums">{pair.ratio}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </DsSection>
 
-      <DsSection id="type" title="Typography" description="Geist for display and headings, Inter for everything else. Indic scripts use Noto Sans with taller lines.">
+      <DsSection id="type" title="Typography" description="Host Grotesk for everything, Geist Mono for small uppercase labels (sparingly). Indic scripts use Noto Sans with taller lines and are never uppercased.">
         <div className="flex flex-col divide-y rounded-xl border bg-card shadow-xs">
           {typeScale.map((row) => (
             <div key={row.role} className="flex flex-col gap-2 p-5 md:flex-row md:items-baseline md:gap-8">
@@ -118,13 +142,13 @@ export function Foundations() {
             <div>
               <p className="mb-1 text-sm font-semibold">Telugu · Noto Sans Telugu</p>
               <p lang="te" className="text-[17px]">
-                నమస్కారం, సన్‌రైజ్ క్లినిక్ నుంచి ప్రియ మాట్లాడుతున్నాను.
+                నమస్కారం, Sunrise Clinic నుంచి Priya మాట్లాడుతున్నాను.
               </p>
             </div>
             <div>
               <p className="mb-1 text-sm font-semibold">Hindi · Noto Sans Devanagari</p>
               <p lang="hi" className="text-[17px]">
-                नमस्ते, मैं सनराइज़ क्लिनिक से प्रिया बोल रही हूँ।
+                नमस्ते, मैं Sunrise Clinic से Priya बोल रही हूँ।
               </p>
             </div>
           </div>

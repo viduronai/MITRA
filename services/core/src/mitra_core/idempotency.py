@@ -72,15 +72,24 @@ async def find(
     return record
 
 
-def replay(record: IdempotencyRecord, req_hash: str) -> JSONResponse:
+def ensure_same_request(record: IdempotencyRecord, req_hash: str) -> None:
     if record.request_hash != req_hash:
         raise AppError(
             422,
             "idempotency_key_reused",
             "Idempotency-Key was already used with a different request body",
         )
+
+
+def replay(
+    record: IdempotencyRecord, req_hash: str, extra: dict[str, Any] | None = None
+) -> JSONResponse:
+    """Replay the stored response; ``extra`` adds fields that must not be stored (tokens)."""
+    ensure_same_request(record, req_hash)
     return JSONResponse(
-        record.response_body, record.response_status, headers={"Idempotent-Replayed": "true"}
+        record.response_body | (extra or {}),
+        record.response_status,
+        headers={"Idempotent-Replayed": "true"},
     )
 
 
@@ -106,3 +115,20 @@ def save(
             response_body=body,
         )
     )
+
+
+async def lookup_for_business(
+    session: AsyncSession,
+    *,
+    business_id: uuid.UUID,
+    endpoint: str,
+    key: str | None,
+    payload: dict[str, Any],
+) -> tuple[str, JSONResponse | None]:
+    """Common start of a business-scoped idempotent create: (request hash, replay or None)."""
+    req_hash = request_hash(payload)
+    if not key:
+        return req_hash, None
+    await lock_key(session, f"business:{business_id}:{endpoint}", key)
+    record = await find(session, endpoint=endpoint, key=key, business_id=business_id)
+    return req_hash, (replay(record, req_hash) if record is not None else None)

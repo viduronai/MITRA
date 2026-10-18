@@ -8,7 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core import idempotency
-from mitra_core.errors import not_found
+from mitra_core.catalog import VOICES_BY_ID
+from mitra_core.errors import AppError, not_found
 from mitra_core.models import Employee
 from mitra_core.models.enums import MemberRole
 from mitra_core.schemas.employee import EmployeeCreate, EmployeeList, EmployeeOut, EmployeeUpdate
@@ -105,7 +106,7 @@ async def get_employee(
 @router.patch(
     "/{employee_id}",
     response_model=EmployeeOut,
-    summary="Update an AI employee (rename, pause/resume, voice tier, ...)",
+    summary="Update an AI employee (rename, pause/resume, voice, greeting, behaviour, ...)",
 )
 async def update_employee(
     employee_id: uuid.UUID,
@@ -114,7 +115,18 @@ async def update_employee(
     session: AsyncSession = Depends(get_tenant_session),
 ) -> Employee:
     employee = await _get_employee(session, tenant, employee_id)
-    for field, value in body.model_dump(mode="json", exclude_unset=True).items():
+    changes = body.model_dump(mode="json", exclude_unset=True)
+    if changes.get("voice_id"):
+        tier = VOICES_BY_ID[changes["voice_id"]].tier
+        if changes.get("voice_tier", tier) != tier:
+            raise AppError(
+                422,
+                "voice_tier_mismatch",
+                "voice_tier must match the chosen voice's tier (or be omitted)",
+                details={"voice_id": changes["voice_id"], "tier": tier},
+            )
+        changes["voice_tier"] = tier
+    for field, value in changes.items():
         setattr(employee, field, value)
     await session.flush()
     await session.commit()

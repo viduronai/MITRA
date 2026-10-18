@@ -42,3 +42,40 @@ class EmployeeStatus(StrEnum):
     WORKING = "working"
     PAUSED = "paused"
     TRAINING = "training"
+
+
+class KnowledgeSourceType(StrEnum):
+    URL = "url"
+    TEXT = "text"
+
+
+class KnowledgeSourceStatus(StrEnum):
+    PROCESSING = "processing"
+    READY = "ready"
+    FAILED = "failed"
+
+
+class FactCategory(StrEnum):
+    SERVICES = "services"
+    PRICES = "prices"
+    TIMINGS = "timings"
+    LOCATION = "location"
+    CONTACT = "contact"
+    FAQ = "faq"
+    POLICY = "policy"
+
+
+class FactStatus(StrEnum):
+    SUGGESTED = "suggested"
+    CONFIRMED = "confirmed"
+
+
+class TestCallStatus(StrEnum):
+    """Not stored: derived from the call's age while calls are simulated."""
+
+    __test__ = False
+
+    QUEUED = "queued"
+    RINGING = "ringing"
+    CONNECTED = "connected"
+    COMPLETED = "completed"

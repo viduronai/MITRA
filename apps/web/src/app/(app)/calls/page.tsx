@@ -4,7 +4,9 @@ import { CallRow } from "@/components/mitra/call-row";
 import { EmptyState } from "@/components/mitra/empty-state";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
-import { calls, minutesAgoToDate, requestTime } from "@/lib/mock-data";
+import { getEmployee } from "@/lib/data";
+// MOCK: calls are invented until the API has them.
+import { mockCallDate, mockCallsSoFar, requestTime } from "@/lib/mock-data";
 
 export async function generateMetadata() {
   const t = await getTranslations("calls");
@@ -13,17 +15,18 @@ export async function generateMetadata() {
 
 // Light preview with mock data. Filters, search and call detail come next (docs/07 §3.4).
 export default async function CallsPage() {
-  const [t, tEmpty] = await Promise.all([getTranslations("calls"), getTranslations("empty")]);
+  const [t, tEmpty, employee] = await Promise.all([getTranslations("calls"), getTranslations("empty"), getEmployee()]);
+  const name = employee?.name ?? "Mitra";
   const now = requestTime();
 
   return (
     <>
-      <PageHeader title={t("title")} subtitle={t("subtitle")} />
-      {calls.length === 0 ? (
+      <PageHeader title={t("title")} subtitle={t("subtitle", { name })} />
+      {mockCallsSoFar(now).length === 0 ? (
         <EmptyState
           icon={PhoneOff}
           title={tEmpty("callsTitle")}
-          description={tEmpty("calls")}
+          description={tEmpty("calls", { name })}
           action={<Button>{tEmpty("callsAction")}</Button>}
         />
       ) : (
@@ -32,9 +35,9 @@ export default async function CallsPage() {
             {t("today")}
           </h2>
           <ul>
-            {calls.map((call) => (
+            {mockCallsSoFar(now).map((call) => (
               <li key={call.id}>
-                <CallRow call={{ ...call, at: minutesAgoToDate(call.minutesAgo, now) }} href="/calls" />
+                <CallRow call={{ ...call, employeeName: name, at: mockCallDate(call.at, now) }} href="/calls" />
               </li>
             ))}
           </ul>

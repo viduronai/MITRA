@@ -4,8 +4,9 @@ import uuid
 from datetime import datetime
 from typing import Annotated, ClassVar, Self
 
-from pydantic import Field, StringConstraints, model_validator
+from pydantic import AfterValidator, Field, StringConstraints, model_validator
 
+from mitra_core.catalog import VOICES_BY_ID
 from mitra_core.models.enums import EmployeeStatus, Locale, RoleTemplate, VoiceTier
 from mitra_core.schemas.common import Languages, Name60, PatchModel, RequestModel, ResponseModel
 
@@ -24,6 +25,28 @@ class TimeRange(RequestModel):
 
 
 DayRanges = Annotated[list[TimeRange], Field(max_length=4)]
+
+
+def _known_voice(value: str) -> str:
+    if value not in VOICES_BY_ID:
+        raise ValueError("unknown voice_id (see GET /v1/catalog/voices)")
+    return value
+
+
+VoiceId = Annotated[str, StringConstraints(max_length=64), AfterValidator(_known_voice)]
+Greeting = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+BehaviourItem = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)
+]
+BehaviourList = Annotated[list[BehaviourItem], Field(max_length=20)]
+
+
+class Behaviour(RequestModel):
+    """How the employee behaves on calls. Replaced as a whole; omitted lists become empty."""
+
+    ask_for: BehaviourList = Field(default_factory=list)
+    never_say: BehaviourList = Field(default_factory=list)
+    transfer_when: BehaviourList = Field(default_factory=list)
 
 
 class WorkingHours(RequestModel):
@@ -47,13 +70,17 @@ class EmployeeCreate(RequestModel):
 
 
 class EmployeeUpdate(PatchModel):
-    _nullable: ClassVar[frozenset[str]] = frozenset({"working_hours"})
+    _nullable: ClassVar[frozenset[str]] = frozenset({"working_hours", "voice_id", "greeting"})
 
     name: Name60 | None = None
     voice_tier: VoiceTier | None = None
     status: EmployeeStatus | None = None
     languages: Languages | None = None
     working_hours: WorkingHours | None = None
+    # Setting a voice also sets voice_tier to that voice's tier (billing follows the voice).
+    voice_id: VoiceId | None = None
+    greeting: Greeting | None = None
+    behaviour: Behaviour | None = None
 
 
 class EmployeeOut(ResponseModel):
@@ -65,6 +92,9 @@ class EmployeeOut(ResponseModel):
     status: EmployeeStatus
     languages: list[Locale]
     working_hours: WorkingHours | None
+    voice_id: str | None
+    greeting: str | None
+    behaviour: Behaviour
     created_at: datetime
     updated_at: datetime
 

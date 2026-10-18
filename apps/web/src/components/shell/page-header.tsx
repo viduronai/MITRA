@@ -6,7 +6,7 @@ interface PageHeaderProps {
   className?: string;
 }
 
-/** H1 per docs/06 §4: Geist 28/34 → 36/42. */
+/** H1 per docs/06 §4: Host Grotesk 28/34 → 36/42. */
 export function PageHeader({ title, subtitle, className }: PageHeaderProps) {
   return (
     <div className={cn("mb-6 md:mb-8", className)}>

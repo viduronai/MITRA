@@ -9,7 +9,7 @@ export function Waveform({ className }: { className?: string }) {
       {bars.map((height, index) => (
         <span
           key={index}
-          className="w-[3px] origin-center rounded-full bg-accent-400 motion-safe:animate-wave"
+          className="w-[3px] origin-center rounded-full bg-sky-400 motion-safe:animate-wave"
           style={{ height: `${height * 100}%`, animationDelay: `${index * 70}ms` }}
         />
       ))}

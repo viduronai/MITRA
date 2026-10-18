@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core import idempotency
+from mitra_core.config import get_settings
 from mitra_core.errors import not_found
 from mitra_core.models import AppUser, Business, Membership
 from mitra_core.models.enums import MemberRole
@@ -26,6 +27,7 @@ from mitra_core.security import (
     require_role,
 )
 from mitra_core.tenancy import TenantContext, set_tenant
+from mitra_core.tokens import mint
 
 router = APIRouter(prefix="/businesses", tags=["businesses"])
 
@@ -49,8 +51,8 @@ async def create_business(
 
     RLS only allows writes where ``business_id = app.business_id``, and a brand-new business has
     no id yet. So we reserve an id from Postgres, switch this transaction's tenant context to
-    it, and insert the business and the owner membership in the same transaction. The caller's
-    token is not scoped to the new business; the client must obtain a new token for it.
+    it, and insert the business and the owner membership in the same transaction. The response
+    carries a new ``access_token`` scoped to the new business (the caller's token is not).
     """
     payload = body.model_dump(mode="json")
     req_hash = idempotency.request_hash(payload)
@@ -60,7 +62,8 @@ async def create_business(
             session, endpoint=_CREATE_ENDPOINT, key=idempotency_key, user_id=user.id
         )
         if record is not None:
-            return idempotency.replay(record, req_hash)
+            token = mint(user.id, business_id=record.business_id, role=MemberRole.OWNER)
+            return idempotency.replay(record, req_hash, extra={"access_token": token})
 
     business_id: uuid.UUID = (await session.execute(select(func.gen_random_uuid()))).scalar_one()
     await set_tenant(session, TenantContext(user_id=user.id, business_id=business_id))
@@ -77,6 +80,8 @@ async def create_business(
         membership=MembershipOut(
             business_id=business_id, business_name=business.name, role=MemberRole.OWNER
         ),
+        access_token=mint(user.id, business_id=business_id, role=MemberRole.OWNER),
+        expires_in=get_settings().access_token_ttl_seconds,
     )
     if idempotency_key:
         idempotency.save(
@@ -87,7 +92,7 @@ async def create_business(
             key=idempotency_key,
             req_hash=req_hash,
             status=status.HTTP_201_CREATED,
-            body=result.model_dump(mode="json"),
+            body=result.model_dump(mode="json", exclude={"access_token"}),
         )
     await session.commit()
     return result

@@ -1,0 +1,367 @@
+@import "tailwindcss";
+
+/*
+ * Mitra marketing tokens. Source: docs/design/landing-direction.md §1.
+ * Scene styling lives in CSS modules next to each scene; this file holds the
+ * tokens, the shared button family (Vesper liquid glass + Targo chamfer),
+ * film grain, masked reveals and reduced-motion rules.
+ */
+:root {
+  --night: #01061a;
+  --ink: #05070d;
+  --ink-raised: #0b1020;
+  --blue: #2f6bff;
+  --blue-deep: #123a9e;
+  --sky: #38c6f4;
+  --sky-soft: #9fe3fa;
+  --sky-focus: #7fd4ff;
+  /* Sky deepened just enough for AA large-text contrast on chalk (3.27:1). */
+  --sky-ink: #0a8fc4;
+  --chalk: #f3f2ee;
+  --chalk-2: #e8e7e2;
+  --white: #ffffff;
+  --mist: #dde8f5;
+  --viduron-ember: #ff6a1f;
+
+  --text-on-chalk: #05070d;
+  --body-on-chalk: #5e6168;
+  --body-on-dark: rgba(226, 233, 255, 0.74);
+  --dim-on-dark: rgba(226, 233, 255, 0.56);
+
+  --glass-fill: rgba(220, 235, 255, 0.04);
+  --glass-edge: rgba(220, 235, 255, 0.1);
+  --glass-hi: rgba(220, 235, 255, 0.2);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.7, 0, 0.2, 1);
+
+  --font-sans: var(--font-host), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --font-serif: var(--font-instrument), "Times New Roman", Times, serif;
+  --font-dot: var(--font-doto), var(--font-mono);
+  --font-telugu: var(--font-noto-telugu), var(--font-sans);
+  --font-devanagari: var(--font-noto-devanagari), var(--font-sans);
+
+  --gutter: clamp(20px, 5vw, 100px);
+  --header-h: 64px;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-night: var(--night);
+  --color-ink: var(--ink);
+  --color-chalk: var(--chalk);
+  --color-sky: var(--sky);
+  --color-blue: var(--blue);
+}
+
+html {
+  background: var(--night);
+  color: var(--white);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--white);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  font-kerning: normal;
+  overflow-x: clip;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sky-soft);
+  outline-offset: 3px;
+}
+
+.on-chalk :focus-visible {
+  outline-color: var(--blue);
+}
+
+::selection {
+  background: rgba(56, 198, 244, 0.35);
+  color: inherit;
+}
+
+[lang="te"] {
+  font-family: var(--font-telugu);
+  line-height: 1.1em;
+}
+
+[lang="hi"] {
+  font-family: var(--font-devanagari);
+  line-height: 1.1em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  z-index: 200;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--ink);
+  font-weight: 500;
+  transform: translateY(-160%);
+  transition: transform 0.2s var(--ease-soft);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+.accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ---------- Render only what is near the viewport ---------- */
+/* Each scene below the hero skips style/layout/paint until it approaches the
+   viewport; the size estimate keeps the scrollbar stable ("auto" then
+   remembers the real size once rendered). */
+.offscreen {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--cis, 100svh);
+}
+
+/* ---------- Film grain (Vesper), dark sections only ---------- */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Buttons: Vesper liquid glass ---------- */
+.btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 7px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    color 0.35s ease,
+    transform 0.35s var(--ease-soft);
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.45) 48%, transparent 76%);
+  transform: translateX(-130%);
+  transition: transform 0.65s ease;
+  pointer-events: none;
+}
+
+.btn:hover::after {
+  transform: translateX(130%);
+}
+
+.btn-solid {
+  background: linear-gradient(180deg, #ffffff 0%, #eef1f6 48%, #d9dee8 100%);
+  color: #0a0d14;
+  border: 1px solid #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0 24px rgba(56, 198, 244, 0.35);
+}
+
+.btn-solid:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8ff 42%, #d3e6f7 100%);
+  border-color: #f2f9ff;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 0 30px rgba(56, 198, 244, 0.5),
+    0 8px 18px rgba(255, 255, 255, 0.12);
+}
+
+.btn-ghost {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(1, 6, 26, 0.5) 46%, rgba(150, 190, 230, 0.1));
+  color: var(--white);
+  border: 1px solid rgba(190, 210, 235, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.btn-ghost:hover {
+  background: linear-gradient(135deg, rgba(210, 235, 255, 0.18), rgba(1, 6, 26, 0.35) 48%, rgba(170, 210, 240, 0.16));
+  border-color: rgba(210, 235, 255, 0.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 24px rgba(127, 212, 255, 0.28);
+}
+
+/* On chalk the solid button turns brand blue. */
+.btn-blue {
+  background: linear-gradient(180deg, #3f78ff 0%, var(--blue) 55%, #2459e0 100%);
+  color: var(--white);
+  border: 1px solid #3f78ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 24px -12px rgba(47, 107, 255, 0.7);
+}
+
+.btn-blue::after {
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.3) 48%, transparent 76%);
+}
+
+.btn-blue:hover {
+  background: linear-gradient(180deg, #5085ff 0%, #3a74ff 55%, var(--blue) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 4px rgba(47, 107, 255, 0.12),
+    0 14px 30px -12px rgba(47, 107, 255, 0.8);
+}
+
+/* Targo chamfer: chalk sections only. */
+.btn-chamfer {
+  height: auto;
+  padding: 18px 30px 18px 32px;
+  border-radius: 0;
+  border: 0;
+  gap: 14px;
+  font-size: clamp(13px, 1.1vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+.btn-chamfer .trail {
+  display: block;
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.35s var(--ease-soft);
+}
+
+.btn-chamfer:hover .trail {
+  width: 34px;
+}
+
+/* ---------- Masked line reveal ---------- */
+.mask {
+  display: block;
+  overflow: hidden;
+  padding: 0.06em 0.08em 0.14em;
+  margin: -0.06em -0.08em -0.14em;
+}
+
+.mask-in {
+  display: block;
+  transform: none;
+}
+
+.js [data-reveal] .mask-in {
+  transform: translateY(104%);
+  transition: transform 1.1s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms + var(--d, 0ms));
+}
+
+.js [data-reveal] .fade-in {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.9s var(--ease-quint),
+    transform 0.9s var(--ease-quint);
+  transition-delay: calc(var(--i, 0) * 80ms + var(--d, 0ms));
+}
+
+.js [data-reveal][data-in] .mask-in,
+.js [data-reveal][data-in] .fade-in {
+  transform: none;
+  opacity: 1;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .js [data-reveal] .mask-in,
+  .js [data-reveal] .fade-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

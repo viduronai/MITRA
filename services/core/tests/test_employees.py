@@ -145,3 +145,66 @@ async def test_employee_validation_errors(client: httpx.AsyncClient) -> None:
 
     resp = await client.get("/v1/employees/not-a-uuid", headers=headers)
     assert resp.status_code == 422
+
+
+async def test_voice_greeting_and_behaviour(client: httpx.AsyncClient) -> None:
+    owner = new_actor()
+    business = await create_business(client, owner)
+    headers = owner.headers(business["id"])
+    employee = await create_employee(client, owner, business["id"])
+    assert (employee["voice_id"], employee["greeting"]) == (None, None)
+    assert employee["behaviour"] == {"ask_for": [], "never_say": [], "transfer_when": []}
+
+    resp = await client.patch(
+        f"/v1/employees/{employee['id']}",
+        json={
+            "voice_id": "lakshmi-te-sig",
+            "greeting": "  Namaskaram! Sunrise Clinic nundi Priya.  ",
+            "behaviour": {"ask_for": ["Patient name"], "never_say": ["Medical advice"]},
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["voice_id"] == "lakshmi-te-sig"
+    assert body["voice_tier"] == "signature"  # follows the voice
+    assert body["greeting"] == "Namaskaram! Sunrise Clinic nundi Priya."
+    assert body["behaviour"] == {
+        "ask_for": ["Patient name"],
+        "never_say": ["Medical advice"],
+        "transfer_when": [],
+    }
+    assert (await client.get(f"/v1/employees/{employee['id']}", headers=headers)).json() == body
+
+    resp = await client.patch(
+        f"/v1/employees/{employee['id']}",
+        json={"voice_id": None, "greeting": None},
+        headers=headers,
+    )
+    assert (resp.json()["voice_id"], resp.json()["greeting"]) == (None, None)
+
+
+async def test_voice_and_behaviour_validation(client: httpx.AsyncClient) -> None:
+    owner = new_actor()
+    business = await create_business(client, owner)
+    headers = owner.headers(business["id"])
+    employee = await create_employee(client, owner, business["id"])
+    cases = [
+        {"voice_id": "nonexistent-voice"},
+        {"greeting": "x" * 301},
+        {"behaviour": None},
+        {"behaviour": {"ask_for": ["x"] * 21}},
+        {"behaviour": {"ask_for": ["x" * 201]}},
+        {"behaviour": {"ask_for": [""]}},
+        {"behaviour": {"mood": ["happy"]}},
+    ]
+    for patch in cases:
+        resp = await client.patch(f"/v1/employees/{employee['id']}", json=patch, headers=headers)
+        assert resp.status_code == 422, patch
+    resp = await client.patch(
+        f"/v1/employees/{employee['id']}",
+        json={"voice_id": "priya-te-hyd", "voice_tier": "signature"},
+        headers=headers,
+    )
+    assert resp.status_code == 422
+    assert resp.json()["error"]["code"] == "voice_tier_mismatch"

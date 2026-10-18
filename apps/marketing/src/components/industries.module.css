@@ -1,0 +1,261 @@
+/* Scene 8 · Industries. Four chalk cards with a hover sheen. */
+.industries {
+  position: relative;
+  padding: clamp(96px, 11vw, 160px) var(--gutter) clamp(96px, 10vw, 150px);
+  background: var(--chalk);
+  color: var(--text-on-chalk);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: clamp(36px, 4vw, 64px);
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--body-on-chalk);
+}
+
+.title {
+  margin: 0;
+  font-weight: 600;
+  font-size: clamp(36px, 4.6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.title em {
+  font-weight: 400;
+  color: var(--blue);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 20px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  padding: 26px 24px 22px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f8f6 100%);
+  border: 1px solid var(--chalk-2);
+  box-shadow:
+    0 1px 0 #fff inset,
+    0 30px 50px -40px rgba(5, 7, 13, 0.35);
+  transition:
+    transform 0.5s var(--ease-soft),
+    box-shadow 0.5s var(--ease-soft),
+    border-color 0.4s ease;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 30%, rgba(159, 227, 250, 0.35) 48%, rgba(255, 255, 255, 0.7) 52%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.9s var(--ease-soft);
+  pointer-events: none;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(47, 107, 255, 0.28);
+  box-shadow:
+    0 1px 0 #fff inset,
+    0 40px 60px -40px rgba(18, 58, 158, 0.45);
+}
+
+.card:hover::after {
+  transform: translateX(120%);
+}
+
+.index {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--body-on-chalk);
+}
+
+.name {
+  margin: 56px 0 0;
+  font-weight: 600;
+  font-size: clamp(26px, 2.2vw, 34px);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.nameLink::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.line {
+  margin: 14px 0 0;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--body-on-chalk);
+}
+
+.tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tasks li {
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: rgba(5, 7, 13, 0.04);
+  border: 1px solid rgba(5, 7, 13, 0.07);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #3d424a;
+}
+
+.foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 26px;
+}
+
+.sample {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-on-chalk);
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.playDot {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 0 0 0 rgba(56, 198, 244, 0.5);
+  transition:
+    background 0.3s ease,
+    box-shadow 0.4s ease;
+}
+
+.playDot svg {
+  width: 10px;
+  height: 11px;
+  margin-left: 2px;
+}
+
+.sample:hover .playDot {
+  background: var(--blue);
+  box-shadow: 0 0 0 6px rgba(56, 198, 244, 0.18);
+}
+
+.bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+}
+
+.bars i {
+  display: block;
+  width: 2px;
+  border-radius: 2px;
+  background: rgba(5, 7, 13, 0.22);
+}
+
+.card:hover .bars i {
+  background: var(--sky-ink);
+}
+
+.partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--blue);
+}
+
+.featured {
+  background:
+    radial-gradient(120% 70% at 100% 0%, rgba(56, 198, 244, 0.22), transparent 60%),
+    linear-gradient(180deg, #0b1020 0%, #05070d 100%);
+  border-color: #0b1020;
+  color: #fff;
+}
+
+.featured .index,
+.featured .line {
+  color: var(--body-on-dark);
+}
+
+.featured .tasks li {
+  background: rgba(220, 235, 255, 0.06);
+  border-color: rgba(220, 235, 255, 0.12);
+  color: #dfe8f6;
+}
+
+.featured .partner {
+  color: var(--sky-soft);
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    min-height: 0;
+  }
+
+  .name {
+    margin-top: 28px;
+  }
+
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

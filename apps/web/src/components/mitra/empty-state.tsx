@@ -22,8 +22,8 @@ export function EmptyState({ icon: Icon, title, description, action, className }
     >
       <span className="relative mb-5 inline-flex size-16 items-center justify-center rounded-full bg-surface-2">
         <Icon className="size-7 text-text-muted" strokeWidth={1.75} aria-hidden />
-        {/* Marigold accent, after the illustration style in docs/06 §6 */}
-        <span className="absolute top-2 right-2 size-2.5 rounded-full bg-accent-400" aria-hidden />
+        {/* Sky accent, after the illustration style in docs/06 §6 */}
+        <span className="absolute top-2 right-2 size-2.5 rounded-full bg-sky-400" aria-hidden />
       </span>
       {title && <h2 className="text-lg leading-[26px] font-semibold">{title}</h2>}
       <p className="mt-1 max-w-sm text-text-muted">{description}</p>

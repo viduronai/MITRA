@@ -36,12 +36,16 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className={cn("h-11 gap-1.5 px-3 text-text-muted", className)}
+          className={cn("h-11 gap-1.5 px-2.5 text-text-muted sm:px-3", className)}
           aria-label={t("change")}
           aria-busy={pending}
         >
           <Languages className="size-5" aria-hidden />
-          <span className="text-sm font-medium" lang={locale}>
+          {/* Phones get a one-glyph code so the header line keeps its room. */}
+          <span className="text-sm font-medium sm:hidden" lang={locale}>
+            {localeLabels[locale].abbr}
+          </span>
+          <span className="hidden text-sm font-medium sm:inline" lang={locale}>
             {localeLabels[locale].short}
           </span>
         </Button>

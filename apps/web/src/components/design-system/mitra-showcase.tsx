@@ -11,7 +11,7 @@ import { StatTile } from "@/components/mitra/stat-tile";
 import { StatusPill } from "@/components/mitra/status-pill";
 import { VoiceCardGroup } from "@/components/mitra/voice-card";
 import { Button } from "@/components/ui/button";
-import { calls, minutesAgoToDate, requestTime, setupSteps, voices, type CallResult } from "@/lib/mock-data";
+import { calls, mockCallDate, requestTime, setupSteps, voices, type CallResult } from "@/lib/mock-data";
 import { DsSection, Specimen } from "./ds-section";
 
 const results: CallResult[] = ["booked", "interested", "callBack", "notInterested", "failed"];
@@ -49,6 +49,7 @@ export function MitraShowcase() {
             </span>
             <StatusPill status="working" />
             <StatusPill status="paused" />
+            <StatusPill status="training" />
           </div>
           <div className="flex items-center gap-4">
             <EmployeeAvatar name="Priya" size="sm" />
@@ -76,7 +77,7 @@ export function MitraShowcase() {
           <ul>
             {calls.slice(0, 3).map((call) => (
               <li key={call.id}>
-                <CallRow call={{ ...call, at: minutesAgoToDate(call.minutesAgo, now) }} href="#mitra" />
+                <CallRow call={{ ...call, at: mockCallDate(call.at, now) }} href="#mitra" />
               </li>
             ))}
           </ul>
@@ -85,7 +86,7 @@ export function MitraShowcase() {
         <Specimen label="<SetupChecklist />">
           <SetupChecklist
             title={tSetup("title")}
-            steps={setupSteps.map((step) => ({ id: step.key, label: tSetup(step.key), done: step.done }))}
+            steps={setupSteps.map((step) => ({ id: step.key, label: tSetup(step.key, { name: "Priya" }), done: step.done }))}
             action={<Button className="w-full">{tSetup("continue")}</Button>}
             className="shadow-none"
           />
@@ -95,7 +96,7 @@ export function MitraShowcase() {
           <EmptyState
             icon={PhoneOff}
             title={tEmpty("callsTitle")}
-            description={tEmpty("calls")}
+            description={tEmpty("calls", { name: "Priya" })}
             action={<Button variant="secondary">{tEmpty("callsAction")}</Button>}
           />
         </Specimen>
