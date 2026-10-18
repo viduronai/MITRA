@@ -46,7 +46,7 @@ from mitra_voice.pipeline import build_call_pipeline, greet, make_turn_analyzers
 from mitra_voice.providers import ResolvedProviders, resolve_providers
 from mitra_voice.session import CallSession, SessionRegistry
 from mitra_voice.text_sessions import TextSessionIn, TextSessionStore, TurnIn
-from mitra_voice.voices import VOICES, VOICES_BY_ID
+from mitra_voice.voices import voice_registry
 from mitra_voice.warmup import warm_up
 
 log = structlog.get_logger(__name__)
@@ -176,6 +176,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             port=settings.port,
         )
         app.state.providers = providers
+        registry = voice_registry(settings)
+        for reason in registry.refused:
+            print(f"[mitra-voice] team voice refused: {reason}", file=sys.stderr)
+        log.info("voices.loaded", team=len(registry.team), refused=len(registry.refused))
         await asyncio.to_thread(warm_up, providers, settings)
         # No STUN/TURN: fine for localhost; TODO(deploy) TURN for browsers off-LAN.
         app.state.webrtc = SmallWebRTCRequestHandler(ice_servers=[])
@@ -205,19 +209,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/voices")
     async def voices(request: Request) -> dict[str, Any]:
         p: ResolvedProviders = request.app.state.providers
+        registry = voice_registry(settings)
+        replaced = registry.replacements
         return {
             "tts": p.tts,
+            # Team voices are Sarvam clones: they only sound like the person with MITRA_TTS=sarvam.
             "voices": [
                 {
                     "id": v.id,
                     "name": v.name,
+                    "kind": v.kind,
                     "gender": v.gender,
                     "languages": list(v.languages),
                     "persona": v.persona,
                     "speaker": v.sarvam_speaker if p.tts == "sarvam" else None,
+                    "replaces": v.replaces,
+                    "replaced_by": replaced[v.id].id if v.id in replaced else None,
+                    # Consent reference only (who/when), never contact details or evidence paths.
+                    "consent": (
+                        {"person": v.consent.person, "date": v.consent.date.isoformat()}
+                        if v.consent
+                        else None
+                    ),
                 }
-                for v in VOICES
+                for v in registry.all()
             ],
+            "refused": len(registry.refused),
         }
 
     @app.get("/health")
@@ -242,7 +259,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         employee_id = str(body.employee_id) if body.employee_id else None
         pack = await load_pack(settings, body.scenario, employee_id)
         if body.voice_id:
-            voice = VOICES_BY_ID.get(body.voice_id)
+            voice = voice_registry(settings).get(body.voice_id)
             if voice is None:
                 raise HTTPException(status_code=422, detail="unknown voice_id")
             pack = dataclasses.replace(pack, voice_id=voice.id, voice_gender=voice.gender)

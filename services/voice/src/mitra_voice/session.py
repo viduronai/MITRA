@@ -16,6 +16,7 @@ from mitra_voice.latency import LatencyTracker, TurnTimings, summarize, turn_rec
 from mitra_voice.logging import redact_phones
 from mitra_voice.pack import EmployeePack, Lang, Scenario
 from mitra_voice.providers import ResolvedProviders
+from mitra_voice.usage import UsageMeter
 
 log = structlog.get_logger(__name__)
 
@@ -45,6 +46,7 @@ class CallSession:
     ended_at: str | None = None
     transcript: list[TranscriptEntry] = field(default_factory=list)
     tracker: LatencyTracker = field(default_factory=LatencyTracker)
+    usage: UsageMeter = field(default_factory=UsageMeter)
     send: SendFn = _noop
 
     def __post_init__(self) -> None:
@@ -94,10 +96,11 @@ class CallSession:
         # Structured latency log line; timings only, never transcript text.
         self._log.info("turn.latency", **record)
         self.send({"type": "metrics", "turn": record})
+        self.send({"type": "usage", "usage": self.usage.summary()})
 
     def end(self) -> None:
         self.ended_at = datetime.now(UTC).isoformat()
-        self._log.info("session.ended", turns=len(self.tracker.turns))
+        self._log.info("session.ended", turns=len(self.tracker.turns), **self.usage.summary())
 
     # --- read side ------------------------------------------------------------------------------
 
@@ -115,6 +118,7 @@ class CallSession:
             },
             "turns": [turn_record(t) for t in self.tracker.turns],
             "summary": summarize(self.tracker.turns),
+            "usage": self.usage.summary(),
         }
 
 

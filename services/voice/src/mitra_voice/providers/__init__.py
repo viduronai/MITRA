@@ -7,6 +7,7 @@ other env refuses to start. The ``make_*`` functions build per-call Pipecat serv
 
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -20,11 +21,20 @@ from pydantic import SecretStr
 from mitra_voice.call_context import CallContext, stt_lock_language
 from mitra_voice.config import LlmProvider, Settings, SttProvider, TtsProvider
 from mitra_voice.pack import EmployeePack, Lang, Scenario
-from mitra_voice.providers.clips import PrerenderedClips, ToneClips, sarvam_renderer
+from mitra_voice.providers.clips import (
+    BackchannelClips,
+    ClipSource,
+    PhraseCache,
+    ToneClips,
+    clone_renderer,
+    sarvam_renderer,
+    shape_clip,
+)
 from mitra_voice.providers.mock_llm import MockLLMService
 from mitra_voice.providers.mock_stt import SCRIPTS, MockSTTService
 from mitra_voice.providers.mock_tts import MockTTSService
-from mitra_voice.voices import voice_for
+from mitra_voice.usage import UsageMeter
+from mitra_voice.voices import Voice, voice_registry
 
 Kind = Literal["stt", "llm", "tts"]
 
@@ -54,6 +64,11 @@ def _requirements(settings: Settings, kind: Kind, name: str) -> list[tuple[str, 
         ],
         ("llm", "gemini"): [
             ("GEMINI_API_KEY", settings.gemini_api_key),
+            ("MITRA_LLM_MODEL", settings.mitra_llm_model),
+            ("the mitra_voice.brain package", _brain_available()),
+        ],
+        ("llm", "groq"): [
+            ("GROQ_API_KEY", settings.groq_api_key),
             ("MITRA_LLM_MODEL", settings.mitra_llm_model),
             ("the mitra_voice.brain package", _brain_available()),
         ],
@@ -115,7 +130,11 @@ def _given(**values: Any) -> dict[str, Any]:
 
 
 def make_stt(
-    providers: ResolvedProviders, settings: Settings, pack: EmployeePack, scenario: Scenario
+    providers: ResolvedProviders,
+    settings: Settings,
+    pack: EmployeePack,
+    scenario: Scenario,
+    usage: UsageMeter | None = None,
 ) -> STTService:
     language = _LANGUAGE[pack.default_language]
     if providers.stt == "sarvam":
@@ -129,6 +148,7 @@ def make_stt(
         lock = stt_lock_language(pack.languages)
         return BufferedSarvamSTTService(
             api_key=_secret(settings.sarvam_api_key),
+            usage=usage,
             mode="codemix",
             settings=BufferedSarvamSTTService.Settings(
                 **_given(
@@ -155,7 +175,7 @@ def make_llm(
     pack: EmployeePack,
     call: CallContext | None = None,
 ) -> LLMService[Any]:
-    if providers.llm == "gemini":
+    if providers.llm in ("gemini", "groq"):  # the brain picks its backend from settings
         from mitra_voice.brain import make_brain_llm
 
         if call is None:
@@ -180,18 +200,47 @@ def make_llm(
     )
 
 
-def make_tts(providers: ResolvedProviders, settings: Settings, pack: EmployeePack) -> TTSService:
+def call_voice(settings: Settings, pack: EmployeePack) -> Voice:
+    """The voice this call speaks with: a consented team clone or a stock Bulbul speaker
+    (registry in voices.py). ``MITRA_TTS_VOICE`` overrides a stock speaker for experiments."""
+    voice = voice_registry(settings).resolve(pack.voice_id, pack.voice_gender)
+    if settings.mitra_tts_voice and voice.kind == "stock":
+        voice = dataclasses.replace(voice, sarvam_speaker=settings.mitra_tts_voice)
+    return voice
+
+
+def make_tts(
+    providers: ResolvedProviders,
+    settings: Settings,
+    pack: EmployeePack,
+    usage: UsageMeter | None = None,
+) -> TTSService:
     language = _LANGUAGE[pack.default_language]
     if providers.tts == "sarvam":
-        from pipecat.services.sarvam.tts import SarvamTTSService
+        from mitra_voice.providers.sarvam_tts import (
+            MeteredSarvamTTSService,
+            SarvamCloneTTSService,
+        )
 
-        # Streaming Bulbul over websocket; the speaker comes from the catalog voice table.
-        return SarvamTTSService(
-            api_key=_secret(settings.sarvam_api_key),
-            settings=SarvamTTSService.Settings(
+        voice = call_voice(settings, pack)
+        key = _secret(settings.sarvam_api_key)
+        if voice.sarvam_voice_id:  # team clone: Instant Voice Cloning websocket
+            return SarvamCloneTTSService(
+                voice_id=voice.sarvam_voice_id,
+                api_key=key,
+                usage=usage,
+                settings=SarvamCloneTTSService.Settings(
+                    language=language, min_buffer_size=settings.mitra_tts_min_buffer
+                ),
+            )
+        # Stock speaker: streaming Bulbul over websocket.
+        return MeteredSarvamTTSService(
+            api_key=key,
+            usage=usage,
+            settings=MeteredSarvamTTSService.Settings(
                 **_given(
                     model=settings.mitra_tts_model,
-                    voice=sarvam_speaker(settings, pack),
+                    voice=voice.sarvam_speaker,
                     language=language,
                     min_buffer_size=settings.mitra_tts_min_buffer,
                 )
@@ -211,33 +260,52 @@ def make_tts(providers: ResolvedProviders, settings: Settings, pack: EmployeePac
     )
 
 
-def sarvam_speaker(settings: Settings, pack: EmployeePack) -> str:
-    """MITRA_TTS_VOICE overrides; otherwise the pack's catalog voice (voices.py)."""
-    return settings.mitra_tts_voice or voice_for(pack.voice_id, pack.voice_gender).sarvam_speaker
+@dataclass(frozen=True, slots=True)
+class Prerendered:
+    """Fixed-phrase audio in the call's voice: back-channel clips and greeting/filler phrases."""
+
+    backchannels: ClipSource
+    phrases: PhraseCache | None  # None: no pre-rendering (mock or non-Sarvam TTS)
 
 
-def make_clips(
+def make_prerendered(
     providers: ResolvedProviders, settings: Settings, pack: EmployeePack, sample_rate: int
-) -> ToneClips | PrerenderedClips:
-    """Back-channel clips in the call's voice (real TTS) or a quiet tone (mock TTS)."""
+) -> Prerendered:
     if providers.tts != "sarvam":
         # TODO(elevenlabs): pre-render through ElevenLabs too; a tone until then.
-        return ToneClips(sample_rate)
-    speaker = sarvam_speaker(settings, pack)
-    renderer = sarvam_renderer(
-        _secret(settings.sarvam_api_key),
-        speaker=speaker,
-        sample_rate=sample_rate,
-        model=settings.mitra_tts_model,
+        return Prerendered(ToneClips(sample_rate), None)
+    voice = call_voice(settings, pack)
+    key = _secret(settings.sarvam_api_key)
+    if voice.sarvam_voice_id:
+        renderer = clone_renderer(key, voice_id=voice.sarvam_voice_id, sample_rate=sample_rate)
+    else:
+        renderer = sarvam_renderer(
+            key,
+            speaker=voice.sarvam_speaker or "",
+            sample_rate=sample_rate,
+            model=settings.mitra_tts_model,
+        )
+    voice_key = f"{voice.cache_key}-{settings.mitra_tts_model or 'default'}"
+    return Prerendered(
+        backchannels=BackchannelClips(
+            PhraseCache(
+                renderer,
+                voice_key=voice_key,
+                sample_rate=sample_rate,
+                shaper=shape_clip,
+                kind="bc",
+            )
+        ),
+        phrases=PhraseCache(renderer, voice_key=voice_key, sample_rate=sample_rate),
     )
-    return PrerenderedClips(renderer, voice_key=f"sarvam-{speaker}", sample_rate=sample_rate)
 
 
 __all__ = [
     "ProviderConfigError",
     "ResolvedProviders",
-    "make_clips",
+    "call_voice",
     "make_llm",
+    "make_prerendered",
     "make_stt",
     "make_tts",
     "resolve_providers",

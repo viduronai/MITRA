@@ -14,9 +14,15 @@ from pipecat.transcriptions.language import Language
 from mitra_human.backchannel import TOKENS
 from mitra_voice.config import Settings
 from mitra_voice.pack import FIXTURES_DIR, Lang, load_fixture
-from mitra_voice.providers import make_clips, make_stt, make_tts, resolve_providers
-from mitra_voice.providers.clips import GAIN, PrerenderedClips, ToneClips, shape_clip
-from mitra_voice.voices import VOICES, VOICES_BY_ID, voice_for
+from mitra_voice.providers import make_prerendered, make_stt, make_tts, resolve_providers
+from mitra_voice.providers.clips import (
+    GAIN,
+    BackchannelClips,
+    PhraseCache,
+    ToneClips,
+    shape_clip,
+)
+from mitra_voice.voices import STOCK_BY_ID, STOCK_VOICES, voice_for
 
 CORE_CATALOG_IDS = {
     "priya-te-hyd",
@@ -31,11 +37,13 @@ CORE_CATALOG_IDS = {
 
 
 def test_every_catalog_voice_maps_to_a_bulbul_v3_speaker() -> None:
-    assert set(VOICES_BY_ID) == CORE_CATALOG_IDS
+    assert set(STOCK_BY_ID) == CORE_CATALOG_IDS
     speakers = {s.value for s in SarvamTTSSpeakerV3}
-    for v in VOICES:
+    for v in STOCK_VOICES:
         assert v.sarvam_speaker in speakers, v
-    assert len({v.sarvam_speaker for v in VOICES}) == len(VOICES)  # each voice sounds distinct
+    assert len({v.sarvam_speaker for v in STOCK_VOICES}) == len(
+        STOCK_VOICES
+    )  # each voice sounds distinct
 
 
 def test_voice_fallback_by_gender() -> None:
@@ -66,12 +74,16 @@ def test_sarvam_services_use_codemix_autodetect_and_the_catalog_speaker() -> Non
     assert override._settings.voice == "kabir"
 
 
-def test_clip_source_follows_the_tts_provider() -> None:
+def test_prerendered_audio_follows_the_tts_provider() -> None:
     pack = load_fixture(FIXTURES_DIR / "sunrise-clinic.json")
     mock = Settings()
-    assert isinstance(make_clips(resolve_providers(mock), mock, pack, 24000), ToneClips)
+    mock_pre = make_prerendered(resolve_providers(mock), mock, pack, 24000)
+    assert isinstance(mock_pre.backchannels, ToneClips)
+    assert mock_pre.phrases is None
     real = _sarvam_settings()
-    assert isinstance(make_clips(resolve_providers(real), real, pack, 24000), PrerenderedClips)
+    real_pre = make_prerendered(resolve_providers(real), real, pack, 24000)
+    assert isinstance(real_pre.backchannels, BackchannelClips)
+    assert isinstance(real_pre.phrases, PhraseCache)
 
 
 def _speechy(seconds: float, rate: int = 24000) -> bytes:
@@ -100,25 +112,38 @@ async def test_prerender_renders_each_token_once_then_uses_the_disk_cache(tmp_pa
         calls.append((token, lang))
         return _speechy(0.3)
 
-    clips = PrerenderedClips(renderer, voice_key="test-a", sample_rate=24000, cache_dir=tmp_path)
+    def bc_clips(voice_key: str) -> BackchannelClips:
+        cache = PhraseCache(
+            renderer, voice_key=voice_key, sample_rate=24000, shaper=shape_clip, cache_dir=tmp_path
+        )
+        return BackchannelClips(cache)
+
+    clips = bc_clips("test-a")
     assert clips.clip("te", TOKENS["te"][0]) is None
-    assert await clips.prerender(["te", "en", "te"]) == 6
+    billed: list[int] = []
+    assert await clips.prerender(["te", "en", "te"], billed.append) == 6
+    assert sum(billed) == sum(len(t) for lang in ("te", "en") for t in TOKENS[lang])
     assert len(calls) == 6
     assert all(clips.clip(lang, tok) for lang in ("te", "en") for tok in TOKENS[lang])
     assert _pcm_files(tmp_path) == 6
 
-    PrerenderedClips._memory.clear()  # a new process: memory empty, disk warm
-    again = PrerenderedClips(renderer, voice_key="test-a", sample_rate=24000, cache_dir=tmp_path)
+    PhraseCache._memory.clear()  # a new process: memory empty, disk warm
+    again = bc_clips("test-a")
     assert await again.prerender(["te", "en"]) == 0
     assert len(calls) == 6
     assert again.clip("en", "okay") is not None
+    # Another voice (e.g. a team clone) gets its own clips: rendered again, in that voice.
+    assert await bc_clips("clone-svc-team").prerender(["en"]) == 3
+    assert len(calls) == 9
 
 
 async def test_render_failure_leaves_no_clip(tmp_path: Path) -> None:
     async def broken(token: str, lang: Lang) -> bytes:
         raise TimeoutError
 
-    clips = PrerenderedClips(broken, voice_key="test-b", sample_rate=24000, cache_dir=tmp_path)
+    clips = BackchannelClips(
+        PhraseCache(broken, voice_key="test-b", sample_rate=24000, cache_dir=tmp_path)
+    )
     assert await clips.prerender(["hi"]) == 0
     assert clips.clip("hi", TOKENS["hi"][0]) is None
 
@@ -128,6 +153,7 @@ async def test_buffered_sarvam_stt_batches_audio_off_the_audio_path() -> None:
 
     stt = BufferedSarvamSTTService(api_key="test-key", mode="codemix")
     stt._sample_rate = 16000  # normally set at StartFrame; no socket is opened here
+    stt._speaking = True  # within a VAD speech segment
     frame_20ms = bytes(640)
     for _ in range(4):
         assert [f async for f in stt.run_stt(frame_20ms)] == [None]

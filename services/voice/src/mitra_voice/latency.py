@@ -166,9 +166,10 @@ class LatencyObserver(BaseObserver):
             return  # back-channels and other output while the caller is still talking
         elif isinstance(frame, LLMTextFrame) and isinstance(data.source, LLMService):
             turn.llm_first_token = turn.llm_first_token or now
-        elif isinstance(frame, (LLMTextFrame, TTSSpeakFrame)) and isinstance(
-            data.destination, TTSService
+        elif (isinstance(frame, LLMTextFrame) and not isinstance(data.source, LLMService)) or (
+            isinstance(frame, TTSSpeakFrame) and isinstance(data.destination, TTSService)
         ):
+            # Spoken chunks from SpeakableProcessor (their first hop may be the phrase player).
             turn.tts_text_in = turn.tts_text_in or now
         elif isinstance(frame, TTSAudioRawFrame) and isinstance(data.source, TTSService):
             turn.tts_first_byte = turn.tts_first_byte or now

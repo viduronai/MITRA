@@ -1,8 +1,8 @@
 """Text-mode sessions for mitra-evals (HTTP contract in evals/src/mitra_evals/agents/base.py).
 
 One eval scenario = one session: greeting, then caller turns, with tool calls surfaced as
-``actions``. With ``MITRA_LLM=gemini`` (plus ``GEMINI_API_KEY`` and ``MITRA_LLM_MODEL``) each turn
-goes through the production brain (``mitra_voice.brain``: guardrails, Gemini, tools, post-check);
+``actions``. With ``MITRA_LLM=gemini`` or ``groq`` (plus its key and ``MITRA_LLM_MODEL``) each turn
+goes through the production brain (``mitra_voice.brain``: guardrails, the LLM, tools, post-check);
 otherwise through the deterministic pack-grounded mock responder.
 """
 
@@ -16,9 +16,10 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from mitra_human import truncate_to_heard
-from mitra_voice.brain.cache import CachingModels
-from mitra_voice.brain.client import brain_available, brain_clock, brain_config, gemini_models
-from mitra_voice.brain.engine import Brain, Message, StreamingModels
+from mitra_voice.brain.backend import ChatBackend
+from mitra_voice.brain.cache import CachingBackend
+from mitra_voice.brain.client import brain_available, brain_clock, brain_config, make_backend
+from mitra_voice.brain.engine import Brain, Message
 from mitra_voice.brain.language import LanguageRef
 from mitra_voice.config import Settings, get_settings
 from mitra_voice.pack import EmployeePack, Lang, pack_from_dict
@@ -158,18 +159,18 @@ class TextSessionStore:
         self._max = max_sessions
         self._settings = settings or get_settings()
         self.uses_brain = brain_available(self._settings)
-        self._models: StreamingModels | None = None
+        self._backend: ChatBackend | None = None
 
     def _brain(self, pack: EmployeePack, localized: Localized) -> Brain | None:
         if not self.uses_brain:
             return None
         s = self._settings
-        if self._models is None:
-            models = gemini_models(s)
+        if self._backend is None:
+            backend = make_backend(s)
             cache = s.mitra_llm_cache_dir
-            self._models = CachingModels(models, cache) if cache else models
+            self._backend = CachingBackend(backend, cache) if cache else backend
         config = brain_config(s, text_mode=True)
-        return Brain(self._models, config, pack, localized=localized, clock=brain_clock(s))
+        return Brain(self._backend, config, pack, localized=localized, clock=brain_clock(s))
 
     def open(self, body: TextSessionIn) -> TextSession:
         pack = pack_from_eval(body.pack)

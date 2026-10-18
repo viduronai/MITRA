@@ -148,7 +148,6 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
 
 def gemini_tools() -> list[Any]:
     """The tool list for ``GenerateContentConfig(tools=...)``."""
-
     return [
         types.Tool(
             function_declarations=[
@@ -158,6 +157,17 @@ def gemini_tools() -> list[Any]:
                 for name, (desc, schema) in TOOL_SPECS.items()
             ]
         )
+    ]
+
+
+def openai_tools() -> list[dict[str, Any]]:
+    """The same tools for OpenAI-compatible chat completions (Groq)."""
+    return [
+        {
+            "type": "function",
+            "function": {"name": name, "description": desc, "parameters": schema},
+        }
+        for name, (desc, schema) in TOOL_SPECS.items()
     ]
 
 
@@ -453,6 +463,7 @@ __all__ = [
     "ToolCall",
     "ToolExecutor",
     "gemini_tools",
+    "openai_tools",
     "parse_date",
     "parse_time",
 ]

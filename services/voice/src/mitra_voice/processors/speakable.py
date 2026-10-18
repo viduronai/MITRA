@@ -51,6 +51,11 @@ PIPECAT_LANGUAGE: dict[Lang, Language] = {
 _HAS_NUMBER = re.compile(r"[\d₹]")
 
 
+def spoken_form(text: str, call_language: Lang) -> str:
+    """What TTS is actually given for ``text``; pre-rendered phrases must use the same form."""
+    return speakable(text, detect_lang(text, call_language))
+
+
 def split_first_words(buffer: str, min_words: int) -> tuple[str, str] | None:
     """An early first chunk: the complete words of ``buffer`` once there are ``min_words``.
 
@@ -102,7 +107,7 @@ class SpeakableProcessor(FrameProcessor):
 
     def _speak(self, text: str) -> str:
         # The reply's own script decides number words; Latin text falls back to English.
-        return speakable(text, detect_lang(text, self._call.language))
+        return spoken_form(text, self._call.language)
 
     async def _sync_tts_language(self) -> None:
         if self._call.language != self._tts_language:

@@ -77,28 +77,30 @@ Set in `services/voice/.env` (see `.env.example`):
 With `MITRA_ENV=local` a provider missing its key falls back to the mock with a message on
 startup; any other env refuses to start.
 
-## Brain (Gemini, `MITRA_LLM=gemini`)
+## Brain (`MITRA_LLM=gemini` or `groq`)
 
 `src/mitra_voice/brain/` is the conversational brain, shared by live calls and text mode:
 
 | Module | |
 |---|---|
+| `backend.py`, `gemini_backend.py`, `openai_backend.py` | provider-neutral streaming (text deltas, whole tool calls, usage) + per-provider/model pacing; Gemini via `google-genai`, Groq via its OpenAI-compatible API |
 | `engine.py` | one caller turn → checked, streamed reply sentences + tool actions; first-token timeout (`MITRA_LLM_FIRST_TOKEN_TIMEOUT_S`, 1.5 s) → filler + one retry (on `MITRA_LLM_MODEL_SLOW` if set) → apology + `schedule_callback` |
 | `guardrails.py` | in code, every turn: emergencies (en/hi/te) → 112 + `transfer_to_human` + `alert_staff` with no LLM call; opt-outs → `opt_out` + `end_call`; medical-advice requests → `alert_staff` + refusal instruction; post-check of every sentence (₹ amounts vs the facts pack, medicine/dose/diagnosis, real-estate guarantees) |
-| `tools.py` | in-call tools as Gemini function declarations, simulated against the pack (calendar from the timings facts) |
+| `tools.py` | in-call tools (Gemini declarations / OpenAI-style functions), simulated against the pack (calendar from the timings facts) |
 | `language.py`, `cues.py` | reply language/script (te, hi, en, te-en, hi-en) and one-turn cues (booking accepted, DOB given) |
-| `llm.py` | `make_brain_llm(pack=, settings=, call=)`: Pipecat `GoogleLLMService` subclass for the pipeline |
+| `llm.py` | `make_brain_llm(pack=, settings=, call=)`: Pipecat `GoogleLLMService` / `GroqLLMService` subclass for the pipeline |
 
-Needs `GEMINI_API_KEY` and `MITRA_LLM_MODEL` (a fast Flash-class model, set only in `.env`). The
-static system prompt comes first and is identical across turns, so Gemini's implicit prefix
-cache applies; per-turn notes (language, clock, tool log) ride on the caller's message.
+Needs `MITRA_LLM_MODEL` (set only in `.env`) and the provider's key: `GEMINI_API_KEY`, or
+`GROQ_API_KEY` for Groq (free tier, used for dev and evals until production). The static system
+prompt comes first and is identical across turns, so provider prefix caches apply; per-turn
+notes (language, clock, tool log) ride on the caller's message.
 
 ### Evals against the brain
 
 ```bash
 # terminal 1: the brain in text mode (fixed clock = reproducible; cache = free re-runs)
 cd services/voice
-MITRA_LLM=gemini PORT=8210 MITRA_BRAIN_FIXED_NOW=2026-10-21T08:00:00+05:30 \
+MITRA_LLM=groq PORT=8210 MITRA_BRAIN_FIXED_NOW=2026-10-21T08:00:00+05:30 \
   MITRA_LLM_CACHE_DIR=.cache/llm uv run mitra-voice
 # terminal 2
 cd evals
@@ -106,8 +108,9 @@ MITRA_VOICE_TEXT_URL=http://127.0.0.1:8210 MITRA_VOICE_TEXT_TIMEOUT=300 \
   uv run mitra-evals run --agent voice-text --set all --judge off --out reports/brain.json
 ```
 
-Free-tier keys: add `MITRA_LLM_MAX_RPM=5 MITRA_LLM_RATE_LIMIT_WAIT_S=90` (pace requests and
-wait out 429s, text mode only) and run with `--concurrency 1`.
+Free tiers: set the provider's limits, e.g. `GROQ_MAX_RPM` / `GROQ_MAX_TPM` (they vary by
+model; see the Groq console) or `GEMINI_MAX_RPM=5`, plus `MITRA_LLM_RATE_LIMIT_WAIT_S=90` so text
+mode waits out 429s (`retry-after` / `retryDelay` are honoured), and run with `--concurrency 1`.
 
 ## Real speech: Sarvam (Step 3b)
 
@@ -135,6 +138,33 @@ MITRA_STT=sarvam MITRA_TTS=sarvam uv run mitra-voice     # PowerShell: set $env:
   1.2 s for te/hi (2.0 s en), Bulbul min buffer 30, early first TTS chunk, heavy imports and
   ONNX loads off the event loop (`warmup.py`, `make_turn_analyzers`).
 - **Recording** (dev only): `MITRA_RECORD_DIR=...` saves every assistant utterance as WAV.
+
+## Team voices (consented clones)
+
+Mitra speaks with the founder's own team members' voices, cloned with Sarvam Instant Voice
+Cloning (beta). Clones are not Bulbul speakers: they play through
+`wss://api.sarvam.ai/voices/clone/ws` with `voice_id: "svc-…"` (`providers/sarvam_tts.py`), and
+greeting/filler/back-channel audio renders through `POST /voices/clone`.
+
+1. Create the clone in Sarvam Content Studio (about 10 s recording plus the consent checkbox) and
+   copy its Voice ID (`svc-…`) from Voice Library → My voices.
+2. Keep the team member's signed consent (who, date, scope) somewhere the team controls.
+3. Copy `voices.example.json` to `voices.local.json` (gitignored) and add an entry with the
+   voice id and a `consent` record (`person`, `date`, `scope`, `evidence`; `revoked: true`
+   withdraws it). Set `replaces` to a catalog voice id to use the clone wherever packs use that
+   voice, or address it by its own `id` (a core pack `voice_id`).
+4. Restart. Entries without valid consent are refused (startup message + `"refused"` count on
+   `/api/voices`); the test page lists loaded clones under "Team voices".
+
+## Free-usage hygiene (Sarvam credits)
+
+- The greeting, fillers and back-channels are rendered once per voice and language (REST), then
+  cached in `.cache/phrases` and played without TTS. Repeat calls spend nothing on them.
+- STT audio is sent only around speech (VAD + 1 s pre-roll; 100 ms keepalive every 15 s).
+  Sarvam bills STT per second of audio sent: a 70 s test call sends about 14 s.
+- Each session meters TTS characters (live / pre-render), cache hits and STT seconds with an
+  estimated ₹ cost (₹30 per 10K chars, ₹30 per STT hour). Shown on the test page and in
+  `/sessions/{id}/metrics` → `usage`. A repeat clinic test call costs about ₹1.2 with the mock LLM.
 
 ## Employee pack
 

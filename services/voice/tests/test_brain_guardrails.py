@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from mitra_voice.brain.engine import _rate_limit_delay
+from mitra_voice.brain.gemini_backend import GeminiBackend
 from mitra_voice.brain.guardrails import (
     PostCheck,
     money_amounts,
@@ -193,9 +193,11 @@ def test_sentence_split_keeps_titles_together() -> None:
     ]
 
 
-def test_rate_limit_delay_parsing() -> None:
-    assert _rate_limit_delay(RuntimeError("429 ... 'retryDelay': '3s'")) == 4.0
-    assert _rate_limit_delay(RuntimeError("500 internal")) is None
+def test_gemini_rate_limit_delay_parsing() -> None:
+    backend = GeminiBackend(None)  # type: ignore[arg-type]
+    assert backend.rate_limit_delay(RuntimeError("429 ... 'retryDelay': '3s'")) == 4.0
+    assert backend.rate_limit_delay(RuntimeError("500 internal")) is None
+    assert backend.is_transient(RuntimeError("503 UNAVAILABLE"))
 
 
 # --- language -------------------------------------------------------------------------------------

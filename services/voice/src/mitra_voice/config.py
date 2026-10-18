@@ -19,7 +19,7 @@ SERVICE_ROOT = Path(__file__).resolve().parents[2]
 
 Env = Literal["local", "dev", "staging", "prod"]
 SttProvider = Literal["mock", "sarvam", "deepgram"]
-LlmProvider = Literal["mock", "anthropic", "gemini"]
+LlmProvider = Literal["mock", "anthropic", "gemini", "groq"]
 TtsProvider = Literal["mock", "sarvam", "elevenlabs"]
 TurnStrategy = Literal["smart", "vad"]
 
@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     sarvam_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
+    groq_api_key: SecretStr | None = None
     deepgram_api_key: SecretStr | None = None
     elevenlabs_api_key: SecretStr | None = None
 
@@ -74,18 +75,27 @@ class Settings(BaseSettings):
     # Live-turn brain: give up on the first token after this long, then retry once.
     mitra_llm_first_token_timeout_s: float = Field(default=1.5, gt=0, le=30)
     mitra_llm_temperature: float = Field(default=0.3, ge=0, le=1)
-    # Gemini thinking level for live turns ("minimal" is fastest; empty = model default).
-    mitra_llm_thinking_level: str | None = "minimal"
+    # Reasoning level: Gemini thinking_level (unset = "minimal", the fastest) or Groq
+    # reasoning_effort (unset = the model default; non-reasoning models reject it).
+    mitra_llm_thinking_level: str | None = None
     # Freeze the brain's clock (ISO datetime, IST if no offset) for reproducible evals.
     mitra_brain_fixed_now: datetime | None = None
-    # Rate limits (free-tier keys): pace requests per model; text mode waits out 429s.
-    mitra_llm_max_rpm: int = Field(default=0, ge=0, le=100_000)
+    # Rate limits per provider (free tiers; they vary by model): requests and estimated
+    # tokens per minute, 0 = no pacing. Text mode also waits out 429s up to this long.
+    gemini_max_rpm: int = Field(default=0, ge=0, le=100_000)
+    gemini_max_tpm: int = Field(default=0, ge=0, le=100_000_000)
+    groq_max_rpm: int = Field(default=0, ge=0, le=100_000)
+    groq_max_tpm: int = Field(default=0, ge=0, le=100_000_000)
     mitra_llm_rate_limit_wait_s: float = Field(default=0, ge=0, le=600)
-    # Text mode only: replay identical Gemini requests from this directory (eval re-runs).
+    # Text mode only: replay identical LLM requests from this directory (eval re-runs).
     mitra_llm_cache_dir: Path | None = None
     mitra_stt_model: str | None = None
     mitra_tts_model: str | None = None
     mitra_tts_voice: str | None = None
+    # Team voices (consented Sarvam clones): local mapping file (default voices.local.json,
+    # gitignored) or the same JSON inline. See voices.example.json.
+    mitra_voices_file: Path | None = None
+    mitra_voices_json: str | None = None
 
     # Employee pack source: services/core when both are set, else a local fixture.
     mitra_core_url: str | None = None

@@ -1,0 +1,20 @@
+{
+  "_comment": "Copy to voices.local.json (gitignored). One entry per consented team-member clone. The service refuses any entry without a consent record. Voice ids come from Sarvam Content Studio > Voice Library > My voices (svc-...).",
+  "team_voices": [
+    {
+      "id": "team-priya-k",
+      "name": "Priya K (team)",
+      "gender": "female",
+      "languages": ["te", "en"],
+      "sarvam_voice_id": "svc-00000000-0000-4000-8000-000000000000",
+      "replaces": "priya-te-hyd",
+      "persona": "Front-desk lead, warm",
+      "consent": {
+        "person": "Priya K",
+        "date": "2026-10-18",
+        "scope": "Voice clone used by Mitra AI voice employees for business phone calls and demos; revocable at any time.",
+        "evidence": "consent-forms/2026-10-18-priya-k.pdf"
+      }
+    }
+  ]
+}

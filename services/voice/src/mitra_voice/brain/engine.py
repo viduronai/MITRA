@@ -5,10 +5,10 @@ the production brain. Per turn:
 
 1. deterministic pre-check (``guardrails.pre_check``): emergencies and opt-outs never reach the
    LLM; medical-advice requests get a turn-level instruction;
-2. Gemini, streamed, with the in-call tools executed locally (``tools.ToolExecutor``) in a loop;
-   the static system prompt is identical across turns and calls of one employee so Gemini's
-   implicit prefix cache applies, and everything per-turn (language, clock, tool log) rides on
-   the caller's message instead;
+2. the LLM (any ``backend.ChatBackend``: Gemini, Groq), streamed, with the in-call tools
+   executed locally (``tools.ToolExecutor``) in a loop; the static system prompt is identical
+   across turns and calls of one employee so provider prefix caches apply, and everything
+   per-turn (language, clock, tool log) rides on the caller's message instead;
 3. sentence-level post-check (``guardrails.PostCheck``) before any text leaves the brain;
 4. first-token timeout -> one retry (optionally on the slow model) -> apology + callback.
 """
@@ -16,19 +16,28 @@ the production brain. Per turn:
 from __future__ import annotations
 
 import asyncio
-import re
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol
+from typing import Any, Literal
 
 import structlog
-from google.genai import types
 
+from mitra_voice.brain.backend import (
+    CallEvent,
+    ChatBackend,
+    ChatEvent,
+    ChatRequest,
+    ChatTurn,
+    TextEvent,
+    ToolCall,
+    UsageEvent,
+    pace,
+)
 from mitra_voice.brain.cues import BOOK_NOW, SEND_REPORT, booking_accepted, dob_given
 from mitra_voice.brain.guardrails import PostCheck, pre_check, split_sentences
 from mitra_voice.brain.language import CallerLanguage, base_language, reply_instruction
-from mitra_voice.brain.tools import Clock, ToolExecutor, gemini_tools
+from mitra_voice.brain.tools import Clock, ToolExecutor
 from mitra_voice.pack import EmployeePack
 from mitra_voice.prompt import Localized, build_prompt
 
@@ -36,14 +45,7 @@ log = structlog.get_logger(__name__)
 
 Role = Literal["user", "assistant"]
 MAX_SENTENCES = 2
-
-
-class StreamingModels(Protocol):
-    """The slice of ``google.genai.Client().aio.models`` the brain uses (faked in tests)."""
-
-    async def generate_content_stream(
-        self, *, model: str, contents: Any, config: Any
-    ) -> AsyncIterator[Any]: ...
+Opened = tuple[AsyncIterator[ChatEvent], ChatEvent | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,10 +59,13 @@ class BrainConfig:
     retry_timeout_s: float = 4.0
     stream_idle_timeout_s: float = 8.0
     max_tool_rounds: int = 4
-    thinking_level: str | None = "minimal"
-    # Free-tier keys are rate limited: pace requests per model (0 = off) and, in text mode,
-    # wait out 429s up to this long per request (live calls: 0, fail fast to the apology).
+    # Gemini thinking_level / Groq reasoning_effort (None = the provider's default).
+    reasoning: str | None = None
+    # Free tiers are rate limited: pace requests per (provider, model) on requests and
+    # estimated tokens per minute (0 = off) and, in text mode, wait out 429s up to this long
+    # per request (live calls: 0, fail fast to the apology).
     max_rpm: int = 0
+    max_tpm: int = 0
     max_rate_limit_wait_s: float = 0.0
 
 
@@ -96,13 +101,12 @@ class Usage:
     thought_tokens: int = 0
     requests: int = 0
 
-    def add(self, meta: Any) -> None:
+    def add(self, event: UsageEvent) -> None:
         self.requests += 1
-        self.prompt_tokens += getattr(meta, "prompt_token_count", None) or 0
-        self.cached_tokens += getattr(meta, "cached_content_token_count", None) or 0
-        self.output_tokens += getattr(meta, "candidates_token_count", None) or 0
-        self.output_tokens += getattr(meta, "response_token_count", None) or 0
-        self.thought_tokens += getattr(meta, "thoughts_token_count", None) or 0
+        self.prompt_tokens += event.prompt_tokens
+        self.cached_tokens += event.cached_tokens
+        self.output_tokens += event.output_tokens
+        self.thought_tokens += event.thought_tokens
 
 
 class FirstTokenTimeoutError(TimeoutError):
@@ -131,7 +135,7 @@ class Brain:
 
     def __init__(
         self,
-        models: StreamingModels,
+        backend: ChatBackend,
         config: BrainConfig,
         pack: EmployeePack,
         *,
@@ -139,7 +143,7 @@ class Brain:
         customer_memory: str | None = None,
         clock: Clock | None = None,
     ) -> None:
-        self._models = models
+        self.backend = backend
         self.config = config
         self.pack = pack
         self.executor = ToolExecutor(pack, clock=clock) if clock else ToolExecutor(pack)
@@ -148,8 +152,7 @@ class Brain:
         self.system_prompt = build_prompt(
             pack, customer_memory, localized=localized
         ).system_prompt()
-        self._thinking_level = config.thinking_level
-        self._tools = gemini_tools()
+        self._reasoning = config.reasoning
         self._t0 = time.perf_counter()
 
     # --- prompt pieces --------------------------------------------------------------------------
@@ -163,94 +166,84 @@ class Brain:
             lines.append(instruction)
         return "\n".join(lines)
 
-    def _contents(self, history: Sequence[Message], caller_text: str, note: str) -> list[Any]:
+    def _turns(self, history: Sequence[Message], caller_text: str, note: str) -> list[ChatTurn]:
+        turns = [ChatTurn(role=m.role, text=m.text) for m in history if m.text.strip()]
+        turns.append(ChatTurn(role="user", text=f"{caller_text}\n\n({note})"))
+        return turns
 
-        contents: list[Any] = []
-        for m in history:
-            role = "model" if m.role == "assistant" else "user"
-            if m.text.strip():
-                contents.append(types.Content(role=role, parts=[types.Part(text=m.text)]))
-        user_text = f"{caller_text}\n\n({note})"
-        contents.append(types.Content(role="user", parts=[types.Part(text=user_text)]))
-        return contents
-
-    def _config(self) -> Any:
-
-        thinking = (
-            types.ThinkingConfig(thinking_level=self._thinking_level)
-            if self._thinking_level
-            else None
-        )
-        return types.GenerateContentConfig(
-            system_instruction=self.system_prompt,
+    def _request_for(self, model: str, turns: list[ChatTurn]) -> ChatRequest:
+        return ChatRequest(
+            model=model,
+            system=self.system_prompt,
+            turns=tuple(turns),
             temperature=self.config.temperature,
             max_output_tokens=self.config.max_output_tokens,
-            tools=self._tools,
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-            thinking_config=thinking,
+            reasoning=self._reasoning,
         )
 
     # --- model calls ----------------------------------------------------------------------------
 
-    async def _open(self, model: str, contents: list[Any], budget_s: float) -> tuple[Any, Any]:
-        """Start a stream and wait, at most ``budget_s`` in total, for its first chunk."""
+    async def _open(self, model: str, turns: list[ChatTurn], budget_s: float) -> Opened:
+        """Start a stream and wait, at most ``budget_s`` in total, for its first event."""
+        request = self._request_for(model, turns)
 
-        async def first_chunk() -> tuple[Any, Any]:
-            stream = await self._models.generate_content_stream(
-                model=model, contents=contents, config=self._config()
-            )
-            iterator = stream.__aiter__()
+        async def first_event() -> Opened:
+            iterator = (await self.backend.stream(request)).__aiter__()
             try:
                 return iterator, await iterator.__anext__()
             except StopAsyncIteration:
                 return iterator, None
 
-        return await asyncio.wait_for(first_chunk(), timeout=budget_s)
+        return await asyncio.wait_for(first_event(), timeout=budget_s)
 
-    async def _request(self, model: str, contents: list[Any], budget_s: float) -> tuple[Any, Any]:
-        """``_open`` with pacing, 429 back-off (bounded) and the thinking-level fallback."""
+    async def _request(self, model: str, turns: list[ChatTurn], budget_s: float) -> Opened:
+        """``_open`` with pacing, 429 back-off (bounded) and the reasoning-level fallback."""
         waited = 0.0
         while True:
-            await _pace(model, self.config.max_rpm)
+            await pace(
+                self.backend.provider,
+                model,
+                self._request_for(model, turns).estimated_tokens(),
+                max_rpm=self.config.max_rpm,
+                max_tpm=self.config.max_tpm,
+            )
             self._t0 = time.perf_counter()
             try:
-                return await self._open(model, contents, budget_s)
+                return await self._open(model, turns, budget_s)
             except TimeoutError:
                 raise
             except Exception as exc:
-                if self._thinking_level == "minimal" and "thinking" in str(exc).lower():
-                    # Some models only accept a higher minimum thinking level.
-                    self._thinking_level = "low"
+                retry, level = self.backend.reasoning_fallback(self._reasoning, exc)
+                if retry:
+                    self._reasoning = level
                     continue
-                delay = _rate_limit_delay(exc)
+                delay = self.backend.rate_limit_delay(exc)
                 if delay is None or waited + delay > self.config.max_rate_limit_wait_s:
                     raise
-                log.info("brain.rate_limited", wait_s=round(delay, 1))
+                log.info("brain.rate_limited", provider=self.backend.provider, wait_s=delay)
                 await asyncio.sleep(delay)
                 waited += delay
 
     async def _open_with_retry(
         self,
-        contents: list[Any],
+        turns: list[ChatTurn],
         result: TurnResult,
         first_round: bool,
         on_retry: Callable[[], Awaitable[None]] | None = None,
-    ) -> tuple[Any, Any]:
+    ) -> Opened:
         """First round: the 1.5 s first-token budget, then one retry (slow model if set) while
         the filler plays. Rounds after a tool call already had their filler: the long budget."""
         if not first_round:
             try:
-                return await self._request(self.config.model, contents, self.config.retry_timeout_s)
+                return await self._request(self.config.model, turns, self.config.retry_timeout_s)
             except TimeoutError:
                 raise FirstTokenTimeoutError from None
         try:
-            return await self._request(
-                self.config.model, contents, self.config.first_token_timeout_s
-            )
+            return await self._request(self.config.model, turns, self.config.first_token_timeout_s)
         except TimeoutError:
             log.warning("brain.first_token_timeout", model_slot="fast")
         except Exception as exc:
-            if not _is_transient(exc):
+            if not self.backend.is_transient(exc):
                 raise
             log.warning("brain.model_unavailable", detail=str(exc)[:120])
         result.retried = True
@@ -258,7 +251,7 @@ class Brain:
             await on_retry()
         model = self.config.slow_model or self.config.model
         try:
-            return await self._request(model, contents, self.config.retry_timeout_s)
+            return await self._request(model, turns, self.config.retry_timeout_s)
         except TimeoutError:
             raise FirstTokenTimeoutError from None
 
@@ -300,7 +293,7 @@ class Brain:
         if dob_given(last_reply, caller_text):
             instructions.append(SEND_REPORT)
         note = self._turn_note(lang, "\n".join(instructions) or None)
-        contents = self._contents(history, caller_text, note)
+        turns = self._turns(history, caller_text, note)
         emitted: list[str] = []
         pending = ""
 
@@ -335,47 +328,39 @@ class Brain:
         try:
             for round_no in range(self.config.max_tool_rounds + 1):
                 iterator, first = await self._open_with_retry(
-                    contents, result, round_no == 0, on_retry
+                    turns, result, round_no == 0, on_retry
                 )
-                calls: list[Any] = []
-                model_parts: list[Any] = []
-                chunk = first
-                usage = None
-                while chunk is not None:
+                calls: list[ToolCall] = []
+                spoken = ""
+                event = first
+                while event is not None:
                     if result.first_token_ms is None:
                         result.first_token_ms = (time.perf_counter() - self._t0) * 1000
-                    usage = getattr(chunk, "usage_metadata", None) or usage
-                    for cand in getattr(chunk, "candidates", None) or []:
-                        content = getattr(cand, "content", None)
-                        for part in getattr(content, "parts", None) or []:
-                            if getattr(part, "thought", False):
-                                continue
-                            model_parts.append(part)
-                            if getattr(part, "function_call", None) is not None:
-                                calls.append(part.function_call)
-                            elif getattr(part, "text", None):
-                                for sentence in take(part.text, final=False):
-                                    yield sentence
+                    if isinstance(event, TextEvent):
+                        spoken += event.text
+                        for sentence in take(event.text, final=False):
+                            yield sentence
+                    elif isinstance(event, CallEvent):
+                        calls.append(event.call)
+                    else:
+                        self.usage.add(event)
                     try:
-                        chunk = await asyncio.wait_for(
+                        event = await asyncio.wait_for(
                             iterator.__anext__(), timeout=self.config.stream_idle_timeout_s
                         )
                     except StopAsyncIteration:
-                        chunk = None
-                if usage is not None:
-                    self.usage.add(usage)
+                        event = None
                 if not calls:
                     break
-                contents.append(_content("model", model_parts))
-                responses = []
+                turns.append(ChatTurn(role="assistant", text=spoken, calls=tuple(calls)))
+                results = []
                 for call in calls:
-                    args = dict(call.args or {})
-                    output = self.executor.execute(call.name, args)
-                    result.actions.append(Action(call.name, args))
-                    responses.append(_function_response(call, output))
+                    output = self.executor.execute(call.name, call.args)
+                    result.actions.append(Action(call.name, call.args))
+                    results.append((call, output))
                 if self.executor.end_call:
                     result.end_call = True
-                contents.append(_content("user", responses))
+                turns.append(ChatTurn(role="tool", results=tuple(results)))
             for sentence in take("", final=True):
                 yield sentence
         except (FirstTokenTimeoutError, TimeoutError):
@@ -415,59 +400,12 @@ _DONE: dict[str, str] = {
 }
 
 
-_RETRY_DELAY = re.compile(r"retry(?:Delay)?['\"]?:\s*['\"]?(\d+(?:\.\d+)?)s", re.IGNORECASE)
-_last_request: dict[str, float] = {}
-_pace_lock = asyncio.Lock()
-
-
-def _is_transient(exc: Exception) -> bool:
-    """Server-side overload / internal errors: worth one retry (possibly on the slow model)."""
-    text = str(exc)
-    return any(code in text for code in ("503", "UNAVAILABLE", "500 ", "INTERNAL", "overloaded"))
-
-
-def _rate_limit_delay(exc: Exception) -> float | None:
-    """Seconds to wait for a 429 / RESOURCE_EXHAUSTED error, else None."""
-    text = str(exc)
-    if "429" not in text and "RESOURCE_EXHAUSTED" not in text:
-        return None
-    m = _RETRY_DELAY.search(text)
-    return (float(m.group(1)) if m else 10.0) + 1.0
-
-
-async def _pace(model: str, max_rpm: int) -> None:
-    """Space requests to one model at least 60/max_rpm seconds apart (process-wide)."""
-    if max_rpm <= 0:
-        return
-    async with _pace_lock:
-        gap = 60.0 / max_rpm
-        wait = _last_request.get(model, 0.0) + gap - time.monotonic()
-        if wait > 0:
-            await asyncio.sleep(wait)
-        _last_request[model] = time.monotonic()
-
-
-def _content(role: str, parts: list[Any]) -> Any:
-
-    return types.Content(role=role, parts=parts)
-
-
-def _function_response(call: Any, output: dict[str, Any]) -> Any:
-
-    return types.Part(
-        function_response=types.FunctionResponse(
-            id=getattr(call, "id", None), name=call.name, response=output
-        )
-    )
-
-
 __all__ = [
     "Action",
     "Brain",
     "BrainConfig",
     "FirstTokenTimeoutError",
     "Message",
-    "StreamingModels",
     "TurnResult",
     "Usage",
     "filler_for",

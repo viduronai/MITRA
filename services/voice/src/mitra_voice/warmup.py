@@ -34,6 +34,7 @@ _BY_PROVIDER = {
     "elevenlabs": ("pipecat.services.elevenlabs.tts",),
     "anthropic": ("pipecat.services.anthropic.llm",),
     "gemini": ("mitra_voice.brain",),
+    "groq": ("mitra_voice.brain",),
 }
 
 

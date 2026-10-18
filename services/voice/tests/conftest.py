@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
+from mitra_voice import voices
 from mitra_voice.config import Settings, get_settings
 
 _ENV_VARS = (
@@ -32,15 +34,28 @@ _ENV_VARS = (
     "MITRA_TTS_FIRST_CHUNK_WORDS",
     "MITRA_RECORD_DIR",
     "MITRA_LOOP_WATCHDOG",
+    "MITRA_VOICES_FILE",
+    "MITRA_VOICES_JSON",
+    "GROQ_API_KEY",
+    "GEMINI_MAX_RPM",
+    "GEMINI_MAX_TPM",
+    "GROQ_MAX_RPM",
+    "GROQ_MAX_TPM",
+    "MITRA_LLM_RATE_LIMIT_WAIT_S",
+    "MITRA_LLM_CACHE_DIR",
 )
 
 
 @pytest.fixture(autouse=True)
-def _isolated_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def _isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
     """Tests never see the developer's real env or .env keys."""
     for name in _ENV_VARS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setitem(Settings.model_config, "env_file", None)
+    # Never the developer's real team voices (voices.local.json) either.
+    monkeypatch.setattr(voices, "LOCAL_VOICES_FILE", tmp_path / "no-voices.local.json")
+    voices._cached_registry.cache_clear()
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+    voices._cached_registry.cache_clear()

@@ -17,7 +17,10 @@ rewritten with ``truncate_to_heard`` so the LLM knows exactly what the caller he
 from __future__ import annotations
 
 import asyncio
+import contextlib
+from collections.abc import Coroutine
 from dataclasses import dataclass, field
+from typing import Any
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADAnalyzer, VADParams
@@ -41,23 +44,26 @@ from pipecat.turns.user_stop import (
 )
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
+from mitra_human.filler import fillers as filler_phrases
 from mitra_voice.config import Settings, TurnStrategy
 from mitra_voice.pack import Lang
 from mitra_voice.processors.backchannel import BackchannelPlayer, UserSpeechState, UserSpeechTap
 from mitra_voice.processors.filler import FillerProcessor, LatencyPredictor
 from mitra_voice.processors.language import LanguageTracker
+from mitra_voice.processors.phrases import CachedPhrasePlayer
 from mitra_voice.processors.recorder import ReplyRecorder
 from mitra_voice.processors.reply import HeardTracker, ReplyLog, apply_heard_to_context
-from mitra_voice.processors.speakable import SpeakableProcessor
+from mitra_voice.processors.speakable import SpeakableProcessor, spoken_form
 from mitra_voice.prompt import build_prompt, greeting_for
-from mitra_voice.providers import make_clips, make_llm, make_stt, make_tts
-from mitra_voice.providers.clips import ClipSource, PrerenderedClips
+from mitra_voice.providers import Prerendered, make_llm, make_prerendered, make_stt, make_tts
+from mitra_voice.providers.clips import BackchannelClips
 from mitra_voice.session import CallSession
 from mitra_voice.turn_tuning import TunableSmartTurn
 
 AUDIO_IN_SAMPLE_RATE = 16000
 AUDIO_OUT_SAMPLE_RATE = 24000
 GREETING_START_TIMEOUT_S = 10.0
+GREETING_RENDER_TIMEOUT_S = 5.0
 
 
 @dataclass
@@ -67,7 +73,7 @@ class CallPipeline:
     user: LLMUserAggregator
     assistant: LLMAssistantAggregator
     reply: ReplyLog
-    clips: ClipSource
+    prerendered: Prerendered
     started: asyncio.Event = field(default_factory=asyncio.Event)
     tasks: set[asyncio.Task[int]] = field(default_factory=set)
 
@@ -140,12 +146,12 @@ def build_call_pipeline(
         session.assistant_delta(text)
 
     tool_latency = settings.mock_tool_latency_ms if session.providers.llm == "mock" else 0
-    clips = make_clips(session.providers, settings, pack, AUDIO_OUT_SAMPLE_RATE)
+    prerendered = make_prerendered(session.providers, settings, pack, AUDIO_OUT_SAMPLE_RATE)
     recorder = [ReplyRecorder(settings.mitra_record_dir, call)] if settings.mitra_record_dir else []
     pipeline = Pipeline(
         [
             transport_input,
-            make_stt(session.providers, settings, pack, session.scenario),
+            make_stt(session.providers, settings, pack, session.scenario, session.usage),
             LanguageTracker(call),
             UserSpeechTap(speech),
             user,
@@ -163,9 +169,10 @@ def build_call_pipeline(
                 first_chunk_words=settings.mitra_tts_first_chunk_words,
                 on_sentence=on_sentence,
             ),
-            make_tts(session.providers, settings, pack),
+            CachedPhrasePlayer(prerendered.phrases, call, session.usage, AUDIO_OUT_SAMPLE_RATE),
+            make_tts(session.providers, settings, pack, session.usage),
             *recorder,
-            BackchannelPlayer(speech, call, clips, on_token=on_backchannel),
+            BackchannelPlayer(speech, call, prerendered.backchannels, on_token=on_backchannel),
             transport_output,
             HeardTracker(reply),
             assistant,
@@ -204,7 +211,7 @@ def build_call_pipeline(
         observers=[session.tracker.observer()],
         enable_rtvi=False,
     )
-    call_pipeline = CallPipeline(worker, context, user, assistant, reply, clips)
+    call_pipeline = CallPipeline(worker, context, user, assistant, reply, prerendered)
 
     @worker.event_handler("on_pipeline_started")
     async def _on_started(*_: object) -> None:
@@ -213,19 +220,45 @@ def build_call_pipeline(
     return call_pipeline
 
 
-async def greet(call: CallPipeline, session: CallSession) -> None:
-    """AI + recording disclosure at call start (WORKFLOWS §2), kept in the LLM context.
+def _fillers_to_prerender(session: CallSession) -> list[tuple[Lang, str]]:
+    gender = session.pack.voice_gender
+    return [
+        (lang, spoken_form(text, lang))
+        for lang in session.pack.languages
+        for text in filler_phrases(lang, gender)
+    ]
 
-    Back-channel clips for the pack's languages render in the background meanwhile; the
-    first ones are needed only after the caller has talked for 3.5 s.
+
+def _track(call: CallPipeline, coro: Coroutine[Any, Any, int]) -> None:
+    task = asyncio.create_task(coro)
+    call.tasks.add(task)
+    task.add_done_callback(call.tasks.discard)
+
+
+async def greet(call: CallPipeline, session: CallSession) -> None:
+    """AI + recording disclosure at call start (WORKFLOWS section 2), kept in the LLM context.
+
+    Fixed phrases in the call's voice are pre-rendered once per voice and cached on disk:
+    the greeting (awaited briefly so even a first call plays it from cache), fillers and
+    back-channel clips (in the background; the first are needed seconds later at the earliest).
     """
-    if isinstance(call.clips, PrerenderedClips):
-        task = asyncio.create_task(call.clips.prerender(session.pack.languages))
-        call.tasks.add(task)
-        task.add_done_callback(call.tasks.discard)
-    greeting = greeting_for(session.pack, session.call.language)
+    lang = session.call.language
+    greeting = greeting_for(session.pack, lang)
+    pre, usage = call.prerendered, session.usage
+    if pre.phrases is not None:
+        fillers = _fillers_to_prerender(session)
+        _track(call, pre.phrases.prerender(fillers, on_render=usage.add_prerender))
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(
+                pre.phrases.ensure(lang, spoken_form(greeting, lang), usage.add_prerender),
+                GREETING_RENDER_TIMEOUT_S,
+            )
+    if isinstance(pre.backchannels, BackchannelClips):
+        _track(call, pre.backchannels.prerender(session.pack.languages, usage.add_prerender))
     # The client can connect before every processor has started (Sarvam sockets, Smart Turn
     # model); frames queued before StartFrame reaches them are dropped, so wait for it.
     await asyncio.wait_for(call.started.wait(), timeout=GREETING_START_TIMEOUT_S)
-    await call.worker.queue_frames([TTSSpeakFrame(greeting)])
+    # Cached playback bypasses the TTS and so the assistant aggregator: add it to the context here.
+    call.context.add_message({"role": "assistant", "content": greeting})
+    await call.worker.queue_frames([TTSSpeakFrame(greeting, append_to_context=False)])
     session.add_assistant(greeting)

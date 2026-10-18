@@ -12,7 +12,9 @@ import pytest
 from google.genai import types
 from pipecat.processors.aggregators.llm_context import LLMContext
 
+from mitra_voice.brain.backend import ChatBackend
 from mitra_voice.brain.engine import Brain, BrainConfig, Message, TurnResult
+from mitra_voice.brain.gemini_backend import GeminiBackend
 from mitra_voice.brain.llm import history_from_context
 from mitra_voice.brain.tools import IST, ToolExecutor
 from mitra_voice.config import Settings
@@ -37,9 +39,10 @@ def clinic() -> EmployeePack:
     return pack_from_eval(_eval_pack("sunrise_clinic"))
 
 
-def _brain(pack: EmployeePack, fake: FakeModels, **config: Any) -> Brain:
+def _brain(pack: EmployeePack, fake: FakeModels | ChatBackend, **config: Any) -> Brain:
     cfg = BrainConfig(model="fast-model", **config)
-    return Brain(fake, cfg, pack, clock=lambda: NOW)
+    backend = GeminiBackend(fake) if isinstance(fake, FakeModels) else fake
+    return Brain(backend, cfg, pack, clock=lambda: NOW)
 
 
 async def test_tool_loop_executes_locally_and_returns_actions(clinic: EmployeePack) -> None:
@@ -174,7 +177,7 @@ async def test_rate_limits_are_waited_out_only_when_allowed(clinic: EmployeePack
 async def test_thinking_level_falls_back_when_minimal_is_rejected(clinic: EmployeePack) -> None:
     error = RuntimeError("400 INVALID_ARGUMENT: thinking_level minimal is not supported")
     fake = FakeModels([Scripted([], error=error), say("Hello.")])
-    result = await _brain(clinic, fake).turn([], "Hi", "en")
+    result = await _brain(clinic, fake, reasoning="minimal").turn([], "Hi", "en")
     assert result.text == "Hello."
     config = fake.requests[1]["config"]
     assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
@@ -198,7 +201,7 @@ def test_history_from_pipecat_context() -> None:
 
 async def test_text_sessions_route_through_the_brain(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeModels([say("జనరల్ కన్సల్టేషన్ ఫీజు 500 రూపాయలు అండి.")])
-    monkeypatch.setattr("mitra_voice.text_sessions.gemini_models", lambda _: fake)
+    monkeypatch.setattr("mitra_voice.text_sessions.make_backend", lambda _: GeminiBackend(fake))
     settings = Settings(
         mitra_llm="gemini",
         gemini_api_key="test-key",
@@ -224,10 +227,10 @@ def test_text_sessions_stay_on_the_mock_without_gemini() -> None:
 
 
 async def test_eval_cache_replays_identical_requests(clinic: EmployeePack, tmp_path: Path) -> None:
-    from mitra_voice.brain.cache import CachingModels
+    from mitra_voice.brain.cache import CachingBackend
 
     fake = FakeModels([calls(("check_availability", {"date": "tomorrow"})), say("Tomorrow works.")])
-    cached = CachingModels(fake, tmp_path)
+    cached = CachingBackend(GeminiBackend(fake), tmp_path)
     first = await _brain(clinic, cached).turn([], "Is tomorrow free?", "en")
     assert cached.misses == 2
     replay = await _brain(clinic, cached).turn([], "Is tomorrow free?", "en")
@@ -261,7 +264,7 @@ async def test_retry_filler_is_skipped_when_the_pipeline_already_spoke_one(
         call = CallContext(session_id="s", language="en")
         call.filler_spoken = already_spoken
         service = MitraBrainLLMService(pack=clinic, settings=settings, call=call)
-        service.brain = _brain(
+        service.turns.brain = _brain(
             clinic, FakeModels([say("late", delay_s=0.5), say("Ok.")]), first_token_timeout_s=0.05
         )
         pushed: list[object] = []
