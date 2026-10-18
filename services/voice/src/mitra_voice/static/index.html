@@ -45,6 +45,7 @@
   .bubble.user { align-self: flex-end; background: var(--user); border-bottom-right-radius: 4px; }
   .bubble.assistant { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
   .bubble .who { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .bubble .lang { font-size: 11px; color: var(--muted); margin-left: 6px; text-transform: uppercase; }
   .bubble .cut { color: var(--warn); font-size: 12px; margin-left: 6px; }
   .note { align-self: center; font-size: 12.5px; color: var(--muted); font-style: italic; }
   .empty { color: var(--muted); }
@@ -71,7 +72,11 @@
         <option value="real_estate">Real estate (Greenfield Homes, Arjun)</option>
       </select>
     </label>
+    <label>Voice
+      <select id="voice"><option value="">Pack default</option></select>
+    </label>
     <button id="talk" type="button">Start talking</button>
+    <span class="chip" id="lang" title="Caller language detected from speech">Language: –</span>
     <span id="status">Idle</span>
   </div>
   <section aria-labelledby="t-h">
@@ -96,6 +101,17 @@
 const $ = (id) => document.getElementById(id);
 const COLS = ["stt_ms", "turn_detect_ms", "llm_ttft_ms", "tts_ttfb_ms", "first_audio_ms"];
 let pc = null, dc = null, ping = null, sessionId = null, live = null;
+
+const LANG_NAMES = { en: "English", hi: "Hindi", te: "Telugu" };
+fetch("/api/voices").then(r => r.json()).then(v => {
+  for (const voice of v.voices) {
+    const o = document.createElement("option");
+    o.value = voice.id;
+    o.textContent = `${voice.name} (${voice.gender}, ${voice.languages.join("/")})` + (voice.speaker ? ` · ${voice.speaker}` : "");
+    $("voice").appendChild(o);
+  }
+}).catch(() => {});
+function setLang(code) { $("lang").textContent = `Language: ${LANG_NAMES[code] || code}`; }
 
 fetch("/health").then(r => r.json()).then(h => {
   $("providers").innerHTML = Object.entries(h.providers)
@@ -154,7 +170,15 @@ async function refreshSummary() {
 function onMessage(msg) {
   switch (msg.type) {
     case "transcript":
-      if (msg.role === "user") { bubble("user", msg.text); break; }
+      if (msg.role === "user") {
+        const b = bubble("user", msg.text);
+        if (msg.language) { b.querySelector(".who").insertAdjacentHTML("beforeend", `<span class="lang">${msg.language}</span>`); setLang(msg.language); }
+        break;
+      }
+      if (!msg.text) {  // barged in before a single word played
+        if (live) live.remove();
+        live = null; note("caller cut in before the reply was heard"); break;
+      }
       if (live) { live.querySelector(".text").textContent = msg.text; }
       else { live = bubble("assistant", msg.text); }
       if (msg.interrupted) live.insertAdjacentHTML("beforeend", '<span class="cut">(cut off by caller)</span>');
@@ -163,6 +187,7 @@ function onMessage(msg) {
       if (!live) { live = bubble("assistant", msg.text); }
       else { const t = live.querySelector(".text"); t.textContent = `${t.textContent} ${msg.text}`; scrollDown(); }
       break;
+    case "language": setLang(msg.language); note(`caller language → ${LANG_NAMES[msg.language] || msg.language}`); break;
     case "filler": note(`filler: "${msg.text}"`); break;
     case "backchannel": note(`back-channel: "${msg.text}"`); break;
     case "metrics": addRow(msg.turn); refreshSummary().catch(() => {}); break;
@@ -204,7 +229,7 @@ async function start() {
   setStatus("Connecting…");
   const res = await fetch("/api/offer", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sdp: pc.localDescription.sdp, type: "offer", scenario: $("scenario").value }),
+    body: JSON.stringify({ sdp: pc.localDescription.sdp, type: "offer", scenario: $("scenario").value, voice_id: $("voice").value || null }),
   });
   if (!res.ok) throw new Error(`offer failed: ${res.status}`);
   const answer = await res.json();
@@ -222,9 +247,9 @@ function stop() {
 
 $("talk").addEventListener("click", async () => {
   const btn = $("talk");
-  if (pc) { stop(); btn.textContent = "Start talking"; btn.classList.remove("live"); $("scenario").disabled = false; return; }
+  if (pc) { stop(); btn.textContent = "Start talking"; btn.classList.remove("live"); $("scenario").disabled = false; $("voice").disabled = false; return; }
   $("transcript").innerHTML = ""; $("rows").innerHTML = ""; $("summary").innerHTML = "";
-  btn.textContent = "Hang up"; btn.classList.add("live"); $("scenario").disabled = true;
+  btn.textContent = "Hang up"; btn.classList.add("live"); $("scenario").disabled = true; $("voice").disabled = true; setLang("–");
   try { await start(); }
   catch (err) { setStatus(`Error: ${err.message}`); stop(); btn.textContent = "Start talking"; btn.classList.remove("live"); $("scenario").disabled = false; }
 });

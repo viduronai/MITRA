@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 
 import httpx
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from mitra_core.models.enums import MemberRole
@@ -208,3 +209,23 @@ async def test_voice_and_behaviour_validation(client: httpx.AsyncClient) -> None
     )
     assert resp.status_code == 422
     assert resp.json()["error"]["code"] == "voice_tier_mismatch"
+
+
+async def test_partial_behaviour_is_stored_complete(
+    client: httpx.AsyncClient, admin_engine: AsyncEngine
+) -> None:
+    owner = new_actor()
+    business = await create_business(client, owner)
+    employee = await create_employee(client, owner, business["id"])
+    await client.patch(
+        f"/v1/employees/{employee['id']}",
+        json={"behaviour": {"never_say": ["Medical advice"]}},
+        headers=owner.headers(business["id"]),
+    )
+    async with admin_engine.connect() as conn:
+        stored = (
+            await conn.execute(
+                text("SELECT behaviour FROM employee WHERE id = :i"), {"i": employee["id"]}
+            )
+        ).scalar_one()
+    assert stored == {"ask_for": [], "never_say": ["Medical advice"], "transfer_when": []}

@@ -11,9 +11,10 @@ from typing import Any, Literal
 
 import structlog
 
+from mitra_voice.call_context import CallContext, stt_lock_language
 from mitra_voice.latency import LatencyTracker, TurnTimings, summarize, turn_record
 from mitra_voice.logging import redact_phones
-from mitra_voice.pack import EmployeePack, Scenario
+from mitra_voice.pack import EmployeePack, Lang, Scenario
 from mitra_voice.providers import ResolvedProviders
 
 log = structlog.get_logger(__name__)
@@ -49,13 +50,28 @@ class CallSession:
     def __post_init__(self) -> None:
         self.tracker.on_turn_complete = self._on_turn_complete
         self._log = log.bind(session_id=self.id, scenario=self.scenario)
+        # Starts in the pack's default language (TODO: caller's last language from memory).
+        self.call = CallContext(
+            session_id=self.id,
+            language=self.pack.default_language,
+            allowed=tuple(self.pack.languages),
+            stt_locked=self.providers.stt == "sarvam"
+            and stt_lock_language(self.pack.languages) is not None,
+        )
+        self.call.on_language_change.append(self._on_language_change)
+
+    async def _on_language_change(self, lang: Lang) -> None:
+        self._log.info("call.language", language=lang)
+        self.send({"type": "language", "language": lang})
 
     # --- events from the pipeline ---------------------------------------------------------------
 
     def add_user(self, text: str) -> None:
         self.transcript.append(TranscriptEntry("user", text))
         self._log.info("turn.user", text=redact_phones(text), turn=len(self.tracker.turns))
-        self.send({"type": "transcript", "role": "user", "text": text})
+        self.send(
+            {"type": "transcript", "role": "user", "text": text, "language": self.call.language}
+        )
 
     def add_assistant(self, text: str, *, interrupted: bool = False) -> None:
         self.transcript.append(TranscriptEntry("assistant", text, interrupted))
@@ -91,6 +107,7 @@ class CallSession:
             "scenario": self.scenario,
             "created_at": self.created_at,
             "ended_at": self.ended_at,
+            "languages": self.call.language_history,
             "providers": {
                 "stt": self.providers.stt,
                 "llm": self.providers.llm,

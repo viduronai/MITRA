@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from mitra_core.api import internal
 from mitra_core.api.v1 import health
 from mitra_core.api.v1 import router as v1_router
 from mitra_core.config import Settings, get_settings
@@ -100,6 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     app.include_router(health.router)
     app.include_router(v1_router)
+    app.include_router(internal.router)
     return app
 
 

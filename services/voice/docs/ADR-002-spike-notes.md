@@ -56,3 +56,63 @@ Date: 2026-10-18 · Scope: Step 3a voice-engine skeleton.
   speculative generation on stable partials (Pipecat `speculation_gate`, TRD §5), and
   clause-level TTS flushing (already done; it saved about 380 ms on long first sentences).
 - **LiveKit Agents** was not evaluated in this step; TRD §16.1 still applies.
+
+---
+
+## Step 3b update: real Sarvam speech (2026-10-18)
+
+### Providers chosen in Pipecat 1.12
+
+| Need | Choice | Why |
+|---|---|---|
+| STT | `SarvamSTTService` streaming websocket, `saaras:v4`, `mode="codemix"`, wrapped by `BufferedSarvamSTTService` | 300–400 ms from end of speech to final; code-mix in native + Latin script |
+| STT (rejected) | `SarvamRealtimeSTTService` (partials, `language_code=auto`) | Live probe: translated Telugu into English and hallucinated text. Not usable yet. |
+| TTS | `SarvamTTSService` (Bulbul v3, websocket, streaming) | First byte 200 ms (short chunks) to 500 ms (sentences) |
+| Speculative LLM start | not possible | Pipecat's `EagerUserTurnStopStrategy` needs eager end-of-turn transcripts; Sarvam streaming gives one final per VAD segment and no partials |
+
+### Language detection (live probes, Bulbul-synthesized callers)
+
+| Clip | STT auto-detect | STT pinned te-IN |
+|---|---|---|
+| "నమస్కారం, కన్సల్టేషన్ ఫీజు ఎంత?" (te) | `ml-IN` "നമസ്കാരം." once; another run returned Kannada script "ಎಷ್ಟು" | correct Telugu |
+| "What are your clinic timings?" (en) | en-IN, correct | correct, Latin |
+| "क्या मैं कल शाम … appointment book कर सकता हूँ?" (hi) | hi-IN, correct code-mix | returned as Telugu or English text |
+| "Clinic address ఎక్కడ ఉంది? Parking ఉందా?" (te-en) | te-IN, correct code-mix | correct |
+
+Decision: pin the STT when the pack has a single Indic language (most SMBs: te+en or hi+en);
+auto-detect only for multi-Indic packs, ignoring detections outside the pack.
+`call_context.py` has the switching policy, unit-tested with the real transcripts above.
+
+### Two production bugs found and fixed
+
+1. **Blocked audio path.** Pipecat's Sarvam STT awaits a websocket send for every 20 ms frame,
+   inline. Under backpressure the whole pipeline fell 17 s behind real time: VAD late,
+   transcripts before their turn, greeting stuck. Fix: batch to 100 ms and send from a
+   background task, draining before the VAD-stop flush.
+2. **Event-loop stalls at call start.** Lazy imports (Pipecat's default LLM adapter pulls in
+   `openai`, Sarvam SDK) and ONNX model loads ran on the shared loop: 3.5 s and 10.5 s stalls
+   measured. Fix: import warm-up in a thread at startup and per-call model loads via
+   `asyncio.to_thread`. Max loop lag is now ~150–500 ms at connect and is reported on `/health`.
+   Also fixed: the greeting was dropped when the client connected before the pipeline started.
+
+### Latency on localhost (real Sarvam STT/TTS, mock LLM TTFT 250 ms; ms, n=5 caller turns)
+
+Same 86 s caller recording each run (te, en, en, te, hi-under-te-pin). In filler turns, "first
+audio" is the filler.
+
+| Config | STT p50 | Turn end p50 / p95 | TTS first byte p50 / p95 | First audio p50 / p95 |
+|---|---|---|---|---|
+| Before: Step 3a defaults (VAD 200 ms, Smart Turn cap 3 s, Bulbul buffer 50, whole first clause) | 347 | 444 / 2656 | 287 / 463 | 1218 / 3917 |
+| After: VAD 200, Smart Turn cap te/hi 1.2 s, en 2.0 s, buffer 30, early first chunk | 446 | 453 / 1894 | 257 / 472 | 1255 / 2238 |
+| After + VAD 160 ms | 325 | 445 / 1203 | 469 / 557 | 1230 / 2432 |
+| VAD 120 ms (rejected) | - | - | - | split one Hindi utterance into 3 turns and degraded transcripts |
+
+Breakdown of a typical non-filler turn: end of speech → Sarvam final ~350 → turn end ~450 →
+LLM 250 (mock) → Bulbul first byte ~450 → first audio ~1.2 s. **800 ms p95 is not reachable
+with this cascade on localhost.** Sarvam STT finalisation (~350) plus Bulbul first byte (~450)
+alone exceed it. The tuning removed the long tail (Smart Turn misjudging Telugu: 3.2 s → 1.4 s).
+Fillers already mask slow turns (perceived 640–680 ms). With Gemini, add its real TTFT.
+
+Next levers: Bulbul's first-byte time (try a lower `max_chunk_length` and a pre-warmed socket
+per call), an STT with eager end-of-turn or partials for Indic (enables speculative LLM start),
+and filler-first on every turn predicted > 900 ms.

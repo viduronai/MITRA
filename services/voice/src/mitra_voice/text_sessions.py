@@ -1,9 +1,9 @@
 """Text-mode sessions for mitra-evals (HTTP contract in evals/src/mitra_evals/agents/base.py).
 
 One eval scenario = one session: greeting, then caller turns, with tool calls surfaced as
-``actions``. The brain is the same deterministic pack-grounded responder as the mock LLM.
-TODO(llm): route through the real live-turn LLM (same prompt sections) once MITRA_LLM=anthropic
-is wired with tools, so evals grade the production brain rather than the mock.
+``actions``. With ``MITRA_LLM=gemini`` (plus ``GEMINI_API_KEY`` and ``MITRA_LLM_MODEL``) each turn
+goes through the production brain (``mitra_voice.brain``: guardrails, Gemini, tools, post-check);
+otherwise through the deterministic pack-grounded mock responder.
 """
 
 from __future__ import annotations
@@ -16,8 +16,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from mitra_human import truncate_to_heard
+from mitra_voice.brain.cache import CachingModels
+from mitra_voice.brain.client import brain_available, brain_clock, brain_config, gemini_models
+from mitra_voice.brain.engine import Brain, Message, StreamingModels
+from mitra_voice.brain.language import LanguageRef
+from mitra_voice.config import Settings, get_settings
 from mitra_voice.pack import EmployeePack, Lang, pack_from_dict
-from mitra_voice.prompt import greeting_for
+from mitra_voice.prompt import Localized, greeting_for
 from mitra_voice.providers.mock_llm import mock_answer
 
 MAX_TEXT_SESSIONS = 200
@@ -74,6 +79,16 @@ def pack_from_eval(data: dict[str, Any]) -> EmployeePack:
     )
 
 
+def localized_from_eval(data: dict[str, Any]) -> Localized:
+    """Localised fact wording from the evals pack, keyed like our facts (by label)."""
+    out: dict[str, dict[str, str]] = {}
+    for f in data.get("facts", []):
+        forms = f.get("localized") or {}
+        if isinstance(forms, dict) and f.get("label"):
+            out[str(f["label"])] = {str(k): str(v) for k, v in forms.items() if v}
+    return out
+
+
 def _greeting(data: dict[str, Any], pack: EmployeePack, ctx: TextContext) -> str:
     lang: Lang = ctx.language.split("-")[0]  # type: ignore[assignment]
     by_direction = (data.get("greeting") or {}).get(ctx.direction) or {}
@@ -81,12 +96,20 @@ def _greeting(data: dict[str, Any], pack: EmployeePack, ctx: TextContext) -> str
     return text if isinstance(text, str) and text else greeting_for(pack, lang)
 
 
-def reply_json(text: str, actions: tuple[str, ...] = (), end_call: bool = False) -> dict[str, Any]:
+def reply_json(
+    text: str,
+    actions: tuple[str, ...] | list[tuple[str, dict[str, Any]]] = (),
+    end_call: bool = False,
+    timings: dict[str, float] | None = None,
+) -> dict[str, Any]:
     return {
         "text": text,
-        "actions": [{"name": name, "args": {}} for name in actions],
+        "actions": [
+            {"name": a, "args": {}} if isinstance(a, str) else {"name": a[0], "args": a[1]}
+            for a in actions
+        ],
         "end_call": end_call,
-        "timings": {},
+        "timings": timings or {},
     }
 
 
@@ -94,6 +117,8 @@ def reply_json(text: str, actions: tuple[str, ...] = (), end_call: bool = False)
 class TextSession:
     pack: EmployeePack
     greeting: str
+    brain: Brain | None = None
+    language: LanguageRef = field(default_factory=LanguageRef)
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
     history: list[dict[str, str]] = field(default_factory=list)
 
@@ -101,25 +126,59 @@ class TextSession:
         self.history.append({"role": "assistant", "content": self.greeting})
         return reply_json(self.greeting)
 
-    def send(self, text: str, *, interrupt: bool = False) -> dict[str, Any]:
+    async def send(self, text: str, *, interrupt: bool = False) -> dict[str, Any]:
         if interrupt and self.history and self.history[-1]["role"] == "assistant":
             # No audio in text mode: assume the caller heard about half of the last reply.
             last = self.history[-1]["content"]
             self.history[-1]["content"] = truncate_to_heard(last, len(last.split()) // 2)
+        if self.brain is None:
+            self.history.append({"role": "user", "content": text})
+            answer = mock_answer(self.pack, text)
+            self.history.append({"role": "assistant", "content": answer.text})
+            return reply_json(answer.text, answer.actions, answer.end_call)
+
+        past = [
+            Message("user" if m["role"] == "user" else "assistant", m["content"])
+            for m in self.history
+        ]
+        result = await self.brain.turn(past, text, self.language.resolve(text))
         self.history.append({"role": "user", "content": text})
-        answer = mock_answer(self.pack, text)
-        self.history.append({"role": "assistant", "content": answer.text})
-        return reply_json(answer.text, answer.actions, answer.end_call)
+        self.history.append({"role": "assistant", "content": result.text})
+        timings = (
+            {"first_token_ms": round(result.first_token_ms, 1)} if result.first_token_ms else {}
+        )
+        return reply_json(
+            result.text, [(a.name, a.args) for a in result.actions], result.end_call, timings
+        )
 
 
 class TextSessionStore:
-    def __init__(self, max_sessions: int = MAX_TEXT_SESSIONS) -> None:
+    def __init__(self, max_sessions: int = MAX_TEXT_SESSIONS, settings: Settings | None = None):
         self._sessions: OrderedDict[str, TextSession] = OrderedDict()
         self._max = max_sessions
+        self._settings = settings or get_settings()
+        self.uses_brain = brain_available(self._settings)
+        self._models: StreamingModels | None = None
+
+    def _brain(self, pack: EmployeePack, localized: Localized) -> Brain | None:
+        if not self.uses_brain:
+            return None
+        s = self._settings
+        if self._models is None:
+            models = gemini_models(s)
+            cache = s.mitra_llm_cache_dir
+            self._models = CachingModels(models, cache) if cache else models
+        config = brain_config(s, text_mode=True)
+        return Brain(self._models, config, pack, localized=localized, clock=brain_clock(s))
 
     def open(self, body: TextSessionIn) -> TextSession:
         pack = pack_from_eval(body.pack)
-        session = TextSession(pack=pack, greeting=_greeting(body.pack, pack, body.context))
+        session = TextSession(
+            pack=pack,
+            greeting=_greeting(body.pack, pack, body.context),
+            brain=self._brain(pack, localized_from_eval(body.pack)),
+            language=LanguageRef(body.context.language),
+        )
         self._sessions[session.id] = session
         while len(self._sessions) > self._max:
             self._sessions.popitem(last=False)

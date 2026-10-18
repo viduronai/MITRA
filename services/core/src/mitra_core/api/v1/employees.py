@@ -116,6 +116,9 @@ async def update_employee(
 ) -> Employee:
     employee = await _get_employee(session, tenant, employee_id)
     changes = body.model_dump(mode="json", exclude_unset=True)
+    if body.behaviour is not None:
+        # exclude_unset also applies inside nested models; store the whole behaviour.
+        changes["behaviour"] = body.behaviour.model_dump(mode="json")
     if changes.get("voice_id"):
         tier = VOICES_BY_ID[changes["voice_id"]].tier
         if changes.get("voice_tier", tier) != tier:

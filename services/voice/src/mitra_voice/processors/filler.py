@@ -14,7 +14,8 @@ from pipecat.frames.frames import Frame, LLMContextFrame, TTSSpeakFrame
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
 from mitra_human import FillerPolicy
-from mitra_voice.intents import detect_lang, needs_tool
+from mitra_voice.call_context import CallContext
+from mitra_voice.intents import needs_tool
 from mitra_voice.latency import LatencyTracker, derive, percentile
 from mitra_voice.pack import Lang
 from mitra_voice.processors.reply import last_user_text
@@ -47,13 +48,13 @@ class FillerProcessor(FrameProcessor):
         self,
         predictor: LatencyPredictor,
         *,
-        default_lang: Lang,
+        call: CallContext,
         gender: Literal["female", "male"] = "female",
         on_filler: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         super().__init__()
         self._predictor = predictor
-        self._default_lang = default_lang
+        self._call = call
         self._gender = gender
         self._policies: dict[Lang, FillerPolicy] = {}
         self._on_filler = on_filler
@@ -70,8 +71,9 @@ class FillerProcessor(FrameProcessor):
             self._turn_index += 1
             user_text = last_user_text(frame.context)
             expected = self._predictor.expected_ms(user_text)
-            lang = detect_lang(user_text, self._default_lang)
+            lang = self._call.language
             filler = self._policy(lang).filler_for(expected, self._turn_index)
+            self._call.filler_spoken = bool(filler)
             if filler:
                 await self.push_frame(TTSSpeakFrame(filler, append_to_context=False))
                 if self._on_filler is not None:

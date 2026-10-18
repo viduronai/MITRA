@@ -7,6 +7,7 @@ other env refuses to start. The ``make_*`` functions build per-call Pipecat serv
 
 from __future__ import annotations
 
+import importlib.util
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -16,11 +17,14 @@ from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
 from pydantic import SecretStr
 
+from mitra_voice.call_context import CallContext, stt_lock_language
 from mitra_voice.config import LlmProvider, Settings, SttProvider, TtsProvider
 from mitra_voice.pack import EmployeePack, Lang, Scenario
+from mitra_voice.providers.clips import PrerenderedClips, ToneClips, sarvam_renderer
 from mitra_voice.providers.mock_llm import MockLLMService
 from mitra_voice.providers.mock_stt import SCRIPTS, MockSTTService
 from mitra_voice.providers.mock_tts import MockTTSService
+from mitra_voice.voices import voice_for
 
 Kind = Literal["stt", "llm", "tts"]
 
@@ -48,6 +52,11 @@ def _requirements(settings: Settings, kind: Kind, name: str) -> list[tuple[str, 
             ("ANTHROPIC_API_KEY", settings.anthropic_api_key),
             ("MITRA_LLM_MODEL", settings.mitra_llm_model),
         ],
+        ("llm", "gemini"): [
+            ("GEMINI_API_KEY", settings.gemini_api_key),
+            ("MITRA_LLM_MODEL", settings.mitra_llm_model),
+            ("the mitra_voice.brain package", _brain_available()),
+        ],
         ("tts", "sarvam"): [("SARVAM_API_KEY", settings.sarvam_api_key)],
         ("tts", "elevenlabs"): [
             ("ELEVENLABS_API_KEY", settings.elevenlabs_api_key),
@@ -55,6 +64,11 @@ def _requirements(settings: Settings, kind: Kind, name: str) -> list[tuple[str, 
         ],
     }
     return reqs.get((kind, name), [])
+
+
+def _brain_available() -> str | None:
+    """The brain package (built in parallel) provides the Gemini LLM service."""
+    return "ok" if importlib.util.find_spec("mitra_voice.brain") is not None else None
 
 
 def _is_set(value: object) -> bool:
@@ -105,12 +119,22 @@ def make_stt(
 ) -> STTService:
     language = _LANGUAGE[pack.default_language]
     if providers.stt == "sarvam":
-        from pipecat.services.sarvam.stt import SarvamSTTService
+        from mitra_voice.providers.sarvam_stt import BufferedSarvamSTTService
 
-        return SarvamSTTService(
+        # Streaming websocket STT, flushed on our VAD stop; sends never block the audio path.
+        # "codemix" keeps English words in Latin script inside Telugu/Hindi sentences. Packs
+        # with one Indic language pin the STT to it (auto-detect misreads short Telugu as
+        # Malayalam/Kannada); packs with several Indic languages auto-detect, and each
+        # transcript's language drives CallContext.
+        lock = stt_lock_language(pack.languages)
+        return BufferedSarvamSTTService(
             api_key=_secret(settings.sarvam_api_key),
-            settings=SarvamSTTService.Settings(
-                **_given(model=settings.mitra_stt_model, language=language)
+            mode="codemix",
+            settings=BufferedSarvamSTTService.Settings(
+                **_given(
+                    model=settings.mitra_stt_model,
+                    language=_LANGUAGE[lock] if lock else None,
+                )
             ),
         )
     if providers.stt == "deepgram":
@@ -126,8 +150,18 @@ def make_stt(
 
 
 def make_llm(
-    providers: ResolvedProviders, settings: Settings, pack: EmployeePack
+    providers: ResolvedProviders,
+    settings: Settings,
+    pack: EmployeePack,
+    call: CallContext | None = None,
 ) -> LLMService[Any]:
+    if providers.llm == "gemini":
+        from mitra_voice.brain import make_brain_llm
+
+        if call is None:
+            raise ProviderConfigError("the brain LLM needs the call context")
+        llm: LLMService[Any] = make_brain_llm(pack=pack, settings=settings, call=call)
+        return llm
     if providers.llm == "anthropic":
         from pipecat.services.anthropic.llm import AnthropicLLMService
 
@@ -151,15 +185,15 @@ def make_tts(providers: ResolvedProviders, settings: Settings, pack: EmployeePac
     if providers.tts == "sarvam":
         from pipecat.services.sarvam.tts import SarvamTTSService
 
-        # TODO(voices): map catalog voice ids (pack.voice_id, e.g. "priya-te-hyd") to provider
-        # speakers; until then MITRA_TTS_VOICE or the adapter default is used.
+        # Streaming Bulbul over websocket; the speaker comes from the catalog voice table.
         return SarvamTTSService(
             api_key=_secret(settings.sarvam_api_key),
             settings=SarvamTTSService.Settings(
                 **_given(
                     model=settings.mitra_tts_model,
-                    voice=settings.mitra_tts_voice,
+                    voice=sarvam_speaker(settings, pack),
                     language=language,
+                    min_buffer_size=settings.mitra_tts_min_buffer,
                 )
             ),
         )
@@ -177,9 +211,32 @@ def make_tts(providers: ResolvedProviders, settings: Settings, pack: EmployeePac
     )
 
 
+def sarvam_speaker(settings: Settings, pack: EmployeePack) -> str:
+    """MITRA_TTS_VOICE overrides; otherwise the pack's catalog voice (voices.py)."""
+    return settings.mitra_tts_voice or voice_for(pack.voice_id, pack.voice_gender).sarvam_speaker
+
+
+def make_clips(
+    providers: ResolvedProviders, settings: Settings, pack: EmployeePack, sample_rate: int
+) -> ToneClips | PrerenderedClips:
+    """Back-channel clips in the call's voice (real TTS) or a quiet tone (mock TTS)."""
+    if providers.tts != "sarvam":
+        # TODO(elevenlabs): pre-render through ElevenLabs too; a tone until then.
+        return ToneClips(sample_rate)
+    speaker = sarvam_speaker(settings, pack)
+    renderer = sarvam_renderer(
+        _secret(settings.sarvam_api_key),
+        speaker=speaker,
+        sample_rate=sample_rate,
+        model=settings.mitra_tts_model,
+    )
+    return PrerenderedClips(renderer, voice_key=f"sarvam-{speaker}", sample_rate=sample_rate)
+
+
 __all__ = [
     "ProviderConfigError",
     "ResolvedProviders",
+    "make_clips",
     "make_llm",
     "make_stt",
     "make_tts",

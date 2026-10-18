@@ -7,6 +7,7 @@ The live-turn LLM model is never defaulted in code: it must come from ``MITRA_LL
 
 from __future__ import annotations
 
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -18,14 +19,17 @@ SERVICE_ROOT = Path(__file__).resolve().parents[2]
 
 Env = Literal["local", "dev", "staging", "prod"]
 SttProvider = Literal["mock", "sarvam", "deepgram"]
-LlmProvider = Literal["mock", "anthropic"]
+LlmProvider = Literal["mock", "anthropic", "gemini"]
 TtsProvider = Literal["mock", "sarvam", "elevenlabs"]
 TurnStrategy = Literal["smart", "vad"]
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=SERVICE_ROOT / ".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=SERVICE_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        env_ignore_empty=True,  # "KEY=" in .env means unset, never an empty string
     )
 
     mitra_env: Env = "local"
@@ -40,16 +44,45 @@ class Settings(BaseSettings):
     mitra_llm: LlmProvider = "mock"
     mitra_tts: TtsProvider = "mock"
     mitra_turn: TurnStrategy = "smart"
+    # Silero VAD stop window. It also triggers Sarvam's transcript flush, so it sits directly on
+    # the latency path; Smart Turn keeps short pauses from ending the turn.
+    mitra_vad_stop_ms: int = Field(default=200, ge=80, le=1_000)
+    # Smart Turn silence cap for every language; unset = per-language table (turn_tuning.py).
+    mitra_smart_turn_max_silence_ms: int | None = Field(default=None, ge=300, le=5_000)
+    # Sarvam Bulbul streaming: characters buffered before synthesis starts (API minimum 30).
+    mitra_tts_min_buffer: int = Field(default=30, ge=30, le=200)
+    # Send a reply's first words to TTS early (after this many words; 0 = whole first clause).
+    # Bulbul's first-byte time grows with chunk length, so a short first chunk starts audio sooner.
+    mitra_tts_first_chunk_words: int = Field(default=5, ge=0, le=20)
+    # Dev only: save each assistant utterance as WAV here (unset = off).
+    mitra_record_dir: Path | None = None
+    # Dev only: log the event-loop thread's stack whenever the loop stalls for > 1 s.
+    mitra_loop_watchdog: bool = False
 
     # Provider credentials (empty in .env.example).
     sarvam_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
+    gemini_api_key: SecretStr | None = None
     deepgram_api_key: SecretStr | None = None
     elevenlabs_api_key: SecretStr | None = None
 
     # Model / voice identifiers come from env only. Empty STT/TTS values use the provider
     # adapter's own default; the LLM has no default and must be set to use a real LLM.
     mitra_llm_model: str | None = None
+    # Optional slower/stronger model for background or hard turns (brain); empty = unused.
+    mitra_llm_model_slow: str | None = None
+    # Live-turn brain: give up on the first token after this long, then retry once.
+    mitra_llm_first_token_timeout_s: float = Field(default=1.5, gt=0, le=30)
+    mitra_llm_temperature: float = Field(default=0.3, ge=0, le=1)
+    # Gemini thinking level for live turns ("minimal" is fastest; empty = model default).
+    mitra_llm_thinking_level: str | None = "minimal"
+    # Freeze the brain's clock (ISO datetime, IST if no offset) for reproducible evals.
+    mitra_brain_fixed_now: datetime | None = None
+    # Rate limits (free-tier keys): pace requests per model; text mode waits out 429s.
+    mitra_llm_max_rpm: int = Field(default=0, ge=0, le=100_000)
+    mitra_llm_rate_limit_wait_s: float = Field(default=0, ge=0, le=600)
+    # Text mode only: replay identical Gemini requests from this directory (eval re-runs).
+    mitra_llm_cache_dir: Path | None = None
     mitra_stt_model: str | None = None
     mitra_tts_model: str | None = None
     mitra_tts_voice: str | None = None

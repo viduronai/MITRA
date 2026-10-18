@@ -26,10 +26,10 @@ def test_index_serves_the_test_page(client: TestClient) -> None:
 
 
 def test_health_reports_providers(client: TestClient) -> None:
-    assert client.get("/health").json() == {
-        "status": "ok",
-        "providers": {"stt": "mock", "llm": "mock", "tts": "mock"},
-    }
+    health = client.get("/health").json()
+    assert health["status"] == "ok"
+    assert health["providers"] == {"stt": "mock", "llm": "mock", "tts": "mock"}
+    assert health["loop_lag_max_ms"] >= 0
 
 
 def test_metrics_endpoint(client: TestClient) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import httpx
 import pytest
 from pydantic import ValidationError
 
@@ -13,6 +14,7 @@ from mitra_voice.pack import (
     CorePackUnavailableError,
     load_fixture,
     load_pack,
+    load_pack_from_core,
     pack_from_dict,
 )
 from mitra_voice.prompt import GLOBAL_RULES, build_prompt, greeting_for
@@ -91,12 +93,77 @@ async def test_load_pack_uses_fixture_without_core() -> None:
     assert pack.business_name == "Greenfield Homes"
 
 
-async def test_core_pack_stub_falls_back_only_in_local() -> None:
-    core = {"mitra_core_url": "http://localhost:8000", "mitra_core_service_token": "t"}
+async def test_core_unavailable_falls_back_only_in_local(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def down(*_: object, **__: object) -> None:
+        raise CorePackUnavailableError("core answered 503")
+
+    monkeypatch.setattr("mitra_voice.pack.load_pack_from_core", down)
+    core = {"mitra_core_url": "http://core.test", "mitra_core_service_token": "t"}
     local = await load_pack(Settings(**core), "clinic", employee_id="emp-1")  # type: ignore[arg-type]
     assert local.business_name == "Sunrise Clinic"
     with pytest.raises(CorePackUnavailableError):
         await load_pack(Settings(mitra_env="dev", **core), "clinic", employee_id="emp-1")  # type: ignore[arg-type]
+
+
+CORE_PACK = {  # shape of services/core GET /internal/v1/employees/{id}/pack
+    "business_id": "6f1c0d2e-0000-4000-8000-000000000001",
+    "business_name": "Sunrise Clinic",
+    "industry": "clinic",
+    "city": "Hyderabad",
+    "business_languages": ["te", "en"],
+    "employee_id": "363eb7a7-0cce-4bd9-8ddd-425d641cdfec",
+    "employee_name": "Priya",
+    "role_template": "receptionist",
+    "languages": ["te", "en"],
+    "voice_id": "priya-te-hyd",
+    "voice_tier": "natural",
+    "voice_gender": "female",
+    "greeting": "Namaste! Thank you for calling Sunrise Clinic. This is Priya, an AI assistant. "
+    "This call may be recorded.",
+    "behaviour": {"ask_for": [], "never_say": [], "transfer_when": []},
+    "working_hours": None,
+    "facts": [{"category": "prices", "key": "Consultation fee", "value": "₹500"}],
+    "knowledge_version": "0123456789abcdef",
+}
+
+
+async def test_load_pack_from_core_sends_the_service_token() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json=CORE_PACK)
+
+    pack = await load_pack_from_core(
+        "http://core.test/",
+        "svc-token",
+        CORE_PACK["employee_id"],  # type: ignore[arg-type]
+        transport=httpx.MockTransport(handler),
+    )
+    assert seen[0].url.path == f"/internal/v1/employees/{CORE_PACK['employee_id']}/pack"
+    assert seen[0].headers["authorization"] == "Bearer svc-token"
+    assert pack.employee_name == "Priya"
+    assert pack.knowledge_version == "0123456789abcdef"
+    assert pack.facts[0].value == "₹500"
+    # Core's greeting already discloses AI + recording: spoken as-is, nothing appended.
+    assert greeting_for(pack) == CORE_PACK["greeting"]
+
+
+@pytest.mark.parametrize("status", [401, 404, 503])
+async def test_core_errors_are_unavailable(status: int) -> None:
+    transport = httpx.MockTransport(lambda _: httpx.Response(status, json={"error": "x"}))
+    with pytest.raises(CorePackUnavailableError, match=str(status)):
+        await load_pack_from_core("http://core.test", "t", "e", transport=transport)
+
+
+async def test_unreachable_core_is_unavailable() -> None:
+    def refuse(_: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    with pytest.raises(CorePackUnavailableError, match="unreachable"):
+        await load_pack_from_core(
+            "http://core.test", "t", "e", transport=httpx.MockTransport(refuse)
+        )
 
 
 @pytest.mark.parametrize(

@@ -13,7 +13,12 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import sys
+import threading
+import time
+import traceback
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -37,10 +42,12 @@ from pydantic import BaseModel, Field
 from mitra_voice.config import Settings, get_settings
 from mitra_voice.logging import configure_logging
 from mitra_voice.pack import Scenario, load_pack
-from mitra_voice.pipeline import build_call_pipeline, greet
+from mitra_voice.pipeline import build_call_pipeline, greet, make_turn_analyzers
 from mitra_voice.providers import ResolvedProviders, resolve_providers
 from mitra_voice.session import CallSession, SessionRegistry
 from mitra_voice.text_sessions import TextSessionIn, TextSessionStore, TurnIn
+from mitra_voice.voices import VOICES, VOICES_BY_ID
+from mitra_voice.warmup import warm_up
 
 log = structlog.get_logger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -52,6 +59,9 @@ class OfferIn(BaseModel):
     pc_id: str | None = Field(default=None, max_length=200)
     restart_pc: bool | None = None
     scenario: Scenario = "clinic"
+    voice_id: str | None = Field(default=None, max_length=64)
+    # A real employee from services/core (needs MITRA_CORE_URL + MITRA_CORE_SERVICE_TOKEN).
+    employee_id: uuid.UUID | None = None
 
 
 class CandidateIn(BaseModel):
@@ -63,6 +73,46 @@ class CandidateIn(BaseModel):
 class PatchIn(BaseModel):
     pc_id: str = Field(max_length=200)
     candidates: list[CandidateIn] = Field(max_length=50)
+
+
+LOOP_SAMPLE_S = 0.25
+LOOP_LAG_WARN_MS = 100.0
+
+
+def start_loop_watchdog(loop: asyncio.AbstractEventLoop, stall_s: float = 1.0) -> None:
+    """Debug aid (MITRA_LOOP_WATCHDOG=1): log the event-loop thread's stack when it stalls."""
+    loop_thread = threading.get_ident()
+    beat = [time.monotonic()]
+
+    def tick() -> None:
+        beat[0] = time.monotonic()
+        loop.call_later(0.1, tick)
+
+    def watch() -> None:
+        reported = 0.0
+        while True:
+            time.sleep(0.2)
+            stalled = time.monotonic() - beat[0]
+            if stalled > stall_s and beat[0] != reported:
+                reported = beat[0]
+                frame = sys._current_frames().get(loop_thread)
+                stack = "".join(traceback.format_stack(frame)[-12:]) if frame else "?"
+                log.warning("loop.stalled", stalled_s=round(stalled, 1), stack=stack)
+
+    loop.call_soon_threadsafe(tick)
+    threading.Thread(target=watch, name="loop-watchdog", daemon=True).start()
+
+
+async def monitor_loop_lag(state: Any) -> None:
+    """Event-loop lag: every call shares this loop, so a blocked loop delays all audio."""
+    loop = asyncio.get_running_loop()
+    while True:
+        expected = loop.time() + LOOP_SAMPLE_S
+        await asyncio.sleep(LOOP_SAMPLE_S)
+        lag_ms = (loop.time() - expected) * 1000
+        state.loop_lag_max_ms = max(state.loop_lag_max_ms, lag_ms)
+        if lag_ms > LOOP_LAG_WARN_MS:
+            log.warning("loop.lag", lag_ms=round(lag_ms))
 
 
 async def run_call(
@@ -80,8 +130,14 @@ async def run_call(
             log.debug("session.send_failed", session_id=session.id)
 
     session.send = send
+    # Model loads block for 100s of ms: never on the event loop that carries every call's audio.
+    analyzers = await asyncio.to_thread(make_turn_analyzers, settings)
     call = build_call_pipeline(
-        session, settings, transport_input=transport.input(), transport_output=transport.output()
+        session,
+        settings,
+        transport_input=transport.input(),
+        transport_output=transport.output(),
+        analyzers=analyzers,
     )
 
     @transport.event_handler("on_client_connected")
@@ -120,12 +176,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             port=settings.port,
         )
         app.state.providers = providers
+        await asyncio.to_thread(warm_up, providers, settings)
         # No STUN/TURN: fine for localhost; TODO(deploy) TURN for browsers off-LAN.
         app.state.webrtc = SmallWebRTCRequestHandler(ice_servers=[])
         app.state.sessions = SessionRegistry()
-        app.state.text_sessions = TextSessionStore()
+        app.state.text_sessions = TextSessionStore(settings=settings)
         app.state.tasks = set()
+        app.state.loop_lag_max_ms = 0.0
+        lag_task = asyncio.create_task(monitor_loop_lag(app.state))
+        if settings.mitra_loop_watchdog:
+            start_loop_watchdog(asyncio.get_running_loop())
         yield
+        lag_task.cancel()
         for task in list(app.state.tasks):
             task.cancel()
         await app.state.webrtc.close()
@@ -140,10 +202,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def favicon() -> Response:
         return Response(status_code=204)
 
+    @app.get("/api/voices")
+    async def voices(request: Request) -> dict[str, Any]:
+        p: ResolvedProviders = request.app.state.providers
+        return {
+            "tts": p.tts,
+            "voices": [
+                {
+                    "id": v.id,
+                    "name": v.name,
+                    "gender": v.gender,
+                    "languages": list(v.languages),
+                    "persona": v.persona,
+                    "speaker": v.sarvam_speaker if p.tts == "sarvam" else None,
+                }
+                for v in VOICES
+            ],
+        }
+
     @app.get("/health")
     async def health(request: Request) -> dict[str, Any]:
         p: ResolvedProviders = request.app.state.providers
-        return {"status": "ok", "providers": {"stt": p.stt, "llm": p.llm, "tts": p.tts}}
+        return {
+            "status": "ok",
+            "providers": {"stt": p.stt, "llm": p.llm, "tts": p.tts},
+            "loop_lag_max_ms": round(request.app.state.loop_lag_max_ms),
+        }
 
     @app.post("/api/offer")
     async def offer(body: OfferIn, request: Request) -> dict[str, Any]:
@@ -155,7 +239,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             answer = await state.webrtc.handle_web_request(webrtc_request, _no_new_call)
             return dict(answer or {})
 
-        pack = await load_pack(settings, body.scenario)
+        employee_id = str(body.employee_id) if body.employee_id else None
+        pack = await load_pack(settings, body.scenario, employee_id)
+        if body.voice_id:
+            voice = VOICES_BY_ID.get(body.voice_id)
+            if voice is None:
+                raise HTTPException(status_code=422, detail="unknown voice_id")
+            pack = dataclasses.replace(pack, voice_id=voice.id, voice_gender=voice.gender)
         session = CallSession(scenario=body.scenario, pack=pack, providers=state.providers)
         state.sessions.add(session)
 
@@ -216,7 +306,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session = request.app.state.text_sessions.get(session_id)
         if session is None:
             raise HTTPException(status_code=404, detail="text session not found")
-        reply: dict[str, Any] = session.send(body.text, interrupt=body.interrupt)
+        reply: dict[str, Any] = await session.send(body.text, interrupt=body.interrupt)
         return reply
 
     @app.delete("/v1/text-sessions/{session_id}", status_code=204)

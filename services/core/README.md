@@ -53,6 +53,20 @@ connection pinned to the vetted IP, 10 s, 2 MB). Fact extraction is deterministi
 advances about every 2 s and the transcript is scripted from confirmed facts. CORS allows
 `localhost:3000` / `localhost:3100` in env=local only.
 
+## Internal API (service-to-service)
+
+`GET /internal/v1/employees/{id}/pack` returns everything the voice service needs at call start:
+business (name, industry, city, languages), employee (name, role, languages, voice id/tier/gender,
+behaviour, working hours), the opening `greeting` with the AI disclosure applied
+(`simulation.opening_line`), CONFIRMED facts only, and a `knowledge_version` hash for cache keys.
+
+Auth is `Authorization: Bearer $MITRA_SERVICE_TOKEN` (constant-time compare; never a user JWT).
+In env=local an unset token means the dev placeholder `dev-only-insecure-service-token-change-me`;
+elsewhere an unset token disables the internal API (503), and staging/prod refuse to start with
+the placeholder. The tenant is bound from the employee's business via the narrow SECURITY DEFINER
+function `internal_employee_business(uuid)` (migration 0003), so all reads still go through RLS.
+Not listed in `/docs`.
+
 ## Test & check
 
 ```bash

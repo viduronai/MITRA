@@ -5,9 +5,13 @@ Two processors share a ``UserSpeechState``:
 - ``BackchannelPlayer`` sits just before ``transport.output()``, polls ``BackchannelPolicy`` every
   100 ms during a user turn and plays a short low-volume clip straight to the output.
 
-Clips bypass the LLM context and TTS on purpose: they are pre-rendered (TRD: "same voice, -6 dB")
-and must never become part of the conversation. Mock: a short quiet tone.
-TODO(voices): pre-render each policy token per language with the call's real TTS voice.
+Clips bypass the LLM context and TTS on purpose: they are pre-rendered in the call's voice at
+-6 dB (``providers/clips.py``) and must never become part of the conversation. Mock TTS: a short
+quiet tone. The policy and the clip follow the caller's current language.
+
+Partial text: Sarvam streaming STT has no interim transcripts, but it returns a final transcript
+for each VAD segment (~300 ms into a pause), so segment finals are accumulated as the turn's
+partial text, which is exactly when the policy looks for a clause-boundary pause.
 """
 
 from __future__ import annotations
@@ -22,6 +26,7 @@ from pipecat.frames.frames import (
     InterimTranscriptionFrame,
     OutputAudioRawFrame,
     StartFrame,
+    TranscriptionFrame,
     UserStartedSpeakingFrame,
     UserStoppedSpeakingFrame,
     VADUserStartedSpeakingFrame,
@@ -34,7 +39,9 @@ from pipecat.processors.frame_processor import (
 )
 
 from mitra_human import BackchannelPolicy
-from mitra_voice.providers.mock_tts import backchannel_clip
+from mitra_voice.call_context import CallContext
+from mitra_voice.pack import Lang
+from mitra_voice.providers.clips import ClipSource
 
 POLL_INTERVAL_S = 0.1
 
@@ -78,6 +85,8 @@ class UserSpeechTap(FrameProcessor):
             s.speaking, s.paused_at = False, now - frame.stop_secs
         elif isinstance(frame, InterimTranscriptionFrame):
             s.partial_text = frame.text
+        elif isinstance(frame, TranscriptionFrame) and s.in_turn:
+            s.partial_text = f"{s.partial_text} {frame.text}".strip()
         await self.push_frame(frame, direction)
 
 
@@ -85,16 +94,26 @@ class BackchannelPlayer(FrameProcessor):
     def __init__(
         self,
         state: UserSpeechState,
-        policy: BackchannelPolicy,
+        call: CallContext,
+        clips: ClipSource,
         *,
+        seed: int | None = None,
         on_token: TokenCallback | None = None,
     ) -> None:
         super().__init__()
         self._state = state
-        self._policy = policy
+        self._call = call
+        self._clips = clips
+        self._seed = seed
+        self._policies: dict[Lang, BackchannelPolicy] = {}
         self._on_token = on_token
         self._task: asyncio.Task[None] | None = None
         self._sample_rate = 16000
+
+    def _policy(self, lang: Lang) -> BackchannelPolicy:
+        if lang not in self._policies:
+            self._policies[lang] = BackchannelPolicy(lang, seed=self._seed)
+        return self._policies[lang]
 
     # FrameProcessor.setup itself narrows BaseObject.setup; mirror its signature.
     async def setup(self, setup: FrameProcessorSetup) -> None:  # type: ignore[override]
@@ -121,18 +140,17 @@ class BackchannelPlayer(FrameProcessor):
             if not s.in_turn:
                 was_in_turn = False
                 continue
+            lang = self._call.language
+            policy = self._policy(lang)
             if not was_in_turn:
-                self._policy.new_turn()
+                policy.new_turn()
                 was_in_turn = True
-            token = self._policy.on_user_speech(s.elapsed_ms(now), s.partial_text, s.pause_ms(now))
-            if token is None:
-                continue
+            token = policy.on_user_speech(s.elapsed_ms(now), s.partial_text, s.pause_ms(now))
+            clip = self._clips.clip(lang, token) if token else None
+            if token is None or clip is None:
+                continue  # no clip rendered (yet) for this token: stay silent, never a stand-in
             await self.push_frame(
-                OutputAudioRawFrame(
-                    audio=backchannel_clip(self._sample_rate),
-                    sample_rate=self._sample_rate,
-                    num_channels=1,
-                )
+                OutputAudioRawFrame(audio=clip, sample_rate=self._sample_rate, num_channels=1)
             )
             if self._on_token is not None:
                 await self._on_token(token)

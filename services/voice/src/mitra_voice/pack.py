@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Literal
 
+import httpx
 import structlog
 from pydantic import Field, TypeAdapter
 from pydantic.dataclasses import dataclass
@@ -91,19 +92,33 @@ class CorePackUnavailableError(RuntimeError):
     pass
 
 
-async def load_pack_from_core(core_url: str, service_token: str, employee_id: str) -> EmployeePack:
-    """Load the pack from services/core. Not available yet.
+CORE_TIMEOUT_S = 2.0  # call start budget is ~150 ms (WORKFLOWS §3); this is a hard ceiling
 
-    TODO(core): core has no service-to-service auth or pack endpoint. Needed:
-      ``GET /internal/v1/employees/{employee_id}/pack`` authenticated with a service credential
-      (signed service JWT or mTLS, not a user OTP token). It must resolve the employee's
-      business, bind the RLS tenant (``app.business_id``) from it, and return the business
-      name/industry, employee fields (name, role_template, languages, voice_id, greeting,
-      behaviour), *confirmed* facts only, and a knowledge version for prompt-cache keys.
-      Later: customer memory card by hashed caller phone (WORKFLOWS §3 step 3).
+
+async def load_pack_from_core(
+    core_url: str,
+    service_token: str,
+    employee_id: str,
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> EmployeePack:
+    """``GET {core}/internal/v1/employees/{id}/pack`` with the service token (Bearer).
+
+    Core returns confirmed facts only, a greeting that already carries the AI and recording
+    disclosure, and a ``knowledge_version`` hash usable as a prompt-cache key. Extra fields
+    (city, working_hours, voice_tier...) are ignored. Unreachable core, 401/404/5xx raise
+    ``CorePackUnavailableError``; a malformed pack raises the validation error.
+    TODO(memory): customer memory card by hashed caller phone (WORKFLOWS §3 step 3).
     """
-    del core_url, service_token, employee_id
-    raise CorePackUnavailableError("services/core has no internal pack endpoint yet")
+    url = f"{core_url.rstrip('/')}/internal/v1/employees/{employee_id}/pack"
+    try:
+        async with httpx.AsyncClient(timeout=CORE_TIMEOUT_S, transport=transport) as client:
+            res = await client.get(url, headers={"Authorization": f"Bearer {service_token}"})
+    except httpx.HTTPError as e:
+        raise CorePackUnavailableError(f"core unreachable: {type(e).__name__}") from e
+    if res.status_code != 200:
+        raise CorePackUnavailableError(f"core answered {res.status_code}")
+    return pack_from_dict(res.json())
 
 
 async def load_pack(

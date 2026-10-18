@@ -13,6 +13,7 @@ from sqlalchemy.engine import make_url
 _DEV_JWT_SECRET = "dev-only-insecure-jwt-secret-change-me-0123456789"  # noqa: S105
 _DEV_PHONE_HASH_KEY = "dev-only-insecure-phone-hash-key-change-me"
 _DEV_OTP_HASH_KEY = "dev-only-insecure-otp-hash-key-change-me"
+_DEV_SERVICE_TOKEN = "dev-only-insecure-service-token-change-me"  # noqa: S105
 _ROLE_NAME_RE = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
 
@@ -60,6 +61,17 @@ class Settings(BaseSettings):
 
     idempotency_ttl_hours: int = 24
 
+    # Shared secret for service-to-service calls (/internal/v1, e.g. the voice service). Unset:
+    # the dev placeholder in env=local, and the internal API is DISABLED everywhere else.
+    # TODO(auth): replace with signed service JWTs or mTLS.
+    service_token: SecretStr | None = None
+
+    @property
+    def effective_service_token(self) -> str | None:
+        if self.service_token is not None and self.service_token.get_secret_value():
+            return self.service_token.get_secret_value()
+        return _DEV_SERVICE_TOKEN if self.env == "local" else None
+
     @property
     def app_db_role(self) -> str:
         return make_url(self.database_url).username or ""
@@ -81,6 +93,11 @@ class Settings(BaseSettings):
                 raise ValueError("MITRA_PHONE_HASH_KEY must be set outside local/test environments")
             if self.otp_hash_key.get_secret_value() == _DEV_OTP_HASH_KEY:
                 raise ValueError("MITRA_OTP_HASH_KEY must be set outside local/test environments")
+            if self.effective_service_token == _DEV_SERVICE_TOKEN:
+                raise ValueError("MITRA_SERVICE_TOKEN must not be the dev placeholder")
+        token = self.effective_service_token
+        if token is not None and token != _DEV_SERVICE_TOKEN and len(token) < 32:
+            raise ValueError("service_token must be at least 32 characters")
         if len(self.jwt_secret.get_secret_value()) < 32:
             raise ValueError("jwt_secret must be at least 32 characters")
         return self
