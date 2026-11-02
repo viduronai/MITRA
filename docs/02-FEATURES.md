@@ -267,3 +267,30 @@ Strategy and legal notes: [08 §8 Trusted Caller ID](08-COMPLIANCE-SECURITY.md).
 | SUP-02 | Contextual tips (one at a time, dismissible) | Should | P1 |
 | MOB-01 | Installable PWA (mobile-first web app) | Must | P1 |
 | MOB-02 | Native app (iOS/Android) with push + live call takeover | Could | P3 |
+
+## 19. Competitive gap features (added 2 Nov 2026)
+
+From a public-feature review of Outpero (outpero.com) and Decibyl (decibyl.ai and its public GitHub PR notes). Features only, built our own way; no competitor code is used.
+
+| ID | Feature | Detail | Priority | Phase |
+|---|---|---|---|---|
+| INT-12 | Lead intake API | `POST /lead-intake/{slug}` with per-business secret header, 202 response, dedupe within minutes, fields become call variables | Must | P1 |
+| INT-13 | Outgoing signed webhooks | `call.ended`, `lead.created`, `campaign.finished`; HMAC-SHA256 signature, custom headers, retries, delivery log | Must | P1 |
+| INT-14 | Indian lead portals | IndiaMART, JustDial, Google Ads lead forms, Google Forms, WordPress/Wix form plugin, Sell.Do | Should | P1 |
+| ACT-09 | Live data lookup in call | Read-only CRM / Sheet / HTTP lookup mid-call (EMI, stock, slot) with owner-approved fields only | Should | P2 |
+| CALL-15 | Campaign controls | CSV upload or paste, column → script variables, sample CSV, skip contacts called in last N days, days/holidays calendar, retry ladder, pause/edit/extend live, ETA by channel count, result buckets + export | Must | P1 |
+| CALL-16 | Auto-pause on carrier refusal | Stop a campaign when the carrier rejects or spam-flags calls; alert owner | Must | P1 |
+| CALL-17 | Voice broadcast | Non-AI recorded message to a list (cheaper tier), same compliance gate | Could | P2 |
+| CALL-18 | Listen & whisper | Supervisor listens live and types a private instruction the AI follows, or takes over | Should | P2 |
+| CALL-19 | Escalation ladder | Transfer tries staff A → B → owner, then takes a message and hands back to AI; shows a hand-off card | Must | P2 |
+| CALL-20 | Missed-call number | "Give a missed call on 040-xxxx" → Mitra calls back in 1 min (free for caller) | Should | P2 |
+| VOICE-17 | More languages | Tamil, Kannada, Malayalam, Marathi (after te/hi/en quality bar is met) | Should | P2 |
+| EMP-12 | "Polish my script" | One tap adds language-correct politeness (garu/andi, ji/aap) and Indian number style | Should | P1 |
+| EMP-13 | Build any role from one line | Owner describes a custom role; Mitra drafts a spec card (steps, fields, hand-offs, schedule) for review before creating it | Should | P2 |
+| MGR-08 | In-app "Ask Mitra" thread | Same manager as WhatsApp inside the app, with openers "What happened this week?" / "What needs my attention today?" | Must | P2 |
+| MGR-09 | "Call me when it's done" | Mitra phones the owner with the result of a long routine or campaign | Could | P2 |
+| APPR-06 | Safe approvals | Approval cards bound to one version and usable once; a spoken "yes" on a call is never an approval; owner can edit before approving | Must | P2 |
+| CHAN-01 | WhatsApp chat employee | The same employee answers WhatsApp text and voice notes with shared memory | Must | P2 |
+| CHAN-02 | Website chat & Instagram DMs | Embeddable web chat widget and Instagram messages answered by the employee | Should | P3 |
+| ACT-10 | Google review request | After a happy call, send a review link (within Google's rules: ask everyone, no gating) | Should | P2 |
+| REP-07 | Auto QA score | Every call scored (greeting, facts grounded, next step, politeness); low scores surfaced for coaching | Should | P2 |
