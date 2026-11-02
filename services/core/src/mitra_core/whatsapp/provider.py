@@ -70,7 +70,8 @@ class SimulatorProvider:
 class CloudApiProvider:
     """Meta WhatsApp Cloud API (``POST /{phone_number_id}/messages``).
 
-    TODO(whatsapp): BSP choice (TRD open question 4), template registration per language, the
+    Mitra talks to Meta directly (no BSP; founder decision, 3 Nov 2026).
+    TODO(whatsapp): template registration per language, the
     24-hour customer-service window (free-form text only inside it; templates outside it), and
     media download for voice notes.
     """

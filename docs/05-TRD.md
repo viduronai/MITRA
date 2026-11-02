@@ -101,7 +101,7 @@ flowchart TB
 | Observability | OpenTelemetry → Grafana (Tempo/Loki/Prometheus), Sentry, **Langfuse** (LLM traces & evals) | Per-turn latency tracing | Datadog |
 | Infra | AWS Mumbai + Hyderabad; **ECS Fargate** (P1) → EKS (P2+); Terraform; GitHub Actions | Simple → scalable | GCP Mumbai |
 | Payments | **Razorpay** (UPI AutoPay, subscriptions, GST invoices); Stripe for foreign agencies (P3) | India-native | Cashfree |
-| WhatsApp | Meta WhatsApp Cloud API via BSP (Gupshup / Interakt / AiSensy) **[Decide]**; WhatsApp Business Calling (P2) | Templates, interactive buttons | — |
+| WhatsApp | Meta WhatsApp Cloud API, **direct (no BSP; decided 3 Nov 2026)**; WhatsApp Business Calling (P2) | Templates, interactive buttons | — |
 | Telephony | **Exotel** (primary, India local numbers, Voicebot streaming, Truecaller verified caller ID), **Plivo** (secondary), Tata Tele Business (SIP trunks for bring-your-own landline/PRI, 1600/1601 and 140 where needed) | Multi-carrier resilience; caller-ID strategy per [08 §8](08-COMPLIANCE-SECURITY.md) | Knowlarity, Ozonetel |
 
 ## 4. Services & responsibilities
@@ -114,7 +114,7 @@ flowchart TB
 | Human layer | back-channel/filler policy, prosody hints, number/date normalisation | in-process library inside workers |
 | Knowledge | ingestion, extraction, facts pack, hybrid retrieval | `/v1/knowledge/*`, `knowledge.updated` |
 | Orchestrator | handoffs, routines, approvals, campaigns | Temporal workflows; consumes events |
-| Manager | WhatsApp inbound, intents, confirmations, reports | BSP webhooks; calls Core/Orchestrator |
+| Manager | WhatsApp inbound, intents, confirmations, reports | Meta Cloud API webhooks; calls Core/Orchestrator |
 | Compliance | consent ledger, DND/NCPR checks, calling windows, opt-outs, DLT templates, disclosures | sync check API (< 20 ms cached) |
 | Billing | per-second usage ledger, wallets, voice-tier rates, top-up bonuses, spend caps, pass-through charges, invoices, agency wholesale | `usage.*`, Razorpay webhooks |
 | Numbers | number inventory, KYC, caller-ID selection per call purpose, Truecaller/CNAP registration status, answer-rate & spam-label health | `number.health_changed` |
@@ -273,5 +273,5 @@ Tenancy: every table carries `business_id` (and `agency_id` where relevant); **P
 1. **Voice bake-off:** Pipecat vs LiveKit Agents × Exotel/Plivo × {Sarvam, Deepgram} STT × {Bulbul v3, ElevenLabs, Cartesia} TTS × 3–4 fast LLMs. Measure p50/p95 latency, Telugu/Hindi WER, naturalness (10 listeners), cost/min.
 2. **Turn-taking:** Smart Turn vs LiveKit turn detector on 200 real Telugu/Hindi phone turns.
 3. **Facts pack:** extraction quality from 10 real clinic/real-estate websites & brochures.
-4. **WhatsApp BSP:** template approval time, interactive buttons, voice-note handling, cost.
+4. **WhatsApp (Meta Cloud API, direct):** template approval time, interactive buttons, voice-note handling, cost.
 5. **Output:** finalise ADR-002 + provider defaults; publish cost/min model.

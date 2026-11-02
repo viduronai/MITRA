@@ -179,7 +179,7 @@ Customer-facing names follow the glossary in [00-README §5](00-README.md).
 | INT-02 | Website form (embed snippet / webhook) | Must | P1 |
 | INT-03 | Google Sheets | Must | P1 |
 | INT-04 | Google Calendar | Must | P1 |
-| INT-05 | WhatsApp Business (Cloud API via BSP) | Must | P1 |
+| INT-05 | WhatsApp Business (Meta Cloud API, direct; decided 3 Nov 2026) | Must | P1 |
 | INT-06 | Zapier / Pabbly / Make / n8n | Should | P1 |
 | INT-07 | Zoho CRM, LeadSquared, HubSpot | Should | P2 |
 | INT-08 | Razorpay payment links | Should | P2 |
