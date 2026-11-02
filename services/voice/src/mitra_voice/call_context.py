@@ -105,6 +105,8 @@ class CallContext:
     # the turn's LLMContextFrame reaches the LLM): at most one filler per turn (TRD §5).
     filler_spoken: bool = False
     on_language_change: list[LanguageHook] = field(default_factory=list)
+    # Outbound calls: who we are calling and why (campaign script variables, callback topic).
+    call_brief: str | None = None
 
     def __post_init__(self) -> None:
         if not self.language_history:

@@ -217,7 +217,9 @@ async def test_number_cannot_be_registered_twice(client: httpx.AsyncClient) -> N
 # ---- inbound routing ---
 
 
-async def test_resolve_dialled_number_to_business_and_employee(client: httpx.AsyncClient) -> None:
+async def test_resolve_dialled_number_to_business_and_employee(
+    client: httpx.AsyncClient, clock: FakeClock
+) -> None:
     _configure()
     t = await _tenant(client)
     number = await _live_number(client, t)

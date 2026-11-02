@@ -7,6 +7,8 @@
 - ``POST /telephony/plivo/answer``   answer XML for Plivo (signature-checked when configured)
 - ``POST /telephony/exotel/status``  Exotel status callback -> attempt outcome in core
 - ``POST /telephony/calls``          place an outbound call (service token): compliance first
+- ``POST /telephony/dialer/calls``   place a call core's dialer already cleared (service token):
+  core ran compliance.check and recorded the attempt; carries the script variables
 
 Audio: Pipecat's Exotel/Plivo serializers resample carrier audio to the pipeline's 16 kHz input
 and our 24 kHz output down to the carrier rate (and mu-law for Plivo). Barge-in: the pipeline's
@@ -17,12 +19,15 @@ Output goes out in 200 ms chunks (3,200 bytes at 8 kHz, a multiple of 320, as Ex
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import hmac
 import json
 import uuid
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 from urllib.parse import parse_qsl
 
@@ -41,15 +46,17 @@ from pipecat.transports.websocket.fastapi import (
 from pipecat.workers.runner import WorkerRunner
 from pydantic import BaseModel, Field
 
+from mitra_voice.callbacks import call_brief, fill, resolve_callback_time
 from mitra_voice.carriers import CarrierError, OutboundRegistry, make_carrier
 from mitra_voice.carriers.base import Carrier, OutboundIntent, Purpose
 from mitra_voice.carriers.core_api import CoreTelephony
-from mitra_voice.carriers.outbound import DialRequest, dial
+from mitra_voice.carriers.outbound import DialRequest, dial, place_intent
 from mitra_voice.carriers.plivo import answer_xml, stream_url, verify_signature_v3, verify_stream
 from mitra_voice.config import Settings, TurnStrategy
 from mitra_voice.pack import load_pack
-from mitra_voice.pipeline import build_call_pipeline, greet, make_turn_analyzers
+from mitra_voice.pipeline import CallPipeline, build_call_pipeline, greet, make_turn_analyzers, say
 from mitra_voice.session import CallSession
+from mitra_voice.team.control import LiveControl
 from mitra_voice.transports.routing import (
     CallMeta,
     Route,
@@ -90,6 +97,18 @@ class DialIn(BaseModel):
     purpose: Purpose
     number_id: uuid.UUID | None = None
     called_number_id: uuid.UUID | None = None
+
+
+class DialerCallIn(BaseModel):
+    job_id: uuid.UUID
+    business_id: uuid.UUID
+    employee_id: uuid.UUID
+    contact_phone: str = Field(pattern=r"^\+[1-9][0-9]{7,14}$")
+    purpose: Purpose
+    caller_id: str = Field(pattern=r"^\+[1-9][0-9]{7,14}$")
+    phone_number_id: uuid.UUID
+    attempt_id: uuid.UUID
+    variables: dict[str, str] = Field(default_factory=dict, max_length=20)
 
 
 def _require_service(settings: Settings, authorization: str | None) -> None:
@@ -260,6 +279,33 @@ def telephony_router(settings: Settings) -> APIRouter:
             "carrier": result.call.carrier if result.call else None,
         }
 
+    @router.post("/dialer/calls")
+    async def place_dialer_call(
+        body: DialerCallIn, request: Request, authorization: str | None = Header(default=None)
+    ) -> dict[str, Any]:
+        """Core's dialer worker: compliance and the attempt row are already done in core."""
+        _require_service(settings, authorization)
+        state: TelephonyState = request.app.state.telephony
+        intent = OutboundIntent(
+            business_id=str(body.business_id),
+            employee_id=str(body.employee_id),
+            contact_phone=body.contact_phone,
+            caller_id=body.caller_id,
+            purpose=body.purpose,
+            phone_number_id=str(body.phone_number_id),
+            attempt_id=str(body.attempt_id),
+            job_id=str(body.job_id),
+            variables={k[:40]: v[:200] for k, v in body.variables.items()},
+        )
+        try:
+            placed = await place_intent(
+                intent, carrier=state.carrier, registry=state.registry, fallback=state.fallback
+            )
+        except CarrierError as e:
+            raise HTTPException(status_code=502, detail=str(e)) from e
+        _remember(state, placed.call_sid, intent)
+        return {"call_sid": placed.call_sid, "carrier": placed.carrier}
+
     return router
 
 
@@ -295,6 +341,9 @@ async def _serve(
         await websocket.close(code=POLICY_VIOLATION)
         return
     pack = await load_pack(settings, route.scenario, route.employee_id)
+    intent = route.intent
+    if intent is not None and intent.variables and pack.greeting:
+        pack = dataclasses.replace(pack, greeting=fill(pack.greeting, intent.variables) or None)
     session = CallSession(
         scenario=route.scenario,
         pack=pack,
@@ -303,6 +352,9 @@ async def _serve(
         direction=route.direction,
         caller_phone=route.caller_phone,
     )
+    if intent is not None:
+        session.call.call_brief = call_brief(intent.purpose, intent.variables)
+    session.call_sid = meta.call_sid
     app_state.sessions.add(session)
     log.info(
         "telephony.call",
@@ -350,9 +402,13 @@ async def run_phone_call(
         turn=state.turn,
     )
 
+    control = LiveControl.from_settings(settings, session, state.carrier, session.call_sid)
+
     @transport.event_handler("on_client_connected")
     async def _on_connected(*_: object) -> None:
         await greet(call, session)
+        if control is not None:
+            control.attach(partial(say, call, session), partial(_hang_up, call))
 
     @transport.event_handler("on_client_disconnected")
     async def _on_disconnected(*_: object) -> None:
@@ -368,19 +424,51 @@ async def run_phone_call(
         await runner.run()
     finally:
         session.end()
+        if control is not None:
+            await control.aclose()
+
+
+async def _hang_up(call: CallPipeline, reason: str) -> None:
+    await call.worker.cancel(reason=reason)
 
 
 async def _after_call(session: CallSession, route: Route, state: TelephonyState) -> None:
-    """CMP-06: "don't call me" during a call -> suppress the number in core."""
+    """CMP-06: "don't call me" during a call -> suppress the number in core.
+    CALL-05: "call me back tomorrow at 5" -> a callback in core's dialer queue."""
     if state.core is None or not route.caller_phone or session.action_log is None:
         return
     try:
         actions = session.action_log()
         business_id = route.business_id or session.pack.business_id
-        if any(a.get("name") == "opt_out" for a in actions) and _is_uuid(business_id):
+        if not _is_uuid(business_id):
+            return
+        if any(a.get("name") == "opt_out" for a in actions):
             await state.core.opt_out(business_id, route.caller_phone, None)
+            return  # never call back someone who asked not to be called
+        asks = [a for a in actions if a.get("name") == "schedule_callback"]
+        if asks and _is_uuid(session.pack.employee_id):
+            args = dict(asks[-1].get("args") or {})
+            if args.get("when") or args.get("when_iso"):
+                at = resolve_callback_time(args, datetime.now(UTC))
+                await state.core.schedule_callback(
+                    {
+                        "business_id": business_id,
+                        "employee_id": session.pack.employee_id,
+                        "contact_phone": route.caller_phone,
+                        "at": at.isoformat(),
+                        "note": str(args.get("topic") or "")[:200] or None,
+                        "called_number_id": _called_number(route),
+                    }
+                )
     except Exception as e:  # never let bookkeeping fail the call teardown
-        log.warning("telephony.opt_out_failed", session_id=session.id, error=type(e).__name__)
+        log.warning("telephony.after_call_failed", session_id=session.id, error=type(e).__name__)
+
+
+def _called_number(route: Route) -> str | None:
+    """Ring back from the number the customer dealt with (inbound: the one they dialled)."""
+    if route.intent is not None:
+        return route.intent.phone_number_id
+    return route.phone_number_id
 
 
 def _is_uuid(value: str) -> bool:

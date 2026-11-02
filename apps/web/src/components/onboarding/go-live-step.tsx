@@ -1,6 +1,7 @@
 "use client";
 
 import { Hash, PhoneForwarded, Plug, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { finishOnboarding, type StepErrorKey } from "@/app/onboarding/actions";
@@ -81,8 +82,11 @@ export function GoLiveStep({
           <CardHead icon={Hash} title={tl("numberTitle")} description={tl("numberDesc")} badge={tl("comingSoon")} />
         </section>
       )}
-      <section className="rounded-xl border border-dashed bg-card/60 p-5 md:p-6">
-        <CardHead icon={Plug} title={tl("leadsTitle")} description={tl("leadsDesc")} badge={tl("comingSoon")} />
+      <section className="rounded-xl border bg-card p-5 shadow-xs md:p-6">
+        <CardHead icon={Plug} title={tl("leadsTitle")} description={tl("leadsDesc")} />
+        <Button asChild variant="secondary" className="mt-4 w-full sm:w-fit">
+          <Link href="/more/connect#leads">{tl("leadsCta")}</Link>
+        </Button>
       </section>
 
       {error && (

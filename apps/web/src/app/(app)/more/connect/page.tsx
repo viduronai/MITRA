@@ -2,6 +2,7 @@ import { CalendarDays, Cable, FlaskConical, Hash, MessageCircle, PhoneForwarded,
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { LeadsSection } from "@/components/leads/leads-section";
 import { PageHeader } from "@/components/shell/page-header";
 import { ForwardingCodes } from "@/components/telephony/forwarding-codes";
 import { RequestNumberForm } from "@/components/telephony/request-number";
@@ -53,7 +54,7 @@ function Section({
 
 export default async function ConnectPage() {
   const { token } = await requireSession();
-  const [t, business] = await Promise.all([getTranslations("connect"), getBusiness()]);
+  const [t, tLeads, business] = await Promise.all([getTranslations("connect"), getTranslations("leads"), getBusiness()]);
 
   let numbers;
   try {
@@ -72,8 +73,7 @@ export default async function ConnectPage() {
   const forwarding = await liveForwarding(token, numbers.items);
   const live = numbers.items.find((n) => n.id === forwarding?.phone_number_id) ?? null;
   const support = process.env.MITRA_SUPPORT_EMAIL;
-  const soon: { key: "leads" | "calendar" | "whatsapp"; icon: LucideIcon }[] = [
-    { key: "leads", icon: Plug },
+  const soon: { key: "calendar" | "whatsapp"; icon: LucideIcon }[] = [
     { key: "calendar", icon: CalendarDays },
     { key: "whatsapp", icon: MessageCircle },
   ];
@@ -125,7 +125,11 @@ export default async function ConnectPage() {
           </Button>
         </Section>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <Section id="leads" icon={Plug} title={tLeads("title")} description={tLeads("desc")}>
+          <LeadsSection token={token} businessName={numbers.business_name} />
+        </Section>
+
+        <div className="grid gap-4 md:grid-cols-2">
           {soon.map(({ key, icon }) => (
             <Section
               key={key}

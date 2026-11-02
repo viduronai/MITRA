@@ -80,6 +80,7 @@ class Route:
     caller_phone: str | None  # the customer's number (E.164), for memory/reporting only
     business_id: str | None = None
     intent: OutboundIntent | None = None
+    phone_number_id: str | None = None  # inbound: the business number that was dialled
 
 
 class RouteError(RuntimeError):
@@ -122,7 +123,12 @@ async def route_call(
             resolved = None
         if resolved is not None:
             return Route(
-                "inbound", resolved.employee_id, scenario, meta.from_, resolved.business_id
+                "inbound",
+                resolved.employee_id,
+                scenario,
+                meta.from_,
+                resolved.business_id,
+                phone_number_id=resolved.phone_number_id,
             )
         if not settings.is_local:
             raise RouteError("dialled number is not a Mitra number")

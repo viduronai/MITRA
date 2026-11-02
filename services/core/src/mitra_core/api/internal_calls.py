@@ -37,6 +37,7 @@ from mitra_core.models.enums import CallDirection
 from mitra_core.schemas.billing import UsageIn
 from mitra_core.schemas.call import CallEndIn, CallEndOut, CallStartIn, CallStartOut
 from mitra_core.tenancy import TenantContext, set_tenant
+from mitra_core.webhooks import events as webhook_events
 
 router = APIRouter(
     prefix="/internal/v1/calls",
@@ -109,6 +110,8 @@ async def report_call_end(
     if changed:
         # TODO(temporal): durable workflow instead of an in-process task.
         background.add_task(run_post_call, call.id, business_id, summarizer)
+        # Runs after post-call processing (tasks run in order), so the summary is included.
+        background.add_task(webhook_events.call_ended, call.id, business_id)
     return CallEndOut(id=call.id, status=call.status, replayed=not changed)
 
 

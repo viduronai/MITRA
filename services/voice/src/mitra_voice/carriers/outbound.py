@@ -96,6 +96,23 @@ async def dial(
         phone_number_id=number_id,
         attempt_id=attempt_id,
     )
+    try:
+        placed = await place_intent(intent, carrier=carrier, registry=registry, fallback=fallback)
+    except CarrierError:
+        if core is not None and attempt_id is not None:
+            await core.set_outcome(attempt_id, req.business_id, "failed")
+        raise
+    return DialResult(decision="allow", call=placed, caller_id=caller_id, intent=intent)
+
+
+async def place_intent(
+    intent: OutboundIntent,
+    *,
+    carrier: Carrier,
+    registry: OutboundRegistry,
+    fallback: Carrier | None = None,
+) -> PlacedCall:
+    """Primary carrier, then the secondary once; the placed call is registered for routing."""
     placed: PlacedCall | None = None
     for option in (carrier, fallback):
         if option is None:
@@ -106,9 +123,7 @@ async def dial(
         except CarrierError as e:
             log.warning("outbound.carrier_failed", carrier=option.name, error=str(e))
     if placed is None:
-        if core is not None and attempt_id is not None:
-            await core.set_outcome(attempt_id, req.business_id, "failed")
         raise CarrierError("no carrier could place the call")
     registry.add(placed.call_sid, intent)
     log.info("outbound.placed", carrier=placed.carrier, call_sid=placed.call_sid)
-    return DialResult(decision="allow", call=placed, caller_id=caller_id, intent=intent)
+    return placed

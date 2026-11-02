@@ -119,7 +119,11 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         _obj(
             {
                 "topic": _s("What needs to be confirmed or discussed."),
-                "when": _s("When the caller wants the callback, if said."),
+                "when": _s("When the caller wants the callback, as they said it."),
+                "when_iso": _s(
+                    "That time as YYYY-MM-DDTHH:MM in IST, if you can resolve it "
+                    "(e.g. 'tomorrow 5 pm')."
+                ),
             },
             ["topic"],
         ),
@@ -289,6 +293,8 @@ class ToolExecutor:
     calls: list[ToolCall] = field(default_factory=list)
     bookings: list[dict[str, Any]] = field(default_factory=list)
     end_call: bool = False
+    # Set on phone calls with a staff ladder: starts the real warm transfer (team.control).
+    on_transfer: Callable[[str], None] | None = None
 
     def __post_init__(self) -> None:
         self.calendar = Calendar.from_pack(self.pack)
@@ -415,13 +421,21 @@ class ToolExecutor:
         return {"status": "queued", "template": a.get("template", "follow_up")}
 
     def _tool_transfer_to_human(self, a: dict[str, Any]) -> dict[str, Any]:
+        if self.on_transfer is not None:
+            self.on_transfer(str(a.get("reason") or "wants a person"))
+            return {"status": "transferring", "to": self.escalate_to, "note": "say only: hold on"}
         return {"status": "transferring", "to": self.escalate_to}
 
     def _tool_alert_staff(self, a: dict[str, Any]) -> dict[str, Any]:
         return {"status": "alerted", "to": self.escalate_to}
 
     def _tool_schedule_callback(self, a: dict[str, Any]) -> dict[str, Any]:
-        return {"status": "scheduled", "by": "the team, today", "channel": "WhatsApp or call"}
+        if not (a.get("when") or a.get("when_iso")):
+            return {"status": "scheduled", "by": "the team, today", "channel": "WhatsApp or call"}
+        from mitra_voice.callbacks import fmt_when, resolve_callback_time  # (import cycle)
+
+        at = resolve_callback_time(a, self.clock())
+        return {"status": "scheduled", "when": fmt_when(at), "channel": "call"}
 
     def _tool_opt_out(self, a: dict[str, Any]) -> dict[str, Any]:
         return {"status": "suppressed"}

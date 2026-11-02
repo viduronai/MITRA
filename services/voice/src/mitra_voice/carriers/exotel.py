@@ -15,6 +15,7 @@ import httpx
 import structlog
 
 from mitra_voice.carriers.base import CarrierError, CarrierName, OutboundIntent, PlacedCall
+from mitra_voice.team.ladder import TransferOutcome
 
 log = structlog.get_logger(__name__)
 
@@ -79,6 +80,17 @@ class ExotelCarrier:
         if not isinstance(sid, str) or not sid:
             raise CarrierError("exotel response had no Call.Sid")
         return PlacedCall(carrier="exotel", call_sid=sid, status=str(call.get("Status", "queued")))
+
+    async def transfer(
+        self, call_sid: str, to_e164: str, *, whisper: str, ring_timeout_s: int
+    ) -> TransferOutcome:
+        """Warm transfer with whisper. Not wired to exotel yet: every step reports "failed",
+        so the ladder ends in a message taken by the AI (no call is ever dropped).
+
+        TODO(exotel): dial the staff leg, play ``whisper`` to it only, then bridge the legs.
+        """
+        log.warning("exotel.transfer_not_implemented", call_sid=call_sid)
+        return "failed"
 
     async def aclose(self) -> None:
         await self._client.aclose()

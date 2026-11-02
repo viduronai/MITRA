@@ -48,6 +48,7 @@ from mitra_voice.brain.language import CallerLanguage, base_language, reply_inst
 from mitra_voice.brain.tools import Clock, ToolExecutor
 from mitra_voice.pack import EmployeePack
 from mitra_voice.prompt import Localized, build_prompt
+from mitra_voice.team.supervisor import supervisor_note
 
 log = structlog.get_logger(__name__)
 
@@ -166,6 +167,8 @@ class Brain:
         self.system_prompt = self._system_for(self._lang)
         self._reasoning = config.reasoning
         self._t0 = time.perf_counter()
+        # CALL-18: a supervisor's private instructions, already vetted (team.supervisor).
+        self.supervisor_notes: list[str] = []
 
     def _system_for(self, lang: CallerLanguage) -> str:
         """The system prompt with localised fact wording for this caller's language only.
@@ -192,6 +195,8 @@ class Brain:
             lines.append("Earlier tool results this call:\n" + "\n".join(tool_log))
         if instruction:
             lines.append(instruction)
+        if note := supervisor_note(self.supervisor_notes):
+            lines.append(note)
         return "\n".join(lines)
 
     def _turns(self, history: Sequence[Message], caller_text: str, note: str) -> list[ChatTurn]:

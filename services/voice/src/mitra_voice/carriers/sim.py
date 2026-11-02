@@ -15,6 +15,7 @@ import structlog
 
 from mitra_voice.carriers.base import CarrierName, OutboundIntent, PlacedCall, new_sim_sid
 from mitra_voice.carriers.simulator import SimulatedCall, simulate_call
+from mitra_voice.team.ladder import TransferOutcome
 
 log = structlog.get_logger(__name__)
 
@@ -27,6 +28,10 @@ class SimCarrier:
     placed: list[tuple[PlacedCall, OutboundIntent]] = field(default_factory=list)
     answered: list[SimulatedCall] = field(default_factory=list)
     name: CarrierName = "sim"
+    # Warm transfers (CALL-06): how each staff number "answers"; unknown numbers don't.
+    staff_answers: dict[str, TransferOutcome] = field(default_factory=dict)
+    ring_s: float = 0.0  # simulated ringing per step (0 in tests)
+    transfers: list[tuple[str, str, str, TransferOutcome]] = field(default_factory=list)
     _tasks: set[asyncio.Task[None]] = field(default_factory=set)
 
     async def place_call(self, intent: OutboundIntent) -> PlacedCall:
@@ -54,6 +59,16 @@ class SimCarrier:
             self.answered.append(call)
         except Exception:
             log.exception("sim.answer_failed", call_sid=placed.call_sid)
+
+    async def transfer(
+        self, call_sid: str, to_e164: str, *, whisper: str, ring_timeout_s: int
+    ) -> TransferOutcome:
+        """Ring staff with the caller on hold; whisper, then bridge if they pick up."""
+        outcome = self.staff_answers.get(to_e164, "no_answer")
+        await asyncio.sleep(min(self.ring_s, ring_timeout_s))
+        self.transfers.append((call_sid, to_e164, whisper, outcome))
+        log.info("sim.transfer", call_sid=call_sid, outcome=outcome)
+        return outcome
 
     async def aclose(self) -> None:
         for task in list(self._tasks):

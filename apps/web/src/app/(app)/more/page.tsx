@@ -1,9 +1,14 @@
 import {
+  BellRing,
   Building2,
   ChevronRight,
+  CircleCheckBig,
   LifeBuoy,
+  Megaphone,
+  MessageCircle,
   Palette,
   ShieldCheck,
+  Sparkles,
   UsersRound,
   Wallet,
   type LucideIcon,
@@ -21,11 +26,16 @@ export async function generateMetadata() {
   return { title: t("title") };
 }
 
-type RowKey = "billing" | "profile" | "people" | "compliance" | "appearance" | "help";
+type RowKey = "billing" | "campaigns" | "ask" | "approvals" | "manager" | "whatsapp" | "profile" | "people" | "compliance" | "appearance" | "help";
 
 // Only billing has a sub-page so far; the other rows point at /more until theirs exist.
 const rows: { key: RowKey; icon: LucideIcon; href: string }[] = [
   { key: "billing", icon: Wallet, href: "/more/billing" },
+  { key: "campaigns", icon: Megaphone, href: "/campaigns" },
+  { key: "ask", icon: Sparkles, href: "/ask" },
+  { key: "approvals", icon: CircleCheckBig, href: "/approvals" },
+  { key: "manager", icon: BellRing, href: "/more/manager" },
+  { key: "whatsapp", icon: MessageCircle, href: "/more/whatsapp" },
   { key: "profile", href: "/more", icon: Building2 },
   { key: "people", href: "/more", icon: UsersRound },
   { key: "compliance", href: "/more", icon: ShieldCheck },

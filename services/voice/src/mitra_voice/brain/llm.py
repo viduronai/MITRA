@@ -78,7 +78,13 @@ class BrainTurns:
         settings: Settings,
         call: CallContext,
     ) -> None:
-        self.brain = Brain(backend, config, pack, clock=brain_clock(settings))
+        self.brain = Brain(
+            backend,
+            config,
+            pack,
+            customer_memory=getattr(call, "call_brief", None),
+            clock=brain_clock(settings),
+        )
         self.call = call
         self._language = LanguageRef(call.language)
 

@@ -21,6 +21,7 @@ import httpx
 import structlog
 
 from mitra_voice.carriers.base import CarrierError, CarrierName, OutboundIntent, PlacedCall
+from mitra_voice.team.ladder import TransferOutcome
 
 log = structlog.get_logger(__name__)
 
@@ -126,6 +127,17 @@ class PlivoCarrier:
         if not isinstance(request_uuid, str) or not request_uuid:
             raise CarrierError("plivo response had no request_uuid")
         return PlacedCall(carrier="plivo", call_sid=request_uuid, status="queued")
+
+    async def transfer(
+        self, call_sid: str, to_e164: str, *, whisper: str, ring_timeout_s: int
+    ) -> TransferOutcome:
+        """Warm transfer with whisper. Not wired to plivo yet: every step reports "failed",
+        so the ladder ends in a message taken by the AI (no call is ever dropped).
+
+        TODO(plivo): dial the staff leg, play ``whisper`` to it only, then bridge the legs.
+        """
+        log.warning("plivo.transfer_not_implemented", call_sid=call_sid)
+        return "failed"
 
     async def aclose(self) -> None:
         await self._client.aclose()

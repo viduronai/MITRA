@@ -278,6 +278,18 @@ async def apply_analysis(
         fact.source_call_id = call.id
 
 
+async def _send_owner_alerts(session: AsyncSession, call: Call) -> None:
+    """MGR-05 WhatsApp alerts (deduped per call). Never fails the processed call."""
+    from mitra_core.manager.alerts import alerts_for_call  # lazy: manager imports calls
+
+    try:
+        await alerts_for_call(session, call)
+        await session.commit()
+    except Exception as exc:
+        await session.rollback()
+        log.warning("call.alerts_failed", call_id=str(call.id), exc_type=type(exc).__name__)
+
+
 async def process_call(call_id: uuid.UUID, business_id: uuid.UUID, summarizer: Summarizer) -> None:
     """Analyse an ended call and update memory. Safe to re-run."""
     async with tenant_session(TenantContext(business_id=business_id)) as session:
@@ -311,6 +323,7 @@ async def process_call(call_id: uuid.UUID, business_id: uuid.UUID, summarizer: S
         analysis = await summarizer.analyze(data)
         await apply_analysis(session, call, analysis, actions)
         await session.commit()
+        await _send_owner_alerts(session, call)
         log.info(
             "call.processed",
             call_id=str(call.id),
@@ -319,6 +332,9 @@ async def process_call(call_id: uuid.UUID, business_id: uuid.UUID, summarizer: S
             memory=len(analysis.memory),
             unknown=len(analysis.unknown_questions),
         )
+        from mitra_core.team.hooks import after_call_processed  # hand-offs, events (TEAM)
+
+        await after_call_processed(session, call.id)
 
 
 async def run_post_call(call_id: uuid.UUID, business_id: uuid.UUID, summarizer: Summarizer) -> None:

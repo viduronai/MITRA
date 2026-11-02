@@ -13,7 +13,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from mitra_core.api import internal, internal_billing, internal_calls, internal_telephony
+from mitra_core.api import (
+    internal,
+    internal_billing,
+    internal_calls,
+    internal_dialer,
+    internal_leads,
+    internal_team,
+    internal_telephony,
+    lead_intake,
+    meta_leads,
+    whatsapp_webhook,
+)
 from mitra_core.api.v1 import health
 from mitra_core.api.v1 import router as v1_router
 from mitra_core.config import Settings, get_settings
@@ -105,6 +116,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(internal_billing.router)
     app.include_router(internal_calls.router)
     app.include_router(internal_telephony.router)
+    app.include_router(internal_dialer.router)
+    app.include_router(internal_team.router)
+    app.include_router(lead_intake.router)
+    app.include_router(meta_leads.router)
+    app.include_router(internal_leads.router)
+    app.include_router(whatsapp_webhook.router)
+    app.include_router(whatsapp_webhook.internal_router)
     return app
 
 

@@ -31,6 +31,9 @@ class OutboundIntent:
     phone_number_id: str | None = None
     attempt_id: str | None = None  # core outbound_attempt row, for the outcome update
     scenario: str = "clinic"  # fixture fallback in local dev only
+    # Dialer calls (core outbound_job): script variables for the prompt ({lead_name}, ...).
+    job_id: str | None = None
+    variables: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

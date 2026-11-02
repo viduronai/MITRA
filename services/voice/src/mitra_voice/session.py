@@ -19,6 +19,7 @@ from mitra_voice.providers import ResolvedProviders
 from mitra_voice.usage import UsageMeter
 
 if TYPE_CHECKING:
+    from mitra_voice.brain.engine import Brain
     from mitra_voice.core_client import ActionLog, CoreCallReporter, Direction
 
 log = structlog.get_logger(__name__)
@@ -56,6 +57,10 @@ class CallSession:
     direction: Direction = "web"
     caller_phone: str | None = field(default=None, repr=False)  # E.164; never logged
     action_log: ActionLog | None = None  # the brain's tool calls, read at call end
+    # Phone calls: the carrier's call id, the call's brain, transcript listeners (team.control).
+    call_sid: str | None = None
+    brain: Brain | None = None
+    listeners: list[Callable[[TranscriptEntry], None]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.tracker.on_turn_complete = self._on_turn_complete
@@ -78,15 +83,20 @@ class CallSession:
 
     # --- events from the pipeline ---------------------------------------------------------------
 
+    def _notify(self, entry: TranscriptEntry) -> None:
+        self.transcript.append(entry)
+        for listener in self.listeners:
+            listener(entry)
+
     def add_user(self, text: str) -> None:
-        self.transcript.append(TranscriptEntry("user", text))
+        self._notify(TranscriptEntry("user", text))
         self._log.info("turn.user", text=redact_phones(text), turn=len(self.tracker.turns))
         self.send(
             {"type": "transcript", "role": "user", "text": text, "language": self.call.human_lang}
         )
 
     def add_assistant(self, text: str, *, interrupted: bool = False) -> None:
-        self.transcript.append(TranscriptEntry("assistant", text, interrupted))
+        self._notify(TranscriptEntry("assistant", text, interrupted))
         self._log.info("turn.assistant", text=redact_phones(text), interrupted=interrupted)
         self.send(
             {"type": "transcript", "role": "assistant", "text": text, "interrupted": interrupted}

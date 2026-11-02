@@ -2,9 +2,12 @@ import {
   CircleCheckBig,
   Ellipsis,
   House,
+  Megaphone,
   Phone,
   Plug,
+  Radio,
   Repeat,
+  Sparkles,
   UserRound,
   Users,
   type LucideIcon,
@@ -17,13 +20,18 @@ export type NavKey =
   | "customers"
   | "more"
   | "routines"
+  | "campaigns"
+  | "live"
   | "approvals"
+  | "ask"
   | "connect";
 
 export interface NavItem {
   key: NavKey;
   href: string;
   icon: LucideIcon;
+  /** In the desktop secondary list: live (a link) instead of "Soon". */
+  ready?: boolean;
 }
 
 /** Mobile bottom bar and the top of the desktop sidebar (docs/07 §1). */
@@ -35,10 +43,13 @@ export const primaryNav: NavItem[] = [
   { key: "more", href: "/more", icon: Ellipsis },
 ];
 
-/** Desktop-only, shown disabled with a "Soon" badge until P2. */
+/** Desktop-only; items without `ready` show disabled with a "Soon" badge until P2. */
 export const upcomingNav: NavItem[] = [
-  { key: "routines", href: "/routines", icon: Repeat },
-  { key: "approvals", href: "/approvals", icon: CircleCheckBig },
+  { key: "routines", href: "/routines", icon: Repeat, ready: true },
+  { key: "campaigns", href: "/campaigns", icon: Megaphone, ready: true },
+  { key: "live", href: "/live", icon: Radio, ready: true },
+  { key: "ask", href: "/ask", icon: Sparkles, ready: true },
+  { key: "approvals", href: "/approvals", icon: CircleCheckBig, ready: true },
   { key: "connect", href: "/connect", icon: Plug },
 ];
 

@@ -4,6 +4,7 @@
 - ``compliance_check(...)``: ``compliance.check(contact, purpose, time, number)`` before dialling
 - ``record_attempt`` / ``set_outcome``: frequency caps and per-number answer rate
 - ``opt_out``: "don't call me" during a call (CMP-06)
+- ``schedule_callback``: "call me back tomorrow at 5" -> core's dialer queue (CALL-05)
 
 Inbound resolution sits on the call-start path, so it has a hard timeout; everything else
 happens before dialling or after hang-up. Phone numbers are sent to core (which hashes them) and
@@ -48,6 +49,7 @@ class CoreTelephony:
         *,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
+        self._dialer_url = core_url.rstrip("/") + "/internal/v1/dialer"
         self._client = httpx.AsyncClient(
             base_url=core_url.rstrip("/") + PREFIX,
             headers={"Authorization": f"Bearer {service_token}"},
@@ -112,6 +114,14 @@ class CoreTelephony:
         res = await self._send("POST", "/opt-outs", json=body)
         if res.status_code != 201:
             log.warning("core.opt_out_failed", status=res.status_code)
+
+    async def schedule_callback(self, body: dict[str, Any]) -> str | None:
+        """CALL-05: queue a call back in core's dialer; returns the job id."""
+        res = await self._send("POST", f"{self._dialer_url}/callbacks", json=body)
+        if res.status_code != 201:
+            log.warning("core.callback_failed", status=res.status_code)
+            return None
+        return str(res.json()["job_id"])
 
     async def aclose(self) -> None:
         await self._client.aclose()

@@ -153,6 +153,7 @@ def build_call_pipeline(
     llm = make_llm(session.providers, settings, pack, call)
     brain = getattr(llm, "brain", None)  # the guarded brain keeps the call's tool calls
     if brain is not None:
+        session.brain = brain
         session.action_log = lambda: [
             {"name": c.name, "args": c.args, "result": c.result} for c in brain.executor.calls
         ]
@@ -284,3 +285,10 @@ async def greet(call: CallPipeline, session: CallSession) -> None:
     call.context.add_message({"role": "assistant", "content": greeting})
     await call.worker.queue_frames([TTSSpeakFrame(greeting, append_to_context=False)])
     session.add_assistant(greeting)
+
+
+async def say(call: CallPipeline, session: CallSession, text: str) -> None:
+    """Speak a fixed line outside an LLM turn (transfer hold / hand-back), kept in context."""
+    call.context.add_message({"role": "assistant", "content": text})
+    await call.worker.queue_frames([TTSSpeakFrame(text, append_to_context=False)])
+    session.add_assistant(text)

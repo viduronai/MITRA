@@ -108,6 +108,49 @@ class Settings(BaseSettings):
     billing_supplier_state_code: str = "36"  # Telangana
     billing_supplier_address: str = "Hyderabad, Telangana"
 
+    # WhatsApp (src/mitra_core/whatsapp). "sim" stores messages only (dev page shows them);
+    # "cloud" = Meta WhatsApp Cloud API. Cloud credentials use Meta's names, no MITRA_ prefix.
+    whatsapp_provider: Literal["sim", "cloud"] = "sim"
+    whatsapp_token: SecretStr = Field(default=SecretStr(""), validation_alias="WHATSAPP_TOKEN")
+    whatsapp_phone_number_id: str = Field(default="", validation_alias="WHATSAPP_PHONE_NUMBER_ID")
+    whatsapp_app_secret: SecretStr = Field(
+        default=SecretStr(""), validation_alias="WHATSAPP_APP_SECRET"
+    )
+    whatsapp_verify_token: SecretStr = Field(
+        default=SecretStr(""), validation_alias="WHATSAPP_VERIFY_TOKEN"
+    )
+    # AI Manager (src/mitra_core/manager). "rules" = deterministic intent parser (default, tests);
+    # "llm" = a free OpenAI-compatible endpoint (Groq or Gemini's OpenAI endpoint) used only to
+    # pick a tool and phrase the answer; numbers always come from tool results.
+    manager_llm: Literal["rules", "llm"] = "rules"
+    manager_llm_url: str | None = None
+    manager_llm_api_key: SecretStr | None = None
+    manager_llm_model: str | None = None
+    # Voice-note transcription: an OpenAI-compatible /audio/transcriptions endpoint (Groq's free
+    # Whisper). Unset = voice notes are answered with "please type it" (TODO in the reply).
+    transcribe_url: str | None = None
+    transcribe_api_key: SecretStr | None = None
+    transcribe_model: str | None = None
+    # Public base URL of the web app, used for links in WhatsApp messages.
+    app_base_url: str = "http://localhost:3000"
+
+    # Lead intake (src/mitra_core/leads). Public base URL of this API, shown in intake URLs.
+    public_api_url: str = "http://localhost:8000"
+    lead_intake_max_per_minute: int = 60  # per business, all sources together
+    lead_form_max_per_ip_hour: int = 10  # website form (no secret possible in a browser)
+    # Meta Lead Ads: "sim" fabricates the lead for a leadgen id; "graph" calls the Graph API.
+    # The app secret signs webhooks (X-Hub-Signature-256); Meta's names, no MITRA_ prefix.
+    meta_leads_provider: Literal["sim", "graph"] = "sim"
+    meta_app_secret: SecretStr = Field(default=SecretStr(""), validation_alias="META_APP_SECRET")
+    meta_verify_token: SecretStr = Field(
+        default=SecretStr(""), validation_alias="META_VERIFY_TOKEN"
+    )
+    # IndiaMART pull API: "sim" returns sample enquiries; "api" calls mapi.indiamart.com.
+    indiamart_provider: Literal["sim", "api"] = "sim"
+    # Outgoing webhooks: private/loopback targets are refused unless allowed (local dev only).
+    webhook_allow_private_urls: bool = False
+    webhook_timeout_seconds: float = 10.0
+
     @property
     def effective_service_token(self) -> str | None:
         if self.service_token is not None and self.service_token.get_secret_value():

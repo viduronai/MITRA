@@ -87,7 +87,7 @@ export function Sidebar() {
       <nav aria-label={t("label")} className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">{primaryNav.map((item) => renderItem(item, false))}</ul>
         <div className="mx-3 my-4 h-px bg-border" role="separator" />
-        <ul className="flex flex-col gap-1">{upcomingNav.map((item) => renderItem(item, true))}</ul>
+        <ul className="flex flex-col gap-1">{upcomingNav.map((item) => renderItem(item, !item.ready))}</ul>
       </nav>
 
       <div className={cn("p-3", collapsed && "flex justify-center")}>
