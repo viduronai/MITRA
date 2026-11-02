@@ -9,16 +9,18 @@ from __future__ import annotations
 
 import re
 
-from mitra_human._lang import TELUGU, Lang
+from mitra_human._lang import TELUGU, BaseLang
 from mitra_human._num_te import TeForm, merge_suffix
 
 OPEN = "\ue010"
 CLOSE = "\ue011"
+# Closes a phrase that must not take కి/కు (English words in code-mixed speech).
+FROZEN = "\ue012"
 
 _TE_MERGE = re.compile(
-    rf"{OPEN}([^{OPEN}{CLOSE}]*){CLOSE} ?(కి|కు)(?![{TELUGU}])",
+    rf"{OPEN}([^{OPEN}{CLOSE}{FROZEN}]*){CLOSE} ?(కి|కు)(?![{TELUGU}])",
 )
-_SENTINELS = re.compile(f"[{OPEN}{CLOSE}]")
+_SENTINELS = re.compile(f"[{OPEN}{CLOSE}{FROZEN}]")
 
 _NEXT_WORD = re.compile(rf"[ \t]?([{TELUGU}\u200c\u200d]+|[A-Za-z]+)")
 _TE_POSTPOSITIONS = frozenset(("నుండి", "నుంచి", "వరకు", "వరకూ", "దాకా", "తో", "లో", "కంటే", "లోపు", "పైన"))
@@ -30,7 +32,15 @@ def mark(phrase: str) -> str:
     return f"{OPEN}{phrase}{CLOSE}"
 
 
-def finalize(text: str, lang: Lang) -> str:
+def freeze(text: str) -> str:
+    """Stop every phrase marked so far from merging with a following కి/కు.
+
+    Code-mixed speech keeps the case marker as its own word: "six thirty కి".
+    """
+    return text.replace(CLOSE, FROZEN)
+
+
+def finalize(text: str, lang: BaseLang) -> str:
     if lang == "te":
         text = _TE_MERGE.sub(lambda m: mark(merge_suffix(m.group(1), m.group(2))), text)
     return _SENTINELS.sub("", text)

@@ -101,6 +101,26 @@ class Settings(BaseSettings):
     mitra_core_url: str | None = None
     mitra_core_service_token: SecretStr | None = None
 
+    # Telephony (transports/telephony.py, carriers/, docs/telephony.md). ``sim`` = the local
+    # carrier simulator: outbound "calls" dial nothing. Values below come from the carrier
+    # dashboards once the account's KYC is approved (empty in .env.example).
+    mitra_telephony_carrier: Literal["sim", "exotel", "plivo"] = "sim"
+    # Public https base of this service, used to build wss:// stream URLs for the carrier.
+    mitra_public_base_url: str | None = None
+    # Exotel: Dashboard > API settings (SID, key, token, subdomain) and App Bazaar (flow id).
+    exotel_account_sid: str | None = None
+    exotel_api_key: str | None = None
+    exotel_api_token: SecretStr | None = None
+    exotel_subdomain: str = "api.in.exotel.com"  # Mumbai cluster; api.exotel.com = Singapore
+    exotel_app_id: str | None = None  # the call flow holding the Voicebot applet
+    exotel_caller_id: str | None = None  # default ExoPhone for outbound
+    # Audio Exotel streams to us: 8000 | 16000 | 24000 (Voicebot applet sample-rate setting).
+    exotel_sample_rate: Literal[8000, 16000, 24000] = 8000
+    # Plivo (secondary carrier): Console > Overview (Auth ID / token) and a Plivo number.
+    plivo_auth_id: str | None = None
+    plivo_auth_token: SecretStr | None = None
+    plivo_caller_id: str | None = None
+
     # Mock tuning (latency simulation).
     mock_llm_ttft_ms: int = Field(default=250, ge=0, le=10_000)
     mock_llm_token_ms: int = Field(default=20, ge=0, le=1_000)

@@ -35,7 +35,7 @@ class CachedPhrasePlayer(FrameProcessor):
             and direction == FrameDirection.DOWNSTREAM
             and isinstance(frame, TTSSpeakFrame)
         ):
-            audio = self._cache.get(self._call.language, frame.text)
+            audio = self._cache.get(self._call.human_lang, frame.text)
             if audio is not None:
                 self._usage.cache_hits += 1
                 step = int(self._sample_rate * CHUNK_MS / 1000) * 2

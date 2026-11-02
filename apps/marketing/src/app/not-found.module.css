@@ -1,0 +1,112 @@
+.page {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: 120px var(--gutter) 160px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(60% 50% at 50% 40%, rgba(47, 107, 255, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--night) 0%, #020c30 100%);
+  text-align: center;
+}
+
+.horizon {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: calc(-1 * (64vw - clamp(70px, 9vw, 150px)));
+  width: max(150vw, 900px);
+  height: 64vw;
+  min-height: 420px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 50% at 50% 50%, #04155a 0%, #020b33 60%, #01061a 100%);
+  box-shadow:
+    0 -1px 0 rgba(159, 227, 250, 0.7),
+    0 -18px 60px rgba(56, 198, 244, 0.28),
+    0 -60px 160px rgba(47, 107, 255, 0.22);
+}
+
+.logo {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 720px;
+}
+
+.code {
+  margin: 0;
+  font-family: var(--font-dot);
+  font-weight: 700;
+  font-size: clamp(88px, 16vw, 220px);
+  line-height: 0.85;
+  color: rgba(159, 227, 250, 0.18);
+  text-shadow: 0 0 60px rgba(56, 198, 244, 0.35);
+}
+
+.eyebrow {
+  margin: 18px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sky);
+}
+
+.title {
+  margin: 14px 0 0;
+  font-weight: 400;
+  font-size: clamp(44px, 7vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.title em {
+  color: var(--sky-soft);
+}
+
+.text {
+  max-width: 30em;
+  margin: 22px 0 0;
+  font-size: 17px;
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--body-on-dark);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 34px;
+}
+
+.lang {
+  display: flex;
+  gap: 20px;
+  margin: 28px 0 0;
+  font-size: 15px;
+}
+
+.lang a {
+  color: var(--body-on-dark);
+  border-bottom: 1px solid rgba(220, 235, 255, 0.3);
+}
+
+.lang a:hover {
+  color: #fff;
+}

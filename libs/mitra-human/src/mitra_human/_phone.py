@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from mitra_human._lang import Lang, check_lang
+from mitra_human._lang import BaseLang, check_lang, digits_lang
 from mitra_human._lexicon import PLUS
 from mitra_human._marks import finalize, mark
 from mitra_human.numwords import digit_words
@@ -35,7 +35,7 @@ def _groups(raw: str, default: tuple[int, ...]) -> list[str]:
     return [g for g in groups if g]
 
 
-def _read(groups: list[str], lang: Lang, *, plus: bool = False) -> str:
+def _read(groups: list[str], lang: BaseLang, *, plus: bool = False) -> str:
     spoken = ", ".join(digit_words(g, lang, phone=True) for g in groups)
     return f"{PLUS[lang]} {spoken}" if plus else spoken
 
@@ -47,7 +47,7 @@ def _landline_groups(raw: str) -> list[str]:
     return [std, local[:split], local[split:]] if split < len(local) else [std, local]
 
 
-def apply_phones(text: str, lang: Lang) -> str:
+def apply_phones(text: str, lang: BaseLang) -> str:
     def landline(m: re.Match[str]) -> str:
         raw = m.group("num")
         if len(re.sub(r"\D", "", raw)) != 11:  # STD code + local number, with the 0
@@ -63,8 +63,11 @@ def apply_phones(text: str, lang: Lang) -> str:
 
 
 def spell_phone(number: str, lang: str) -> str:
-    """Read a phone number aloud: "+91 98765 43210" -> "nine eight seven six five, ..."."""
-    language = check_lang(lang)
+    """Read a phone number aloud: "+91 98765 43210" -> "nine eight seven six five, ...".
+
+    Code-mixed speakers ("te-en", "hi-en") read phone numbers in English digits.
+    """
+    language = digits_lang(check_lang(lang))
     stripped = number.strip()
     if not re.fullmatch(r"\+?[\d \-()]+", stripped) or not re.search(r"\d", stripped):
         raise ValueError(f"not a phone number: {number!r}")

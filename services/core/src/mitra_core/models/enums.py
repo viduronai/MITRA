@@ -79,3 +79,49 @@ class TestCallStatus(StrEnum):
     RINGING = "ringing"
     CONNECTED = "connected"
     COMPLETED = "completed"
+
+
+class CallDirection(StrEnum):
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
+    WEB = "web"  # browser test call (WebRTC), no phone network
+
+
+class CallStatus(StrEnum):
+    LIVE = "live"
+    ENDED = "ended"  # transcript received, post-call processing pending
+    PROCESSED = "processed"
+
+
+class CallResult(StrEnum):
+    BOOKED = "booked"
+    INTERESTED = "interested"
+    CALL_BACK = "call_back"
+    TRANSFERRED = "transferred"
+    NOT_INTERESTED = "not_interested"
+    INFO_ONLY = "info_only"
+    MISSED = "missed"
+
+
+class Sentiment(StrEnum):
+    POSITIVE = "positive"
+    NEUTRAL = "neutral"
+    NEGATIVE = "negative"
+
+
+class CallRating(StrEnum):
+    UP = "up"
+    DOWN = "down"
+
+
+class MemoryStatus(StrEnum):
+    """MEM-03: what the customer said (confirmed) vs what was guessed (inferred)."""
+
+    CONFIRMED = "confirmed"
+    INFERRED = "inferred"
+
+
+class CommitmentStatus(StrEnum):
+    OPEN = "open"
+    DONE = "done"
+    CANCELLED = "cancelled"

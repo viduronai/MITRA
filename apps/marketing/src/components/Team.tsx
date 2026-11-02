@@ -1,4 +1,4 @@
-import { copy } from "@/content";
+import { content, type Copy } from "@/content";
 import { media } from "@/lib/media";
 import { LazyVideo } from "./LazyVideo";
 import s from "./team.module.css";
@@ -17,7 +17,7 @@ function Accent({ text, word }: { text: string; word: string }) {
   );
 }
 
-export function Team() {
+export function Team({ copy = content.en }: { copy?: Copy }) {
   const { team } = copy;
   return (
     <section

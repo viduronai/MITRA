@@ -1,0 +1,121 @@
+/* Closing CTA: night canvas, breathing sky orb with ripples behind the line. */
+.band {
+  --cis: 720px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: min(86svh, 820px);
+  padding: clamp(96px, 12vw, 180px) var(--gutter);
+  overflow: hidden;
+  text-align: center;
+  background:
+    radial-gradient(40% 50% at 50% 50%, rgba(47, 107, 255, 0.22), transparent 70%),
+    linear-gradient(180deg, #020a2a 0%, var(--night) 100%);
+}
+
+.orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(78vw, 640px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.orb span {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(127, 212, 255, 0.22);
+  border-radius: 50%;
+  animation: ripple 6s var(--ease-out) infinite;
+}
+
+.orb span:nth-child(2) {
+  animation-delay: 2s;
+}
+
+.orb span:nth-child(3) {
+  animation-delay: 4s;
+}
+
+.orb i {
+  position: absolute;
+  inset: 34%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, rgba(201, 241, 255, 0.55), rgba(56, 198, 244, 0.28) 40%, rgba(47, 107, 255, 0.12) 70%, transparent 72%);
+  filter: blur(2px);
+  animation: breathe 5s ease-in-out infinite;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(40px, 6.4vw, 104px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.title em {
+  color: var(--sky-soft);
+}
+
+.text {
+  max-width: 32em;
+  margin: 24px 0 0;
+  font-size: clamp(16px, 1.3vw, 19px);
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--body-on-dark);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb span,
+  .orb i {
+    animation: none;
+  }
+
+  .orb span:nth-child(1) {
+    transform: scale(0.6);
+  }
+
+  .orb span:nth-child(2) {
+    transform: scale(0.8);
+  }
+}

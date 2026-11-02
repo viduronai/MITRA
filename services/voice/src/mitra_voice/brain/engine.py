@@ -16,6 +16,7 @@ the production brain. Per turn:
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
@@ -34,7 +35,14 @@ from mitra_voice.brain.backend import (
     UsageEvent,
     pace,
 )
-from mitra_voice.brain.cues import BOOK_NOW, SEND_REPORT, booking_accepted, dob_given
+from mitra_voice.brain.cues import (
+    BOOK_NOW,
+    HURRIED,
+    SEND_REPORT,
+    booking_accepted,
+    dob_given,
+    hurried,
+)
 from mitra_voice.brain.guardrails import PostCheck, pre_check, split_sentences
 from mitra_voice.brain.language import CallerLanguage, base_language, reply_instruction
 from mitra_voice.brain.tools import Clock, ToolExecutor
@@ -91,6 +99,8 @@ class TurnResult:
     violations: list[str] = field(default_factory=list)
     retried: bool = False
     failed: bool = False
+    # "rate_limited" when the provider quota (e.g. a daily token cap) stopped the turn.
+    error: str | None = None
 
 
 @dataclass
@@ -149,11 +159,29 @@ class Brain:
         self.executor = ToolExecutor(pack, clock=clock) if clock else ToolExecutor(pack)
         self.post = PostCheck(pack)
         self.usage = Usage()
-        self.system_prompt = build_prompt(
-            pack, customer_memory, localized=localized
-        ).system_prompt()
+        self._localized = localized
+        self._memory = customer_memory
+        self._prompts: dict[str, str] = {}
+        self._lang: CallerLanguage = pack.default_language
+        self.system_prompt = self._system_for(self._lang)
         self._reasoning = config.reasoning
         self._t0 = time.perf_counter()
+
+    def _system_for(self, lang: CallerLanguage) -> str:
+        """The system prompt with localised fact wording for this caller's language only.
+
+        One prompt per base language, so the prefix stays identical (cacheable) within a call.
+        """
+        base = base_language(lang)
+        if base not in self._prompts:
+            sections = build_prompt(
+                self.pack,
+                self._memory,
+                localized=self._localized,
+                localized_languages=() if base == "en" else (base,),
+            )
+            self._prompts[base] = sections.system_prompt()
+        return self._prompts[base]
 
     # --- prompt pieces --------------------------------------------------------------------------
 
@@ -174,7 +202,7 @@ class Brain:
     def _request_for(self, model: str, turns: list[ChatTurn]) -> ChatRequest:
         return ChatRequest(
             model=model,
-            system=self.system_prompt,
+            system=self._system_for(self._lang),
             turns=tuple(turns),
             temperature=self.config.temperature,
             max_output_tokens=self.config.max_output_tokens,
@@ -265,6 +293,8 @@ class Brain:
         on_retry: Callable[[], Awaitable[None]] | None = None,
     ) -> AsyncIterator[str]:
         """Yield checked reply sentences for one caller turn; ``result`` collects the rest."""
+        self._lang = lang
+        self.system_prompt = self._system_for(lang)
         started = time.perf_counter()
         self.post.caller_texts = [m.text for m in history if m.role == "user"] + [caller_text]
 
@@ -292,6 +322,8 @@ class Brain:
             instructions.append(BOOK_NOW)
         if dob_given(last_reply, caller_text):
             instructions.append(SEND_REPORT)
+        if hurried(caller_text, [m.text for m in history if m.role == "user"]):
+            instructions.append(HURRIED)
         note = self._turn_note(lang, "\n".join(instructions) or None)
         turns = self._turns(history, caller_text, note)
         emitted: list[str] = []
@@ -368,7 +400,9 @@ class Brain:
             log.warning("brain.turn_failed", reason="timeout", round=round_no)
         except Exception as exc:
             result.failed = True
-            log.warning("brain.turn_failed", reason=type(exc).__name__, detail=str(exc)[:200])
+            if self.backend.rate_limit_delay(exc) is not None:
+                result.error = "rate_limited"
+            log.warning("brain.turn_failed", reason=type(exc).__name__, detail=str(exc)[:400])
 
         if result.failed or not emitted:
             if result.failed or not result.actions:
@@ -383,6 +417,12 @@ class Brain:
                 emitted.append(done)
                 yield done
         result.text = " ".join(emitted)
+        names = {a.name for a in result.actions}
+        if not result.failed and _PROMISE.search(result.text) and not names & _FOLLOW_UP_TOOLS:
+            # A spoken "the team will confirm / get back to you" must create the follow-up.
+            args = {"topic": caller_text[:200]}
+            self.executor.execute("schedule_callback", args)
+            result.actions.append(Action("schedule_callback", args))
 
     async def turn(
         self, history: Sequence[Message], caller_text: str, lang: CallerLanguage
@@ -392,6 +432,16 @@ class Brain:
             pass
         return result
 
+
+_PROMISE = re.compile(
+    r"confirm|get back to you|call you back|will (?:share|send|update)|"
+    r"కన్ఫర్మ్|confirm చేసి|తెలియజేస్తా|చెప్తాను|చెబుతాను|కాల్ చేస్తా|"
+    r"कन्फ़र्म|कन्फर्म|बता दूँगी|बता दूंगी|बता देंगे|कॉल कर|call कर",
+    re.IGNORECASE,
+)
+_FOLLOW_UP_TOOLS = frozenset(
+    {"schedule_callback", "transfer_to_human", "send_whatsapp_template", "book_slot", "reschedule"}
+)
 
 _DONE: dict[str, str] = {
     "en": "Done, I've taken care of that.",

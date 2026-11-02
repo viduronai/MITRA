@@ -1,10 +1,10 @@
-import { copy } from "@/content";
+import { content, type Copy } from "@/content";
 import { SampleButton } from "./SampleButton";
 import s from "./industries.module.css";
 
 const BARS = [8, 14, 20, 12, 17, 9, 15, 21, 11, 7, 13, 18, 10, 6];
 
-export function Industries() {
+export function Industries({ copy = content.en }: { copy?: Copy }) {
   const { industries: ind } = copy;
   return (
     <section

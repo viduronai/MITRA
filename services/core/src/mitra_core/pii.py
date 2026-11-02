@@ -14,5 +14,10 @@ def hash_phone(phone_e164: str, key: str | None = None) -> str:
     return hmac.new(secret.encode(), phone_e164.encode(), hashlib.sha256).hexdigest()
 
 
+def hash_ip(ip: str, key: str | None = None) -> str:
+    """HMAC of a client IP for rate limiting; domain-separated from phone hashes."""
+    return hash_phone(f"ip:{ip}", key)
+
+
 def phone_last4(phone_e164: str) -> str:
     return phone_e164[-4:]

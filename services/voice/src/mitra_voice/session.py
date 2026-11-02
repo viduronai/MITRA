@@ -7,7 +7,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import structlog
 
@@ -17,6 +17,9 @@ from mitra_voice.logging import redact_phones
 from mitra_voice.pack import EmployeePack, Lang, Scenario
 from mitra_voice.providers import ResolvedProviders
 from mitra_voice.usage import UsageMeter
+
+if TYPE_CHECKING:
+    from mitra_voice.core_client import ActionLog, CoreCallReporter, Direction
 
 log = structlog.get_logger(__name__)
 
@@ -48,6 +51,11 @@ class CallSession:
     tracker: LatencyTracker = field(default_factory=LatencyTracker)
     usage: UsageMeter = field(default_factory=UsageMeter)
     send: SendFn = _noop
+    # Call reporting to services/core (core_client.py); None = not reported.
+    reporter: CoreCallReporter | None = None
+    direction: Direction = "web"
+    caller_phone: str | None = field(default=None, repr=False)  # E.164; never logged
+    action_log: ActionLog | None = None  # the brain's tool calls, read at call end
 
     def __post_init__(self) -> None:
         self.tracker.on_turn_complete = self._on_turn_complete
@@ -61,6 +69,8 @@ class CallSession:
             and stt_lock_language(self.pack.languages) is not None,
         )
         self.call.on_language_change.append(self._on_language_change)
+        if self.reporter is not None:
+            self.reporter.call_started(self)
 
     async def _on_language_change(self, lang: Lang) -> None:
         self._log.info("call.language", language=lang)
@@ -72,7 +82,7 @@ class CallSession:
         self.transcript.append(TranscriptEntry("user", text))
         self._log.info("turn.user", text=redact_phones(text), turn=len(self.tracker.turns))
         self.send(
-            {"type": "transcript", "role": "user", "text": text, "language": self.call.language}
+            {"type": "transcript", "role": "user", "text": text, "language": self.call.human_lang}
         )
 
     def add_assistant(self, text: str, *, interrupted: bool = False) -> None:
@@ -99,8 +109,11 @@ class CallSession:
         self.send({"type": "usage", "usage": self.usage.summary()})
 
     def end(self) -> None:
+        first = self.ended_at is None
         self.ended_at = datetime.now(UTC).isoformat()
         self._log.info("session.ended", turns=len(self.tracker.turns), **self.usage.summary())
+        if first and self.reporter is not None:
+            self.reporter.call_ended(self)
 
     # --- read side ------------------------------------------------------------------------------
 

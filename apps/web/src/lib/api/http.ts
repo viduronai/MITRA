@@ -4,6 +4,14 @@ import type {
   ApiErrorBody,
   Business,
   BusinessCreatedOut,
+  CallDetail,
+  CallFilters,
+  CallList,
+  CustomerDetail,
+  CustomerList,
+  ForgetOut,
+  HomeSummary,
+  MemoryFact,
   CatalogVoice,
   CorrectionOut,
   Employee,
@@ -58,6 +66,36 @@ async function request<T>(path: string, { method = "GET", token, body, idempoten
   return data as T;
 }
 
+/** CSV and other non-JSON bodies. */
+async function requestText(path: string, token: string): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/v1${path}`, {
+      headers: { Accept: "text/csv", Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch {
+    throw new ApiError(0, "unreachable", "The Mitra service could not be reached.");
+  }
+  if (!response.ok) {
+    const error = ((await response.json().catch(() => null)) as ApiErrorBody | null)?.error;
+    throw new ApiError(response.status, error?.code ?? `http_${response.status}`, error?.message ?? response.statusText);
+  }
+  return response.text();
+}
+
+/** `?result=booked&result=missed&language=te` (empty values dropped). */
+export function callQuery(filters: CallFilters = {}): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === "") continue;
+    for (const v of Array.isArray(value) ? value : [value]) params.append(key, String(v));
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 /** Lists come back either bare or wrapped as `{ items: [...] }`. */
 function items<T>(data: T[] | { items: T[] }): T[] {
   return Array.isArray(data) ? data : data.items;
@@ -106,6 +144,23 @@ export const httpApi: MitraApi = {
   getTestCall: (token, id) => request<TestCall>(`/test-calls/${enc(id)}`, { token }),
   addCorrection: (token, testCallId, text) =>
     request<CorrectionOut>(`/test-calls/${enc(testCallId)}/corrections`, { method: "POST", token, body: { text } }),
+
+  listCalls: (token, filters) => request<CallList>(`/calls${callQuery(filters)}`, { token }),
+  getCall: (token, id) => request<CallDetail>(`/calls/${enc(id)}`, { token }),
+  rateCall: async (token, id, rating, reason) => {
+    await request(`/calls/${enc(id)}/rating`, { method: "POST", token, body: { rating, reason: reason || undefined } });
+  },
+  exportCalls: (token, filters) => requestText(`/calls/export.csv${callQuery(filters)}`, token),
+  homeSummary: (token) => request<HomeSummary>("/home/summary", { token }),
+
+  listCustomers: (token, q) => request<CustomerList>(`/customers${q ? `?q=${enc(q)}` : ""}`, { token }),
+  getCustomer: (token, id) => request<CustomerDetail>(`/customers/${enc(id)}`, { token }),
+  updateMemory: (token, customerId, factId, body) =>
+    request<MemoryFact>(`/customers/${enc(customerId)}/memory/${enc(factId)}`, { method: "PATCH", token, body }),
+  deleteMemory: (token, customerId, factId) =>
+    request<void>(`/customers/${enc(customerId)}/memory/${enc(factId)}`, { method: "DELETE", token }),
+  forgetCustomer: (token, customerId) =>
+    request<ForgetOut>(`/customers/${enc(customerId)}/forget`, { method: "POST", token }),
 
   progress: (token) => request<OnboardingProgress>("/onboarding/progress", { token }),
 };

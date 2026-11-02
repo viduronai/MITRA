@@ -37,9 +37,10 @@
   --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-inout: cubic-bezier(0.7, 0, 0.2, 1);
 
-  --font-sans: var(--font-host), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  --font-serif: var(--font-instrument), "Times New Roman", Times, serif;
+  /* Indic faces follow Host Grotesk so Telugu/Hindi glyphs anywhere use Noto. */
+  --font-sans: var(--font-host), var(--font-noto-telugu), var(--font-noto-devanagari), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), var(--font-noto-telugu), var(--font-noto-devanagari), ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --font-serif: var(--font-instrument), var(--font-noto-telugu), var(--font-noto-devanagari), "Times New Roman", Times, serif;
   --font-dot: var(--font-doto), var(--font-mono);
   --font-telugu: var(--font-noto-telugu), var(--font-sans);
   --font-devanagari: var(--font-noto-devanagari), var(--font-sans);
@@ -105,12 +106,15 @@ button {
   color: inherit;
 }
 
-[lang="te"] {
+/* Inline Indic snippets inside English copy (chips, transcripts). Whole
+   localised pages set the lang on <html>; they get the Indic faces from the
+   font stacks above and the html[lang] rules below instead. */
+:where(body *)[lang="te"] {
   font-family: var(--font-telugu);
   line-height: 1.1em;
 }
 
-[lang="hi"] {
+:where(body *)[lang="hi"] {
   font-family: var(--font-devanagari);
   line-height: 1.1em;
 }

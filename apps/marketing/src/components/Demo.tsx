@@ -1,10 +1,10 @@
-import { copy } from "@/content";
+import { content, type Copy } from "@/content";
 import { media } from "@/lib/media";
 import { DemoForm } from "./DemoForm";
 import { LazyVideo } from "./LazyVideo";
 import s from "./demo.module.css";
 
-export function Demo() {
+export function Demo({ copy = content.en }: { copy?: Copy }) {
   const { demo } = copy;
   const chip = demo.chip.replace(/^\[\s*|\s*\]$/g, "");
   return (
@@ -29,7 +29,7 @@ export function Demo() {
           <p className={`${s.tagline} fade-in`} style={{ "--i": 2 } as React.CSSProperties}>
             {demo.tagline}
           </p>
-          <DemoForm />
+          <DemoForm copy={copy} />
         </div>
       </div>
 

@@ -12,12 +12,14 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
 _HOST = os.environ.get("MITRA_TEST_DB_HOST", "localhost:5433")
+# Parallel workstreams can point at their own database to avoid dropping each other's schema.
+_DB = os.environ.get("MITRA_TEST_DB_NAME", "mitra_test")
 os.environ["MITRA_ENV"] = "test"
 os.environ["MITRA_DATABASE_URL"] = (
-    f"postgresql+asyncpg://mitra_app:mitra_app_dev_password@{_HOST}/mitra_test"
+    f"postgresql+asyncpg://mitra_app:mitra_app_dev_password@{_HOST}/{_DB}"
 )
 os.environ["MITRA_MIGRATION_DATABASE_URL"] = (
-    f"postgresql+asyncpg://mitra:mitra_dev_password@{_HOST}/mitra_test"
+    f"postgresql+asyncpg://mitra:mitra_dev_password@{_HOST}/{_DB}"
 )
 
 import httpx  # noqa: E402
@@ -36,6 +38,12 @@ from tests.helpers import FIXED_CODE, Actor, FakeClock, new_actor  # noqa: E402
 
 CORE_DIR = Path(__file__).resolve().parents[1]
 TABLES = (
+    "call_action",
+    "commitment",
+    "memory_fact",
+    "interaction_summary",
+    "call",
+    "demo_call",
     "otp_request",
     "test_call",
     "fact",
@@ -67,7 +75,8 @@ def _migrated_database() -> None:
     asyncio.run(_reset_schema())
     cfg = Config(str(CORE_DIR / "alembic.ini"))
     cfg.attributes["configure_logger"] = False
-    command.upgrade(cfg, "head")
+    # "heads": feature branches may add migrations in parallel; a merge revision joins them.
+    command.upgrade(cfg, "heads")
 
 
 @pytest.fixture(scope="session")

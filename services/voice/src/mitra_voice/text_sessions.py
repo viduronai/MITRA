@@ -27,6 +27,12 @@ from mitra_voice.prompt import Localized, greeting_for
 from mitra_voice.providers.mock_llm import mock_answer
 
 MAX_TEXT_SESSIONS = 200
+
+
+class BrainQuotaExhaustedError(RuntimeError):
+    """The LLM provider's rate limit / daily quota stopped a text-mode turn."""
+
+
 EvalLanguage = Literal["en", "hi", "te", "te-en", "hi-en"]
 
 
@@ -143,6 +149,9 @@ class TextSession:
             for m in self.history
         ]
         result = await self.brain.turn(past, text, self.language.resolve(text))
+        if result.error == "rate_limited":
+            # Evals must see an infrastructure error here, not grade the apology as the brain.
+            raise BrainQuotaExhaustedError("LLM provider quota exhausted; retry later")
         self.history.append({"role": "user", "content": text})
         self.history.append({"role": "assistant", "content": result.text})
         timings = (

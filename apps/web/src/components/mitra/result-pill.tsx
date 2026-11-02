@@ -1,13 +1,17 @@
 import {
   CalendarCheck,
   CircleAlert,
+  CircleCheck,
   CircleMinus,
+  Hourglass,
   PhoneCall,
+  PhoneForwarded,
+  PhoneMissed,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { CallResult } from "@/lib/mock-data";
+import type { CallResult } from "@/lib/calls";
 import { cn } from "@/lib/utils";
 
 const styles: Record<CallResult, { icon: LucideIcon; className: string }> = {
@@ -16,6 +20,10 @@ const styles: Record<CallResult, { icon: LucideIcon; className: string }> = {
   callBack: { icon: PhoneCall, className: "bg-info/12 text-info-fg" },
   notInterested: { icon: CircleMinus, className: "bg-surface-2 text-text-muted" },
   failed: { icon: CircleAlert, className: "bg-danger/10 text-danger-fg" },
+  missed: { icon: PhoneMissed, className: "bg-warning/15 text-warning-fg" },
+  transferred: { icon: PhoneForwarded, className: "bg-info/12 text-info-fg" },
+  answered: { icon: CircleCheck, className: "bg-surface-2 text-text-muted" },
+  processing: { icon: Hourglass, className: "bg-surface-2 text-text-subtle" },
 };
 
 /** Call result — always icon + label, never colour alone (docs/06 §3). */

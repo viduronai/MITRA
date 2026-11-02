@@ -1,5 +1,15 @@
 import type {
   Business,
+  CallDetail,
+  CallFilters,
+  CallList,
+  CallRating,
+  CustomerDetail,
+  CustomerList,
+  ForgetOut,
+  HomeSummary,
+  MemoryFact,
+  MemoryStatus,
   BusinessCreatedOut,
   BusinessIn,
   CatalogVoice,
@@ -68,6 +78,25 @@ export interface MitraApi {
   startTestCall(token: string, employeeId: string): Promise<TestCall>;
   getTestCall(token: string, id: string): Promise<TestCall>;
   addCorrection(token: string, testCallId: string, text: string): Promise<CorrectionOut>;
+
+  listCalls(token: string, filters?: CallFilters): Promise<CallList>;
+  getCall(token: string, id: string): Promise<CallDetail>;
+  rateCall(token: string, id: string, rating: CallRating, reason?: string): Promise<void>;
+  /** CSV text (UTF-8 with BOM) for the same filters as the list. */
+  exportCalls(token: string, filters?: CallFilters): Promise<string>;
+  homeSummary(token: string): Promise<HomeSummary>;
+
+  listCustomers(token: string, q?: string): Promise<CustomerList>;
+  getCustomer(token: string, id: string): Promise<CustomerDetail>;
+  updateMemory(
+    token: string,
+    customerId: string,
+    factId: string,
+    body: { value?: string; status?: MemoryStatus },
+  ): Promise<MemoryFact>;
+  deleteMemory(token: string, customerId: string, factId: string): Promise<void>;
+  /** DPDP erasure: the customer, their calls, transcripts and memory. */
+  forgetCustomer(token: string, customerId: string): Promise<ForgetOut>;
 
   /** go_live stays false in Step 2 (a number and wallet come later), so 83% is "set up". */
   progress(token: string): Promise<OnboardingProgress>;

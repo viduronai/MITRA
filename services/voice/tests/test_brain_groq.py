@@ -290,3 +290,42 @@ async def test_groq_pipecat_service_runs_a_brain_turn(clinic: EmployeePack) -> N
     service.push_frame = ignore  # type: ignore[method-assign]
     await service._process_context(LLMContext(messages=[{"role": "user", "content": "Fee?"}]))
     assert spoken == ["The fee is ₹500. "]
+
+
+def test_live_reply_language_follows_the_voice_layer(clinic: EmployeePack) -> None:
+    from mitra_voice.brain.llm import make_brain_llm
+    from mitra_voice.call_context import CallContext
+
+    settings = Settings(mitra_llm="groq", groq_api_key="k", mitra_llm_model="groq-model")
+    call = CallContext(session_id="s", language="te")
+    service = make_brain_llm(pack=clinic, settings=settings, call=call)
+    assert service.turns.caller_language("ఫీజు ఎంత?") == "te"
+    call.code_mixed = True
+    assert service.turns.caller_language("ఫీజు ఎంత?") == "te-en"
+
+
+async def test_daily_token_cap_surfaces_as_an_error_in_text_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mitra_voice.text_sessions import BrainQuotaExhaustedError
+
+    tpd = RateLimitedError(
+        retry_after="41000",
+        message="Rate limit reached for model on tokens per day (TPD): Limit 200000, Used 199800",
+    )
+    fake = FakeOpenAI([Step([], error=tpd)])
+    monkeypatch.setattr(
+        "mitra_voice.text_sessions.make_backend", lambda _: OpenAICompatBackend(fake)
+    )
+    settings = Settings(
+        mitra_llm="groq",
+        groq_api_key="k",
+        mitra_llm_model="groq-model",
+        mitra_llm_rate_limit_wait_s=120,  # far below the cap's retry-after: no waiting
+    )
+    store = TextSessionStore(settings=settings)
+    session = store.open(TextSessionIn(pack=_eval_pack("sunrise_clinic"), context={}))
+    session.start()
+    with pytest.raises(BrainQuotaExhaustedError):
+        await session.send("What is the fee?")
+    assert len(fake.requests) == 1  # failed fast, no retry storm

@@ -1,8 +1,8 @@
-import { ChevronRight, Phone, PhoneIncoming, PhoneOutgoing } from "lucide-react";
+import { ChevronRight, Globe, Phone, PhoneIncoming, PhoneOutgoing } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { formatTime } from "@/lib/format";
-import type { CallDirection, CallResult } from "@/lib/mock-data";
+import type { CallDirection, CallResult } from "@/lib/calls";
 import { cn } from "@/lib/utils";
 import { ResultPill } from "./result-pill";
 
@@ -51,7 +51,7 @@ function CallerAvatar({ contact }: { contact: string }) {
 export function CallRow({ call, href, className }: CallRowProps) {
   const t = useTranslations("call");
   const locale = useLocale();
-  const DirectionIcon = call.direction === "incoming" ? PhoneIncoming : PhoneOutgoing;
+  const DirectionIcon = { incoming: PhoneIncoming, outgoing: PhoneOutgoing, web: Globe }[call.direction];
   const duration = t("duration", {
     minutes: Math.floor(call.durationSeconds / 60),
     seconds: call.durationSeconds % 60,

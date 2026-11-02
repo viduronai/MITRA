@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Final
 
-from mitra_human._lang import Lang
+from mitra_human._lang import BaseLang
 
-MONTHS: Final[dict[Lang, tuple[str, ...]]] = {
+MONTHS: Final[dict[BaseLang, tuple[str, ...]]] = {
     "en": tuple(
         "January February March April May June July August September October November December".split()  # noqa: E501
     ),
@@ -15,7 +15,7 @@ MONTHS: Final[dict[Lang, tuple[str, ...]]] = {
 }
 
 # Index 0 is Monday.
-WEEKDAYS: Final[dict[Lang, tuple[str, ...]]] = {
+WEEKDAYS: Final[dict[BaseLang, tuple[str, ...]]] = {
     "en": tuple("Monday Tuesday Wednesday Thursday Friday Saturday Sunday".split()),
     "hi": tuple("सोमवार मंगलवार बुधवार गुरुवार शुक्रवार शनिवार रविवार".split()),
     "te": tuple("సోమవారం మంగళవారం బుధవారం గురువారం శుక్రవారం శనివారం ఆదివారం".split()),
@@ -55,7 +55,7 @@ def weekday_index(token: str) -> int:
 
 
 # Time-of-day buckets. "noon"/"midnight" are used only for exactly 12:00 and 00:00.
-BUCKET_WORDS: Final[dict[Lang, dict[str, str]]] = {
+BUCKET_WORDS: Final[dict[BaseLang, dict[str, str]]] = {
     "en": {
         "morning": "in the morning",
         "afternoon": "in the afternoon",
@@ -98,13 +98,13 @@ def bucket_of(hour24: int, minute: int) -> str:
 
 
 # "A to B" for ranges: (between, after). Telugu/Hindi wrap the range: A నుండి B వరకు.
-RANGE_WORDS: Final[dict[Lang, tuple[str, str]]] = {
+RANGE_WORDS: Final[dict[BaseLang, tuple[str, str]]] = {
     "en": (" to ", ""),
     "hi": (" से ", " तक"),
     "te": (" నుండి ", " వరకు"),
 }
 # Plain number ranges ("5-10 minutes") read without the closing word.
-NUMBER_RANGE_WORDS: Final[dict[Lang, str]] = {"en": " to ", "hi": " से ", "te": " నుండి "}
+NUMBER_RANGE_WORDS: Final[dict[BaseLang, str]] = {"en": " to ", "hi": " से ", "te": " నుండి "}
 
-PERCENT: Final[dict[Lang, str]] = {"en": "percent", "hi": "परसेंट", "te": "శాతం"}
-PLUS: Final[dict[Lang, str]] = {"en": "plus", "hi": "प्लस", "te": "ప్లస్"}
+PERCENT: Final[dict[BaseLang, str]] = {"en": "percent", "hi": "परसेंट", "te": "శాతం"}
+PLUS: Final[dict[BaseLang, str]] = {"en": "plus", "hi": "प्लस", "te": "ప్లస్"}

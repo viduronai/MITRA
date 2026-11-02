@@ -6,7 +6,7 @@ TODO: native-speaker review for hi/te tables.
 from __future__ import annotations
 
 from mitra_human import _num_en, _num_hi, _num_te
-from mitra_human._lang import Lang, check_lang
+from mitra_human._lang import BaseLang, base_lang, check_lang
 from mitra_human._num_te import TeForm
 
 __all__ = [
@@ -23,7 +23,7 @@ __all__ = [
 _POINT = {"en": "point", "hi": "पॉइंट", "te": "పాయింట్"}
 
 
-def cardinal(n: int, lang: Lang, te_form: TeForm = "plain") -> str:
+def cardinal(n: int, lang: BaseLang, te_form: TeForm = "plain") -> str:
     if lang == "en":
         return _num_en.cardinal(n)
     if lang == "hi":
@@ -33,10 +33,10 @@ def cardinal(n: int, lang: Lang, te_form: TeForm = "plain") -> str:
 
 def number_to_words(n: int, lang: str) -> str:
     """Public helper: an integer as words in the Indian system (lakh/crore)."""
-    return cardinal(n, check_lang(lang))
+    return cardinal(n, base_lang(check_lang(lang)))
 
 
-def ordinal(n: int, lang: Lang) -> str:
+def ordinal(n: int, lang: BaseLang) -> str:
     if lang == "en":
         return _num_en.ordinal(n)
     if lang == "hi":
@@ -44,7 +44,7 @@ def ordinal(n: int, lang: Lang) -> str:
     return _num_te.ordinal(n)
 
 
-def half(n: int, lang: Lang) -> str:
+def half(n: int, lang: BaseLang) -> str:
     if lang == "en":
         return _num_en.half(n)
     if lang == "hi":
@@ -52,7 +52,7 @@ def half(n: int, lang: Lang) -> str:
     return _num_te.half(n)
 
 
-def year(n: int, lang: Lang) -> str:
+def year(n: int, lang: BaseLang) -> str:
     if lang == "en":
         return _num_en.year(n)
     if lang == "hi":
@@ -60,7 +60,7 @@ def year(n: int, lang: Lang) -> str:
     return _num_te.year(n)
 
 
-def digit_words(digits: str, lang: Lang, *, phone: bool = False) -> str:
+def digit_words(digits: str, lang: BaseLang, *, phone: bool = False) -> str:
     """Read a string of ASCII digits one by one, space separated."""
     if lang == "en":
         table = _num_en.DIGITS
@@ -71,6 +71,6 @@ def digit_words(digits: str, lang: Lang, *, phone: bool = False) -> str:
     return " ".join(table[int(d)] for d in digits)
 
 
-def decimal(int_part: int, frac_digits: str, lang: Lang) -> str:
+def decimal(int_part: int, frac_digits: str, lang: BaseLang) -> str:
     """3.25 -> "three point two five" (digits after the point read one by one)."""
     return f"{cardinal(int_part, lang)} {_POINT[lang]} {digit_words(frac_digits, lang)}"

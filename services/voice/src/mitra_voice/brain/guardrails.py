@@ -258,7 +258,7 @@ _CLAIMS: dict[Industry, re.Pattern[str]] = {
     "real_estate": re.compile(
         r"guarantee|(?:will|definitely|surely|sure to) (?:double|appreciate|go up|increase)|"
         r"100% (?:legal|safe|clear title)|(?:fully|completely|totally) (?:legal|safe)|"
-        r"ఖచ్చితంగా (?:డబుల్|పెరుగుతుంది)|पक्का (?:डबल|बढ़ेगा)|"
+        r"ఖచ్చితంగా|गारंटी|पक्का (?:डबल|बढ़ेगा)|"
         r"\b(?:i|we)(?:'ll| will| can| could)? (?:give|offer) (?:you )?(?:an? )?(?:\d+% )?discount",
         re.IGNORECASE,
     ),

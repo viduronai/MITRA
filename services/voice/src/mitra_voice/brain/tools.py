@@ -42,8 +42,7 @@ def _s(description: str) -> dict[str, str]:
 # name -> (description, JSON schema). Names match the evals ActionName contract.
 TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
     "check_availability": (
-        "Look up free appointment / site-visit slots on a date. Call it before confirming any "
-        "time, unless the caller has already accepted a slot you offered.",
+        "Free appointment / site-visit slots on a date.",
         _obj(
             {
                 "date": _DATE,
@@ -54,8 +53,7 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         ),
     ),
     "book_slot": (
-        "Book an appointment or site visit. Call it as soon as the caller agrees to a date and "
-        "time; name and other details are optional and can be added later.",
+        "Book an appointment or site visit once the caller agrees to a date and time.",
         _obj(
             {
                 "date": _DATE,
@@ -84,8 +82,7 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         _obj({"current_booking": _s("What the caller said about the booking.")}),
     ),
     "send_whatsapp_template": (
-        "Send the caller a WhatsApp message: booking confirmation, location pin, project "
-        "details/brochure, report link, or a follow-up note.",
+        "Send the caller a WhatsApp message.",
         _obj(
             {
                 "template": {
@@ -104,13 +101,11 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         ),
     ),
     "transfer_to_human": (
-        "Transfer the call to a staff member (front desk / sales manager). Use when the caller "
-        "asks for a person, or for anything you must not handle.",
+        "Transfer the call to a staff member (front desk / sales manager).",
         _obj({"reason": _s("Why the caller needs a person.")}, ["reason"]),
     ),
     "alert_staff": (
-        "Alert the doctor / staff about something that needs a human: a medical question for the "
-        "doctor, a report question, an urgent issue.",
+        "Alert the doctor / staff about something that needs a human.",
         _obj(
             {
                 "reason": _s("What staff should know."),
@@ -120,8 +115,7 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         ),
     ),
     "schedule_callback": (
-        "Promise a follow-up: the team will confirm something you don't know (missing fact) and "
-        "call back or WhatsApp, or the doctor will call back.",
+        "The team / doctor will follow up (missing fact, callback request).",
         _obj(
             {
                 "topic": _s("What needs to be confirmed or discussed."),
@@ -131,7 +125,7 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         ),
     ),
     "opt_out": (
-        "The caller does not want any more calls: suppress their number.",
+        "Suppress the caller's number (no more calls).",
         _obj({}),
     ),
     "end_call": (
@@ -139,8 +133,7 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         _obj({"reason": _s("Why the call ends.")}),
     ),
     "record_field": (
-        "Save a lead detail the caller shared: budget, preferred_location, bedrooms, "
-        "purchase_timeline, name, purpose.",
+        "Save a lead detail (budget, preferred_location, bedrooms, purchase_timeline, name).",
         _obj({"field": _s("Field name."), "value": _s("Value as the caller said it.")}, ["field"]),
     ),
 }
@@ -381,6 +374,11 @@ class ToolExecutor:
         return self._availability(str(a.get("date", "")), a.get("time"), a.get("part_of_day"))
 
     def _book(self, date_s: str, time_s: str, extra: dict[str, Any]) -> dict[str, Any]:
+        day, minute = parse_date(date_s, self.clock().date()), parse_time(time_s)
+        if day is not None and minute is not None:
+            for b in self.bookings:  # the same slot again in this call: already booked
+                if b["date"] == day.isoformat() and b["time"] == _fmt(minute):
+                    return {"status": "booked", "note": "already booked in this call", **b}
         info = self._availability(date_s, time_s)
         if "error" in info:
             return info

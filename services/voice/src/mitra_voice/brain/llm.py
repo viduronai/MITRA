@@ -26,7 +26,7 @@ from mitra_voice.brain.backend import ChatBackend
 from mitra_voice.brain.client import brain_clock, brain_config
 from mitra_voice.brain.engine import Brain, BrainConfig, Message, TurnResult, filler_for
 from mitra_voice.brain.gemini_backend import GeminiBackend
-from mitra_voice.brain.language import CallerLanguage, LanguageRef
+from mitra_voice.brain.language import CallerLanguage, LanguageRef, normalise_code
 from mitra_voice.brain.openai_backend import OpenAICompatBackend
 from mitra_voice.call_context import CallContext
 from mitra_voice.config import Settings
@@ -83,7 +83,12 @@ class BrainTurns:
         self._language = LanguageRef(call.language)
 
     def caller_language(self, text: str) -> CallerLanguage:
-        """The pipeline's call language (script + STT tag) refined with code-mix from the text."""
+        """The call's language as the voice layer sees it (``call.human_lang``: STT language +
+        sticky code-mix), so reply style, speech normalisation and fillers agree. Falls back to
+        the brain's own text heuristic if the context has no such field."""
+        human = normalise_code(getattr(self.call, "human_lang", None))
+        if human is not None:
+            return human
         self._language.set(self.call.language)
         return self._language.resolve(text)
 

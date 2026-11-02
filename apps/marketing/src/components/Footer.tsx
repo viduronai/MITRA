@@ -1,4 +1,5 @@
-import { copy } from "@/content";
+import { content, type Copy, type Locale } from "@/content";
+import { LangSwitch } from "./LangSwitch";
 import { media } from "@/lib/media";
 import { LazyVideo } from "./LazyVideo";
 import { Wordmark } from "./Wordmark";
@@ -15,7 +16,14 @@ const chipIcons = [
   </svg>,
 ];
 
-export function Footer() {
+type Props = {
+  copy?: Copy;
+  langHrefs: Record<Locale, string>;
+  homeHref?: string;
+  ctaHref?: string;
+};
+
+export function Footer({ copy = content.en, langHrefs, homeHref = "#top", ctaHref = "#demo" }: Props) {
   const { footer: f, nav } = copy;
   return (
     <footer className={`${s.footer} on-chalk offscreen`}>
@@ -35,12 +43,12 @@ export function Footer() {
 
       <div className={s.content}>
         <div className={s.brand}>
-          <a href="#top" className={s.logo} aria-label={nav.home}>
+          <a href={homeHref} className={s.logo} aria-label={nav.home}>
             <Wordmark />
           </a>
           <h2 className={s.title}>{f.title}</h2>
           <p className={s.text}>{f.text}</p>
-          <a href="#demo" className={s.cta}>
+          <a href={ctaHref} className={s.cta}>
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1Z" />
             </svg>
@@ -59,6 +67,7 @@ export function Footer() {
               </li>
             ))}
           </ul>
+          <LangSwitch className={s.lang} current={copy.locale} hrefs={langHrefs} label={nav.language} tone="light" />
         </div>
         {f.columns.map((col) => (
           <nav key={col.title} aria-label={col.title}>

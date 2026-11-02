@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core import idempotency
+from mitra_core.calls.gaps import unknown_question_gaps
 from mitra_core.errors import not_found
 from mitra_core.knowledge.fetch import Fetcher, get_fetcher
 from mitra_core.knowledge.gaps import missing_gaps
@@ -227,4 +228,5 @@ async def list_gaps(
         select(Fact.category, Fact.key, Fact.value).where(Fact.business_id == tenant.business_id)
     )
     gaps = missing_gaps(business.industry, [(c, k, v) for c, k, v in rows])
-    return [GapOut(category=g.category, key=g.key, question=g.question) for g in gaps]
+    out = [GapOut(category=g.category, key=g.key, question=g.question) for g in gaps]
+    return out + await unknown_question_gaps(session, tenant.business_id)

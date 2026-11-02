@@ -3,14 +3,9 @@
  * Everything here is invented: a clinic in Hyderabad with one AI employee.
  */
 
-export type CallResult =
-  | "booked"
-  | "interested"
-  | "callBack"
-  | "notInterested"
-  | "failed";
+import type { CallDirection, CallResult } from "./calls";
 
-export type CallDirection = "incoming" | "outgoing";
+export type { CallDirection, CallResult };
 
 export interface MockCall {
   id: string;

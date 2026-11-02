@@ -1,4 +1,5 @@
-import { copy } from "@/content";
+import { content, type Copy, type Locale } from "@/content";
+import { LangSwitch, languageHrefs } from "./LangSwitch";
 import { HeroIntro } from "./HeroIntro";
 import { HeroVideo } from "./HeroVideo";
 import { Wordmark } from "./Wordmark";
@@ -14,10 +15,11 @@ export function Sparkle({ className }: { className?: string }) {
   );
 }
 
-export function Hero() {
+export function Hero({ copy = content.en }: { copy?: Copy }) {
   const { hero, nav } = copy;
+  const locale: Locale = copy.locale;
   return (
-    <section id="top" className={s.hero} aria-labelledby="hero-title" data-hero-root>
+    <section id="top" className={s.hero} aria-labelledby="hero-title" data-hero-root data-locale={locale}>
       <header className={s.masthead}>
         <a href="#top" className={s.wordmark} aria-label={nav.home} data-hero="wordmark">
           <Wordmark />
@@ -37,6 +39,13 @@ export function Hero() {
           ))}
         </nav>
       </header>
+      <LangSwitch
+        className={s.lang}
+        current={locale}
+        hrefs={languageHrefs(locale, copy.homeHref, "/")}
+        label={nav.language}
+        data-hero="nav"
+      />
 
       <div className={s.gap} aria-hidden="true" />
 

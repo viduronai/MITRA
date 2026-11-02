@@ -17,13 +17,13 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-from mitra_human._lang import Lang, check_lang, has_devanagari, has_telugu
+from mitra_human._lang import BaseLang, Lang, base_lang, check_lang, has_devanagari, has_telugu
 
 Formality = Literal["friendly", "respectful", "formal"]
 HonorificGender = Literal["male", "female", "unknown"]
 
 _LATIN: Final = {"ji": "ji", "garu": "garu", "sir": "sir", "madam": "madam"}
-_NATIVE: Final[dict[Lang, dict[str, str]]] = {
+_NATIVE: Final[dict[BaseLang, dict[str, str]]] = {
     "en": _LATIN,
     "hi": {"ji": "जी", "sir": "सर", "madam": "मैडम"},
     "te": {"garu": "గారు"},
@@ -38,7 +38,7 @@ def honorific(
     gender: HonorificGender = "unknown",
 ) -> str:
     """Address ``name`` the way a telecaller would at the given formality."""
-    language = check_lang(lang)
+    language = base_lang(check_lang(lang))  # te-en / hi-en address callers like te / hi
     if formality not in ("friendly", "respectful", "formal"):
         raise ValueError(f"unknown formality {formality!r}")
     if gender not in ("male", "female", "unknown"):

@@ -11,8 +11,10 @@ import {
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/shell/page-header";
-import { formatNumber, formatRupees } from "@/lib/format";
-import { business } from "@/lib/mock-data";
+import { billingApi } from "@/lib/billing/api";
+import { formatPaise } from "@/lib/billing/money";
+import { formatNumber } from "@/lib/format";
+import { requireSession } from "@/lib/session";
 
 export async function generateMetadata() {
   const t = await getTranslations("more");
@@ -21,36 +23,41 @@ export async function generateMetadata() {
 
 type RowKey = "billing" | "profile" | "people" | "compliance" | "appearance" | "help";
 
-// Sub-pages don't exist yet; every row points at /more until they do.
-const rows: { key: RowKey; icon: LucideIcon }[] = [
-  { key: "billing", icon: Wallet },
-  { key: "profile", icon: Building2 },
-  { key: "people", icon: UsersRound },
-  { key: "compliance", icon: ShieldCheck },
-  { key: "appearance", icon: Palette },
-  { key: "help", icon: LifeBuoy },
+// Only billing has a sub-page so far; the other rows point at /more until theirs exist.
+const rows: { key: RowKey; icon: LucideIcon; href: string }[] = [
+  { key: "billing", icon: Wallet, href: "/more/billing" },
+  { key: "profile", href: "/more", icon: Building2 },
+  { key: "people", href: "/more", icon: UsersRound },
+  { key: "compliance", href: "/more", icon: ShieldCheck },
+  { key: "appearance", href: "/more", icon: Palette },
+  { key: "help", href: "/more", icon: LifeBuoy },
 ];
 
 export default async function MorePage() {
-  const [t, locale] = await Promise.all([getTranslations("more"), getLocale()]);
+  const [t, locale, { token }] = await Promise.all([getTranslations("more"), getLocale(), requireSession()]);
+  // The wallet hint is a nice-to-have: fall back to the plain label if billing is unavailable.
+  const wallet = await billingApi.summary(token).catch(() => null);
+  const natural = wallet?.rates.find((r) => r.tier === "natural");
 
   const hint = (key: RowKey) =>
-    key === "billing"
+    key === "billing" && wallet && natural
       ? t("billingHint", {
-          amount: formatRupees(business.walletRupees, locale),
-          minutes: formatNumber(business.minutesLeft, locale),
+          amount: formatPaise(wallet.available_paise, locale),
+          minutes: formatNumber(natural.minutes_left, locale),
         })
-      : t(`${key}Hint`);
+      : key === "billing"
+        ? ""
+        : t(`${key}Hint`);
 
   return (
     <>
       <PageHeader title={t("title")} />
       <nav aria-label={t("title")} className="overflow-hidden rounded-xl border bg-card shadow-xs">
         <ul className="divide-y">
-          {rows.map(({ key, icon: Icon }) => (
+          {rows.map(({ key, icon: Icon, href }) => (
             <li key={key}>
               <Link
-                href="/more"
+                href={href}
                 className="group focus-ring flex min-h-[72px] items-center gap-4 px-4 py-3 transition-colors motion-fast hover:bg-surface-2 focus-visible:-outline-offset-2 md:px-5"
               >
                 <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-text-muted">

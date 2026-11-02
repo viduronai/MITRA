@@ -93,6 +93,37 @@ For Telugu, `speakable(text, "te", colloquial_quarters=True)` reads 6:15 / 6:45 
 ఆరుంబావు / ఆరుముప్పావు instead of ఆరు పదిహేను / ఆరు నలభై ఐదు. The flag is off by default
 and has no effect on en/hi.
 
+### Code-mixed speech: `te-en` (Tenglish) and `hi-en` (Hinglish)
+
+When the caller code-mixes, pass `"te-en"` or `"hi-en"` to `speakable`, the policies
+and the helpers. This follows the founder's rule (confirmed by the founder): **times,
+dates and phone numbers are said in English, while amounts and plain numbers stay in
+Telugu or Hindi.** Native connectors are kept.
+
+| Input | `te-en` | `hi-en` |
+|---|---|---|
+| `6:30 pm` (+ కి in te-en) | evening six thirty కి | evening six thirty बजे |
+| `evening 11 am` | evening eleven | evening eleven बजे |
+| `9 am – 8 pm` | morning nine నుండి night eight వరకు | morning nine बजे से night eight बजे तक |
+| `9876543210` | nine eight seven six five, four three two one zero | (same) |
+| `18 Oct` | eighteenth October | eighteenth October |
+| `Mon–Sat` | Monday నుండి Saturday వరకు | Monday से Saturday तक |
+| `₹500` | ఐదు వందల రూపాయలు | पाँच सौ रुपये |
+| `₹1500 కి` | పదిహేను వందల రూపాయలకి | — |
+
+- The English time-of-day word (morning / afternoon / evening / night) is added in
+  front, unless the text already has one just before the time ("evening 6:30 pm", or a
+  native సాయంత్రం / शाम), in which case that word is kept as it is.
+- Telugu keeps కి / కు as a separate word after English phrases ("six thirty కి").
+  Telugu amounts still merge it (రూపాయలకి). Hinglish adds बजे once, never twice.
+- `colloquial_quarters` has no effect in code-mixed mode (times are in English).
+- `spell_phone`, `spell_digits` and `spell_email` read in English; `number_to_words`
+  and `honorific` follow the native language (ఐదు వందలు, Ravi garu, Ravi ji).
+- Back-channels: te-en `అవును / సరే / okay`, hi-en `हाँ जी / अच्छा / okay`. Question cues
+  from either language block a back-channel.
+- Fillers lean English: te-en `one minute అండి… / check చేస్తాను… / just a second అండి…`,
+  hi-en `just one minute जी… / check करती हूँ… / one second जी…` (करता with `gender="male"`).
+
 ## Timing rules
 
 **BackchannelPolicy** fires only when all of these hold. The per-turn state resets when
@@ -119,6 +150,8 @@ script. When the cut lands mid-sentence it adds `…` and drops a dangling comma
 
 Confirmed by the founder (native Telugu speaker):
 
+- **Code-mixed speech (te-en / hi-en):** times, dates and phone numbers in English,
+  amounts in Telugu/Hindi, as described in the code-mixed section above.
 - **Telugu times:** hh:30 uses the half form ఆరున్నర. Other minutes are read as
   "hour minute" (ఆరు పదిహేను). The founder said the traditional ఆరుంబావు is equally
   fine, so it is available with `colloquial_quarters=True`. Minutes 1-9 are read as
@@ -148,7 +181,7 @@ Still judgement calls. A native-speaker review should confirm or change them:
 
 ```bash
 uv sync
-uv run pytest            # 604 tests, including Hypothesis property tests
+uv run pytest            # 663 tests, including Hypothesis property tests
 uv run ruff check . && uv run ruff format --check .
 uv run mypy              # --strict, src + tests
 ```

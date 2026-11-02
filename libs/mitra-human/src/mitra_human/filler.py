@@ -19,9 +19,14 @@ _FILLERS: Final[dict[tuple[Lang, Gender], tuple[str, ...]]] = {
     ("hi", "male"): ("जी, एक सेकंड…", "देखता हूँ…", "एक मिनट, मैं चेक करता हूँ…"),
     ("te", "female"): ("సరే, ఒక్క నిమిషం…", "చూస్తాను…", "ఒక్క క్షణం అండి…"),
 }
+# Code-mixed callers get English-leaning fillers with the native politeness word.
+_FILLERS[("te-en", "female")] = ("one minute అండి…", "check చేస్తాను…", "just a second అండి…")
+_FILLERS[("hi-en", "female")] = ("just one minute जी…", "check करती हूँ…", "one second जी…")
+_FILLERS[("hi-en", "male")] = ("just one minute जी…", "check करता हूँ…", "one second जी…")
 # English and Telugu first-person verbs do not change with gender.
 _FILLERS[("en", "male")] = _FILLERS[("en", "female")]
 _FILLERS[("te", "male")] = _FILLERS[("te", "female")]
+_FILLERS[("te-en", "male")] = _FILLERS[("te-en", "female")]
 
 
 def fillers(lang: Lang, gender: Gender = "female") -> tuple[str, ...]:

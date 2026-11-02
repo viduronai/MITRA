@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass
 
 from mitra_human import _num_en
-from mitra_human._lang import Lang
+from mitra_human._lang import BaseLang
 from mitra_human._lexicon import (
     BUCKET_WORDS,
     MONTH_PATTERN,
@@ -81,7 +81,7 @@ def _clock24(hour_text: str, minute: int) -> Clock:
     return Clock(hour12, minute, bucket_of(hour, minute) if explicit else None)
 
 
-def _core(c: Clock, lang: Lang, quarters: bool) -> str:
+def _core(c: Clock, lang: BaseLang, quarters: bool) -> str:
     h, m = c.hour12, c.minute
     if lang == "en":
         if m == 0:
@@ -114,7 +114,9 @@ def _core(c: Clock, lang: Lang, quarters: bool) -> str:
     return f"{hw} {cardinal(m, 'te')}"
 
 
-def render_time(c: Clock, lang: Lang, *, with_bucket: bool = True, quarters: bool = False) -> str:
+def render_time(
+    c: Clock, lang: BaseLang, *, with_bucket: bool = True, quarters: bool = False
+) -> str:
     core = _core(c, lang, quarters)
     if not with_bucket or c.bucket is None:
         return core
@@ -126,7 +128,7 @@ def render_time(c: Clock, lang: Lang, *, with_bucket: bool = True, quarters: boo
     return f"{word} {core}"
 
 
-def render_time_range(a: Clock, b: Clock, lang: Lang, *, quarters: bool = False) -> str:
+def render_time_range(a: Clock, b: Clock, lang: BaseLang, *, quarters: bool = False) -> str:
     shared = a.bucket is not None and a.bucket == b.bucket and a.bucket not in ("noon", "midnight")
     between, after = RANGE_WORDS[lang]
     if lang == "en":
@@ -144,7 +146,46 @@ def _minute(m: re.Match[str], i: int) -> int:
     return int(value) if value else 0
 
 
-def apply_times(text: str, lang: Lang, *, quarters: bool = False) -> str:
+# Code-mixed speech (te-en, hi-en): times are said in English with an English
+# time-of-day word in front ("evening six thirty"), keeping the native connectors.
+_MIXED_BUCKET = {"noon": "afternoon", "midnight": "night"}
+_BUCKET_BEFORE = re.compile(
+    r"(?:(?<![A-Za-z])(?i:morning|afternoon|evening|night|tonight)"
+    r"|ఉదయం|మధ్యాహ్నం|సాయంత్రం|రాత్రి|सुबह|दोपहर|शाम|रात)\s*$"
+)
+_BAJE_AFTER = re.compile(r"\s*बजे")
+_MIXED_RANGE = {"te": "{a} నుండి {b} వరకు", "hi": "{a} बजे से {b} बजे तक"}
+
+
+def render_time_mixed(c: Clock, *, with_bucket: bool = True) -> str:
+    core = _core(c, "en", False)
+    if not with_bucket or c.bucket is None:
+        return core
+    return f"{_MIXED_BUCKET.get(c.bucket, c.bucket)} {core}"
+
+
+def apply_times(text: str, lang: BaseLang, *, quarters: bool = False, mixed: bool = False) -> str:
+    """Rewrite clock times. ``mixed`` renders them for code-mixed te-en / hi-en speech."""
+
+    def said_before(m: re.Match[str]) -> bool:
+        return _BUCKET_BEFORE.search(m.string[: m.start()]) is not None
+
+    def one(c: Clock, m: re.Match[str]) -> str:
+        if not mixed:
+            return mark(render_time(c, lang, quarters=quarters))
+        phrase = render_time_mixed(c, with_bucket=not said_before(m))
+        if lang == "hi" and not _BAJE_AFTER.match(m.string, m.end()):
+            phrase += " बजे"
+        return mark(phrase)
+
+    def both(a: Clock, b: Clock, m: re.Match[str]) -> str:
+        if not mixed:
+            return mark(render_time_range(a, b, lang, quarters=quarters))
+        shared = a.bucket is not None and a.bucket == b.bucket
+        first = render_time_mixed(a, with_bucket=not said_before(m))
+        second = render_time_mixed(b, with_bucket=not shared)
+        return mark(_MIXED_RANGE.get(lang, "{a} to {b}").format(a=first, b=second))
+
     def range12(m: re.Match[str]) -> str:
         h1, h2 = int(m.group("h1")), int(m.group("h2"))
         m1, m2 = _minute(m, 1), _minute(m, 2)
@@ -154,21 +195,17 @@ def apply_times(text: str, lang: Lang, *, quarters: bool = False) -> str:
             ap1 = ap2
             if _to24(h1, ap1) * 60 + m1 > _to24(h2, ap2) * 60 + m2:
                 ap1 = "a" if ap2.lower() == "p" else "p"
-        a, b = _clock12(h1, m1, ap1), _clock12(h2, m2, ap2)
-        return mark(render_time_range(a, b, lang, quarters=quarters))
+        return both(_clock12(h1, m1, ap1), _clock12(h2, m2, ap2), m)
 
     def range24(m: re.Match[str]) -> str:
         a = _clock24(m.group("h1"), int(m.group("m1")))
-        b = _clock24(m.group("h2"), int(m.group("m2")))
-        return mark(render_time_range(a, b, lang, quarters=quarters))
+        return both(a, _clock24(m.group("h2"), int(m.group("m2"))), m)
 
     def single12(m: re.Match[str]) -> str:
-        clock = _clock12(int(m.group("h1")), _minute(m, 1), m.group("ap1"))
-        return mark(render_time(clock, lang, quarters=quarters))
+        return one(_clock12(int(m.group("h1")), _minute(m, 1), m.group("ap1")), m)
 
     def single24(m: re.Match[str]) -> str:
-        clock = _clock24(m.group("h1"), int(m.group("m1")))
-        return mark(render_time(clock, lang, quarters=quarters))
+        return one(_clock24(m.group("h1"), int(m.group("m1"))), m)
 
     text = _RANGE12.sub(range12, text)
     text = _RANGE24.sub(range24, text)
@@ -210,7 +247,7 @@ def _valid(day: int, month: int, yr: int | None) -> bool:
     return day <= calendar.monthrange(yr if yr is not None else 2024, month)[1]
 
 
-def render_date(day: int, month: int, yr: int | None, weekday: int | None, lang: Lang) -> str:
+def render_date(day: int, month: int, yr: int | None, weekday: int | None, lang: BaseLang) -> str:
     month_word = MONTHS[lang][month - 1]
     if lang == "en":
         body = f"{ordinal(day, lang)} {month_word}"
@@ -225,7 +262,7 @@ def render_date(day: int, month: int, yr: int | None, weekday: int | None, lang:
     return body
 
 
-def apply_dates(text: str, lang: Lang) -> str:
+def apply_dates(text: str, lang: BaseLang) -> str:
     def numeric(m: re.Match[str]) -> str:
         day, month = int(m.group("d")), int(m.group("mo"))
         raw_year = m.group("y")
@@ -248,16 +285,20 @@ def apply_dates(text: str, lang: Lang) -> str:
     return _MONTH_DAY.sub(textual, text)
 
 
-def apply_weekdays(text: str, lang: Lang) -> str:
-    """Mon-Sat -> Monday to Saturday; English weekday names into hi/te."""
+def apply_weekdays(text: str, lang: BaseLang, *, english_names: bool = False) -> str:
+    """Mon-Sat -> Monday to Saturday; English weekday names into hi/te.
+
+    ``english_names`` (code-mixed speech) keeps English names with native connectors:
+    "Monday నుండి Saturday వరకు".
+    """
 
     def weekday_range(m: re.Match[str]) -> str:
-        names = WEEKDAYS[lang]
+        names = WEEKDAYS["en" if english_names else lang]
         between, after = RANGE_WORDS[lang]
         a, b = names[weekday_index(m.group("a"))], names[weekday_index(m.group("b"))]
         return mark(f"{a}{between}{b}{after}")
 
     text = _WEEKDAY_RANGE.sub(weekday_range, text)
-    if lang != "en":
+    if lang != "en" and not english_names:
         text = _FULL_WEEKDAY.sub(lambda m: mark(WEEKDAYS[lang][weekday_index(m.group(1))]), text)
     return text

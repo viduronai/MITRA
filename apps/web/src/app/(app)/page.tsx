@@ -1,4 +1,4 @@
-import { ArrowRight, CircleHelp, Frown, MessageSquareWarning, type LucideIcon } from "lucide-react";
+import { ArrowRight, CircleHelp, Flame, Frown, MessageSquareWarning, Siren, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { CallRow } from "@/components/mitra/call-row";
@@ -7,10 +7,12 @@ import { StatTile, type TrendDirection } from "@/components/mitra/stat-tile";
 import { MockActionButton } from "@/components/mitra/mock-action-button";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
-import type { OnboardingStepKey } from "@/lib/api/types";
+import type { AlertKind, OnboardingStepKey } from "@/lib/api/types";
+import { callerLabel, toCallRow } from "@/lib/calls";
+import { getHomeSummary } from "@/lib/calls-data";
 import { getEmployee, getMe, getProgress } from "@/lib/data";
 import { formatLongDate, formatNumber, hourInIndia } from "@/lib/format";
-// MOCK: call stats, "needs you" and recent calls stay invented until calls exist in the API.
+// MOCK: sample stats, "needs you" and recent calls only until the business has real calls.
 import { mockCallDate, mockCallsSoFar, needs, requestTime, stats, type NeedKind } from "@/lib/mock-data";
 
 export async function generateMetadata() {
@@ -22,6 +24,14 @@ const needIcons: Record<NeedKind, LucideIcon> = {
   unknownQuestion: CircleHelp,
   upsetCaller: Frown,
   failedMessage: MessageSquareWarning,
+};
+
+const alertIcons: Record<AlertKind, LucideIcon> = {
+  hot_lead: Flame,
+  angry: Frown,
+  urgent: Siren,
+  failed_action: MessageSquareWarning,
+  unknown_question: CircleHelp,
 };
 
 /** Home checklist (max 5 rows, docs/06 §8) folded from the six onboarding steps. */
@@ -38,16 +48,20 @@ function trendOf(change: number): TrendDirection {
 }
 
 export default async function HomePage() {
-  const [t, tNeeds, tSetup, tEmpty, locale, me, employee, progress] = await Promise.all([
+  const [t, tNeeds, tSetup, tEmpty, tCall, locale, me, employee, progress, summary] = await Promise.all([
     getTranslations("home"),
     getTranslations("needs"),
     getTranslations("setup"),
     getTranslations("empty"),
+    getTranslations("call"),
     getLocale(),
     getMe(),
     getEmployee(),
     getProgress(),
+    getHomeSummary(),
   ]);
+  // Real numbers once the business has calls; the invented sample (with its note) until then.
+  const live = summary?.has_calls ? summary : null;
   const now = requestTime();
   const hour = hourInIndia(now);
   const greetingKey = hour < 12 ? "greetingMorning" : hour < 17 ? "greetingAfternoon" : "greetingEvening";
@@ -62,7 +76,11 @@ export default async function HomePage() {
   }));
   // go_live can't be done until numbers + wallet exist (later step), so it doesn't hold the card open.
   const setupComplete = setupSteps.every((step) => step.done || step.id === "forward");
-  const recentCalls = mockCallsSoFar(now).slice(0, 5);
+  const recentCalls = live
+    ? live.recent_calls.map((call) => ({ row: toCallRow(call, employeeName, tCall("web")), href: `/calls/${call.id}` }))
+    : mockCallsSoFar(now)
+        .slice(0, 5)
+        .map((call) => ({ row: { ...call, employeeName, at: mockCallDate(call.at, now) }, href: "/calls" }));
 
   const trend = (change: number) => {
     const direction = trendOf(change);
@@ -72,12 +90,23 @@ export default async function HomePage() {
     return { direction, label };
   };
 
+  // TODO(home): day-over-day trend once the API returns yesterday's numbers.
+  const realStat = (value: number) => ({ value, change: null });
+  const tileStats = live
+    ? {
+        callsToday: realStat(live.stats.calls_today),
+        booked: realStat(live.stats.booked_today),
+        rescued: realStat(live.stats.rescued_today),
+        needsYou: realStat(live.stats.needs_you),
+      }
+    : stats;
   const tiles = [
-    { label: t("callsToday"), stat: stats.callsToday, href: "/calls" },
-    { label: t("booked"), stat: stats.booked, href: "/calls?result=booked" },
-    { label: t("rescued"), stat: stats.rescued, href: "/calls?result=missed" },
-    { label: t("needsYou"), stat: stats.needsYou, href: "#needs-you", highlight: stats.needsYou.value > 0 },
+    { label: t("callsToday"), stat: tileStats.callsToday, href: "/calls?when=today" },
+    { label: t("booked"), stat: tileStats.booked, href: "/calls?when=today&result=booked" },
+    { label: t("rescued"), stat: tileStats.rescued, href: "/calls?result=missed" },
+    { label: t("needsYou"), stat: tileStats.needsYou, href: "#needs-you", highlight: tileStats.needsYou.value > 0 },
   ];
+  const needsCount = live ? live.needs_you.length : needs.length;
 
   return (
     <>
@@ -87,13 +116,13 @@ export default async function HomePage() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-8">
         <div className="flex min-w-0 flex-col gap-6 lg:gap-8">
           <section aria-label={t("statsLabel")} className="grid grid-cols-2 gap-3 md:gap-4">
-            <p className="col-span-2 -mb-1 text-[13px] leading-5 text-text-muted">{t("sampleNote")}</p>
+            {!live && <p className="col-span-2 -mb-1 text-[13px] leading-5 text-text-muted">{t("sampleNote")}</p>}
             {tiles.map((tile) => (
               <StatTile
                 key={tile.label}
                 label={tile.label}
                 value={formatNumber(tile.stat.value, locale)}
-                trend={trend(tile.stat.change)}
+                trend={tile.stat.change === null ? undefined : trend(tile.stat.change)}
                 href={tile.href}
                 highlight={tile.highlight}
               />
@@ -108,8 +137,40 @@ export default async function HomePage() {
             <h2 id="needs-you-title" className="text-lg leading-[26px] font-semibold">
               {t("needsYou")}
             </h2>
-            <p className="text-sm leading-5 text-text-muted">{t("needsYouCount", { count: needs.length })}</p>
-            {needs.length === 0 ? (
+            <p className="text-sm leading-5 text-text-muted">{t("needsYouCount", { count: needsCount })}</p>
+            {live ? (
+              live.needs_you.length === 0 ? (
+                <p className="mt-4 text-text-muted">{t("allClear", { employee: employeeName })}</p>
+              ) : (
+                <ul className="mt-4 flex flex-col divide-y">
+                  {live.needs_you.map((need, index) => {
+                    const Icon = alertIcons[need.kind] ?? CircleHelp;
+                    const who = callerLabel(need.contact_name, need.phone_last4, tCall("unknownCaller"));
+                    const teach = need.kind === "unknown_question";
+                    return (
+                      <li
+                        key={`${need.call_id}-${index}`}
+                        className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
+                      >
+                        <div className="flex flex-1 items-start gap-3">
+                          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-ink">
+                            <Icon className="size-[18px]" aria-hidden />
+                          </span>
+                          <p className="pt-1.5 leading-6">{tNeeds(need.kind, { name: who, employee: employeeName })}</p>
+                        </div>
+                        <div className="pl-12 sm:pl-0">
+                          <Button asChild variant="secondary" size="sm">
+                            <Link href={`/calls/${need.call_id}${teach ? "#teach" : ""}`}>
+                              {teach ? tNeeds("unknownQuestionAction", { employee: employeeName }) : tNeeds("openCall")}
+                            </Link>
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            ) : needs.length === 0 ? (
               <p className="mt-4 text-text-muted">{t("allClear", { employee: employeeName })}</p>
             ) : (
               <ul className="mt-4 flex flex-col divide-y">
@@ -180,9 +241,9 @@ export default async function HomePage() {
               <p className="px-2 pt-1 pb-3 text-text-muted md:px-3">{tEmpty("calls", { name: employeeName })}</p>
             ) : (
               <ul>
-                {recentCalls.map((call) => (
-                  <li key={call.id}>
-                    <CallRow call={{ ...call, employeeName, at: mockCallDate(call.at, now) }} href="/calls" />
+                {recentCalls.map(({ row, href }) => (
+                  <li key={row.id}>
+                    <CallRow call={row} href={href} />
                   </li>
                 ))}
               </ul>

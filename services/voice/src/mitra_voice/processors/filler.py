@@ -14,10 +14,10 @@ from pipecat.frames.frames import Frame, LLMContextFrame, TTSSpeakFrame
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
 from mitra_human import FillerPolicy
+from mitra_human import Lang as HumanLang
 from mitra_voice.call_context import CallContext
 from mitra_voice.intents import needs_tool
 from mitra_voice.latency import LatencyTracker, derive, percentile
-from mitra_voice.pack import Lang
 from mitra_voice.processors.reply import last_user_text
 
 PRIOR_ANSWER_MS = 450  # LLM TTFT + TTS TTFB before any turn has been measured (WORKFLOWS §1)
@@ -56,11 +56,11 @@ class FillerProcessor(FrameProcessor):
         self._predictor = predictor
         self._call = call
         self._gender = gender
-        self._policies: dict[Lang, FillerPolicy] = {}
+        self._policies: dict[HumanLang, FillerPolicy] = {}
         self._on_filler = on_filler
         self._turn_index = 0
 
-    def _policy(self, lang: Lang) -> FillerPolicy:
+    def _policy(self, lang: HumanLang) -> FillerPolicy:
         if lang not in self._policies:
             self._policies[lang] = FillerPolicy(lang, gender=self._gender)
         return self._policies[lang]
@@ -71,7 +71,7 @@ class FillerProcessor(FrameProcessor):
             self._turn_index += 1
             user_text = last_user_text(frame.context)
             expected = self._predictor.expected_ms(user_text)
-            lang = self._call.language
+            lang = self._call.human_lang
             filler = self._policy(lang).filler_for(expected, self._turn_index)
             self._call.filler_spoken = bool(filler)
             if filler:

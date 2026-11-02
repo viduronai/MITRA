@@ -1,5 +1,6 @@
 import "server-only";
 import { ApiError, type MitraApi } from "./client";
+import { callsMock } from "./mock-calls";
 import type {
   Business,
   CatalogVoice,
@@ -215,7 +216,14 @@ function progressOf(token: string): OnboardingProgress {
   return { steps, percent: Math.round((count / steps.length) * 100), next: steps.find((s) => !s.done)?.key ?? null };
 }
 
+function callsTenant(token: string) {
+  const business = businessOf(token);
+  const employee = [...store.employees.values()].find((e) => e.business_id === business.id);
+  return { businessId: business.id, employeeId: employee?.id ?? null, employeeName: employee?.name ?? "Priya" };
+}
+
 export const mockApi: MitraApi = {
+  ...callsMock(callsTenant),
   async requestOtp(phone) {
     if (!/^\+91[6-9]\d{9}$/.test(phone)) throw new ApiError(422, "validation_error", "Invalid phone number.");
     const requestId = id();

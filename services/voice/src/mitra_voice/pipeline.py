@@ -44,7 +44,9 @@ from pipecat.turns.user_stop import (
 )
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
+from mitra_human import Lang as HumanLang
 from mitra_human.filler import fillers as filler_phrases
+from mitra_voice.call_context import MIXED, human_lang_for
 from mitra_voice.config import Settings, TurnStrategy
 from mitra_voice.pack import Lang
 from mitra_voice.processors.backchannel import BackchannelPlayer, UserSpeechState, UserSpeechTap
@@ -148,6 +150,12 @@ def build_call_pipeline(
     tool_latency = settings.mock_tool_latency_ms if session.providers.llm == "mock" else 0
     prerendered = make_prerendered(session.providers, settings, pack, AUDIO_OUT_SAMPLE_RATE)
     recorder = [ReplyRecorder(settings.mitra_record_dir, call)] if settings.mitra_record_dir else []
+    llm = make_llm(session.providers, settings, pack, call)
+    brain = getattr(llm, "brain", None)  # the guarded brain keeps the call's tool calls
+    if brain is not None:
+        session.action_log = lambda: [
+            {"name": c.name, "args": c.args, "result": c.result} for c in brain.executor.calls
+        ]
     pipeline = Pipeline(
         [
             transport_input,
@@ -161,7 +169,7 @@ def build_call_pipeline(
                 gender=pack.voice_gender,
                 on_filler=on_filler,
             ),
-            make_llm(session.providers, settings, pack, call),
+            llm,
             SpeakableProcessor(
                 reply,
                 call=call,
@@ -220,13 +228,26 @@ def build_call_pipeline(
     return call_pipeline
 
 
-def _fillers_to_prerender(session: CallSession) -> list[tuple[Lang, str]]:
+def human_langs(languages: list[Lang]) -> list[HumanLang]:
+    """The pack's languages plus the code-mixed variant of each Indic one (te -> te, te-en)."""
+    out: list[HumanLang] = []
+    for lang in languages:
+        out.append(lang)
+        if lang in MIXED:
+            out.append(MIXED[lang])
+    return out
+
+
+def _fillers_to_prerender(session: CallSession) -> list[tuple[HumanLang, str]]:
     gender = session.pack.voice_gender
-    return [
-        (lang, spoken_form(text, lang))
-        for lang in session.pack.languages
-        for text in filler_phrases(lang, gender)
-    ]
+    items: list[tuple[HumanLang, str]] = []
+    for lang in session.pack.languages:
+        for mixed in (False, True) if lang in MIXED else (False,):
+            human = human_lang_for(lang, mixed)
+            items += [
+                (human, spoken_form(text, lang, mixed)) for text in filler_phrases(human, gender)
+            ]
+    return items
 
 
 def _track(call: CallPipeline, coro: Coroutine[Any, Any, int]) -> None:
@@ -254,7 +275,8 @@ async def greet(call: CallPipeline, session: CallSession) -> None:
                 GREETING_RENDER_TIMEOUT_S,
             )
     if isinstance(pre.backchannels, BackchannelClips):
-        _track(call, pre.backchannels.prerender(session.pack.languages, usage.add_prerender))
+        langs = human_langs(session.pack.languages)
+        _track(call, pre.backchannels.prerender(langs, usage.add_prerender))
     # The client can connect before every processor has started (Sarvam sockets, Smart Turn
     # model); frames queued before StartFrame reaches them are dropped, so wait for it.
     await asyncio.wait_for(call.started.wait(), timeout=GREETING_START_TIMEOUT_S)

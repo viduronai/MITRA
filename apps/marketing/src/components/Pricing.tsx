@@ -1,6 +1,7 @@
 import { Fragment } from "react";
-import { copy } from "@/content";
+import { content, type Copy } from "@/content";
 import { DotNumber } from "./DotNumber";
+import { RupeeDots } from "./RupeeDots";
 import s from "./pricing.module.css";
 
 const icons = [
@@ -32,26 +33,7 @@ const icons = [
   </svg>,
 ];
 
-// Doto has no ₹ glyph, so the rupee is drawn on the same 5×7 dot grid.
-const RUPEE = ["11111", "00010", "11111", "01100", "00100", "00010", "00001"];
-
-function RupeeDots() {
-  return (
-    <svg className={s.rupee} viewBox="0 0 5 7" aria-hidden="true">
-      {RUPEE.flatMap((row, y) =>
-        row
-          .split("")
-          .map((on, x) =>
-            on === "1" ? (
-              <rect key={`${x}-${y}`} x={x + 0.11} y={y + 0.11} width="0.78" height="0.78" rx="0.14" />
-            ) : null,
-          ),
-      )}
-    </svg>
-  );
-}
-
-export function Pricing() {
+export function Pricing({ copy = content.en }: { copy?: Copy }) {
   const { pricing: p } = copy;
   const [before, accent] = p.line.split(p.lineAccent);
   return (
@@ -71,7 +53,7 @@ export function Pricing() {
             <li className={s.tier} data-featured={i === 1 ? "" : undefined}>
               <span className={s.num}>
                 <span className="sr-only">₹</span>
-                <RupeeDots />
+                <RupeeDots className={s.rupee} />
                 <DotNumber value={t.price.replace("₹", "")} delay={i * 160} />
               </span>
               <span className={s.name}>{t.name}</span>
@@ -90,7 +72,7 @@ export function Pricing() {
           {p.fine}
         </p>
         <div className={`${s.cta} fade-in`} style={{ "--i": 3 } as React.CSSProperties}>
-          <a href="/pricing" className="btn btn-solid">
+          <a href={p.href} className="btn btn-solid">
             {p.cta}
           </a>
         </div>

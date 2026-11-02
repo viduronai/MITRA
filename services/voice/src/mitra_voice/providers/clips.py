@@ -16,12 +16,13 @@ import io
 import wave
 from collections.abc import Awaitable, Callable, Iterable
 from pathlib import Path
-from typing import ClassVar, Protocol
+from typing import ClassVar, Protocol, cast
 
 import httpx
 import numpy as np
 import structlog
 
+from mitra_human import Lang as HumanLang
 from mitra_human.backchannel import TOKENS
 from mitra_voice.config import SERVICE_ROOT
 from mitra_voice.pack import Lang
@@ -43,7 +44,7 @@ OnRender = Callable[[int], None]  # characters billed for a fresh render
 
 
 class ClipSource(Protocol):
-    def clip(self, lang: Lang, token: str) -> bytes | None: ...
+    def clip(self, lang: HumanLang, token: str) -> bytes | None: ...
 
 
 class ToneClips:
@@ -52,7 +53,7 @@ class ToneClips:
     def __init__(self, sample_rate: int) -> None:
         self._clip = backchannel_clip(sample_rate)
 
-    def clip(self, lang: Lang, token: str) -> bytes | None:
+    def clip(self, lang: HumanLang, token: str) -> bytes | None:
         return self._clip
 
 
@@ -95,22 +96,23 @@ class PhraseCache:
         self._kind = kind
         self._cache_dir = cache_dir
 
-    def _key(self, lang: Lang, text: str) -> str:
+    def _key(self, lang: HumanLang, text: str) -> str:
         digest = hashlib.sha1(f"{lang}:{text}".encode()).hexdigest()[:12]  # noqa: S324 - cache key
         return f"{self._voice_key}-{self._kind}-{lang}-{digest}-{self._sample_rate}"
 
-    def get(self, lang: Lang, text: str) -> bytes | None:
+    def get(self, lang: HumanLang, text: str) -> bytes | None:
         return self._memory.get(self._key(lang, text))
 
     async def prerender(
-        self, items: Iterable[tuple[Lang, str]], *, on_render: OnRender | None = None
+        self, items: Iterable[tuple[HumanLang, str]], *, on_render: OnRender | None = None
     ) -> int:
         """Make every (lang, text) available; returns how many were newly rendered (billed)."""
         jobs = list(dict.fromkeys(items))
         done = await asyncio.gather(*(self.ensure(lang, text, on_render) for lang, text in jobs))
         return sum(done)
 
-    async def ensure(self, lang: Lang, text: str, on_render: OnRender | None = None) -> bool:
+    async def ensure(self, lang: HumanLang, text: str, on_render: OnRender | None = None) -> bool:
+        """Keyed by the human language (te-en text differs from te); rendered in the base one."""
         key = self._key(lang, text)
         if key in self._memory:
             return False
@@ -120,7 +122,7 @@ class PhraseCache:
             self._memory[key] = cached
             return False
         try:
-            pcm = self._shaper(await self._renderer(text, lang), self._sample_rate)
+            pcm = self._shaper(await self._renderer(text, _base(lang)), self._sample_rate)
         except Exception as e:  # a missing phrase only means live TTS / no back-channel
             log.warning("phrases.render_failed", kind=self._kind, lang=lang, error=type(e).__name__)
             return False
@@ -137,12 +139,19 @@ class BackchannelClips:
     def __init__(self, cache: PhraseCache) -> None:
         self.cache = cache
 
-    def clip(self, lang: Lang, token: str) -> bytes | None:
+    def clip(self, lang: HumanLang, token: str) -> bytes | None:
         return self.cache.get(lang, token)
 
-    async def prerender(self, languages: Iterable[Lang], on_render: OnRender | None = None) -> int:
+    async def prerender(
+        self, languages: Iterable[HumanLang], on_render: OnRender | None = None
+    ) -> int:
         items = [(lang, token) for lang in dict.fromkeys(languages) for token in TOKENS[lang]]
         return await self.cache.prerender(items, on_render=on_render)
+
+
+def _base(lang: HumanLang) -> Lang:
+    """te-en -> te: the TTS language a code-mixed phrase is rendered in."""
+    return cast(Lang, lang.split("-")[0])
 
 
 def _read_if_exists(path: Path) -> bytes | None:

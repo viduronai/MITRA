@@ -6,7 +6,7 @@ import re
 from functools import lru_cache
 from typing import Literal, Self
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     otp_max_requests: int = 3
     otp_window_seconds: int = 600
 
+    # Public "Call me now" demo calls from the marketing site (per phone, then per client IP).
+    demo_call_max_per_phone: int = 2
+    demo_call_phone_window_seconds: int = 24 * 3600
+    demo_call_max_per_ip: int = 5
+    demo_call_ip_window_seconds: int = 3600
+
     # Browser origins allowed by CORS (applied in env=local only).
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3100"]
 
@@ -61,10 +67,46 @@ class Settings(BaseSettings):
 
     idempotency_ttl_hours: int = 24
 
+    # Telephony (src/mitra_core/telephony). ``sim`` = local carrier simulator: number requests
+    # stay "pending_kyc" and nothing is bought. Switch to ``exotel`` once KYC is approved.
+    telephony_carrier: Literal["sim", "exotel", "plivo"] = "sim"
+    # DND/NCPR scrub provider; ``mock`` treats the numbers listed here as registered.
+    dnd_provider: Literal["mock"] = "mock"
+    dnd_mock_registered: list[str] = []
+    # Promotional (140-series) calling is off by default (08 section 8.1).
+    promotional_calling_enabled: bool = False
+    # Require a DLT template id on promotional scripts (CMP-07, Phase 2).
+    dlt_enforced: bool = False
+
     # Shared secret for service-to-service calls (/internal/v1, e.g. the voice service). Unset:
     # the dev placeholder in env=local, and the internal API is DISABLED everywhere else.
     # TODO(auth): replace with signed service JWTs or mTLS.
     service_token: SecretStr | None = None
+
+    # Post-call analysis: "heuristic" (deterministic, default) or "llm" via an OpenAI-compatible
+    # endpoint (e.g. the voice brain's provider). The model id comes from env only; any LLM
+    # failure falls back to the heuristic.
+    summarizer: Literal["heuristic", "llm"] = "heuristic"
+    summarizer_llm_url: str | None = None
+    summarizer_llm_api_key: SecretStr | None = None
+    summarizer_llm_model: str | None = None
+
+    # Wallet top-ups (billing). "mock" credits instantly and is refused in staging/prod.
+    # Razorpay keys are read from Razorpay's own variable names, without the MITRA_ prefix
+    # (test-mode keys work).
+    payment_provider: Literal["mock", "razorpay"] = "mock"
+    razorpay_key_id: str = Field(default="", validation_alias="RAZORPAY_KEY_ID")
+    razorpay_key_secret: SecretStr = Field(
+        default=SecretStr(""), validation_alias="RAZORPAY_KEY_SECRET"
+    )
+    razorpay_webhook_secret: SecretStr = Field(
+        default=SecretStr(""), validation_alias="RAZORPAY_WEBHOOK_SECRET"
+    )
+    # Supplier details printed on GST invoices. TODO(billing): real legal entity + GSTIN.
+    billing_supplier_name: str = "Mitra (supplier name not configured)"
+    billing_supplier_gstin: str = ""
+    billing_supplier_state_code: str = "36"  # Telangana
+    billing_supplier_address: str = "Hyderabad, Telangana"
 
     @property
     def effective_service_token(self) -> str | None:
@@ -93,6 +135,8 @@ class Settings(BaseSettings):
                 raise ValueError("MITRA_PHONE_HASH_KEY must be set outside local/test environments")
             if self.otp_hash_key.get_secret_value() == _DEV_OTP_HASH_KEY:
                 raise ValueError("MITRA_OTP_HASH_KEY must be set outside local/test environments")
+            if self.payment_provider == "mock":
+                raise ValueError("MITRA_PAYMENT_PROVIDER=mock is not allowed in staging/prod")
             if self.effective_service_token == _DEV_SERVICE_TOKEN:
                 raise ValueError("MITRA_SERVICE_TOKEN must not be the dev placeholder")
         token = self.effective_service_token

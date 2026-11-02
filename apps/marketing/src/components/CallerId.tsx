@@ -1,4 +1,4 @@
-import { copy } from "@/content";
+import { content, type Copy } from "@/content";
 import s from "./callerid.module.css";
 
 const cssVar = (vars: Record<string, string | number>) => vars as React.CSSProperties;
@@ -9,7 +9,7 @@ const Phone = () => (
   </svg>
 );
 
-export function CallerId() {
+export function CallerId({ copy = content.en }: { copy?: Copy }) {
   const { callerId: c } = copy;
   const initials = c.caller
     .split(" ")

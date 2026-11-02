@@ -39,8 +39,8 @@ from pipecat.processors.frame_processor import (
 )
 
 from mitra_human import BackchannelPolicy
+from mitra_human import Lang as HumanLang
 from mitra_voice.call_context import CallContext
-from mitra_voice.pack import Lang
 from mitra_voice.providers.clips import ClipSource
 
 POLL_INTERVAL_S = 0.1
@@ -105,12 +105,12 @@ class BackchannelPlayer(FrameProcessor):
         self._call = call
         self._clips = clips
         self._seed = seed
-        self._policies: dict[Lang, BackchannelPolicy] = {}
+        self._policies: dict[HumanLang, BackchannelPolicy] = {}
         self._on_token = on_token
         self._task: asyncio.Task[None] | None = None
         self._sample_rate = 16000
 
-    def _policy(self, lang: Lang) -> BackchannelPolicy:
+    def _policy(self, lang: HumanLang) -> BackchannelPolicy:
         if lang not in self._policies:
             self._policies[lang] = BackchannelPolicy(lang, seed=self._seed)
         return self._policies[lang]
@@ -140,7 +140,7 @@ class BackchannelPlayer(FrameProcessor):
             if not s.in_turn:
                 was_in_turn = False
                 continue
-            lang = self._call.language
+            lang = self._call.human_lang
             policy = self._policy(lang)
             if not was_in_turn:
                 policy.new_turn()

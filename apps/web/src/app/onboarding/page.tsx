@@ -24,6 +24,7 @@ import {
   ROLES,
 } from "@/lib/onboarding";
 import { requireSession } from "@/lib/session";
+import { liveForwarding, telephonyApi } from "@/lib/telephony/api";
 
 type Ctx = { token: string; business: Business | null; employee: Employee | null; locale: string };
 
@@ -105,13 +106,16 @@ async function testCallStep({ employee }: Ctx) {
   );
 }
 
-async function goLiveStep({ employee }: Ctx) {
+async function goLiveStep({ token, business, employee }: Ctx) {
   const t = await getTranslations("onboarding.live");
   const name = employee?.name ?? "Mitra";
+  // Numbers are optional here: if telephony is unreachable the step still finishes.
+  const numbers = await telephonyApi.list(token).catch(() => null);
+  const forwarding = numbers ? await liveForwarding(token, numbers.items) : null;
   return (
     <>
       <StepHeader title={t("title")} subtitle={t("subtitle", { name })} />
-      <GoLiveStep employeeName={name} />
+      <GoLiveStep employeeName={name} numbers={numbers} forwarding={forwarding} defaultCity={business?.city ?? ""} />
     </>
   );
 }

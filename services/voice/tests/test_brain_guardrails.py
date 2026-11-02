@@ -271,7 +271,9 @@ def test_tool_executor_books_and_offers_alternatives(clinic: EmployeePack) -> No
     assert booked["status"] == "booked"
     assert booked["booking_id"].startswith("SC-")
     again = tools.execute("book_slot", {"date": "2026-10-22", "time": slot})
-    assert again["status"] == "unavailable"  # the slot is taken now
+    assert again["status"] == "booked"  # same call, same slot: idempotent, no double booking
+    assert again["booking_id"] == booked["booking_id"]
+    assert len(tools.bookings) == 1
     moved = tools.execute("reschedule", {"new_date": "2026-10-23", "new_time": "10:00"})
     assert moved["status"] in {"rescheduled", "unavailable"}
     assert tools.execute("transfer_to_human", {"reason": "x"})["to"] == "Front desk (Ramesh)"

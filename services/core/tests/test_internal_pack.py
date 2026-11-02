@@ -60,10 +60,11 @@ async def test_local_env_accepts_dev_placeholder(client: httpx.AsyncClient) -> N
 
 
 def test_service_token_config_rules() -> None:
-    secrets = {
+    secrets: dict[str, Any] = {
         "jwt_secret": SecretStr("s" * 40),
         "phone_hash_key": SecretStr("p" * 40),
         "otp_hash_key": SecretStr("o" * 40),
+        "payment_provider": "razorpay",  # the mock provider is refused in prod
     }
     assert Settings(env="prod", **secrets).effective_service_token is None  # disabled
     assert Settings(env="test").effective_service_token is None

@@ -231,6 +231,10 @@
   stroke-linejoin: round;
 }
 
+.lang {
+  margin-top: calc(16 * var(--u));
+}
+
 .colTitle {
   margin: 0;
   font-size: max(calc(16 * var(--u)), 14px);

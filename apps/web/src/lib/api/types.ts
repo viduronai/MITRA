@@ -200,6 +200,9 @@ export interface Gap {
   category: FactCategory;
   key: string;
   question: string;
+  /** "call": a caller asked and the employee had no answer (unknown-question inbox). */
+  source?: "checklist" | "call";
+  call_id?: Uuid | null;
 }
 
 // ---------- Test calls ----------
@@ -234,4 +237,152 @@ export interface OnboardingProgress {
   steps: { key: OnboardingStepKey; done: boolean }[];
   percent: number;
   next: OnboardingStepKey | null;
+}
+
+// ---------- Calls (services/core api/v1/calls.py) ----------
+
+export type ApiCallResult =
+  | "booked"
+  | "interested"
+  | "call_back"
+  | "transferred"
+  | "not_interested"
+  | "info_only"
+  | "missed";
+export type ApiCallDirection = "inbound" | "outbound" | "web";
+export type CallStatus = "live" | "ended" | "processed";
+export type CallRating = "up" | "down";
+export type AlertKind = "hot_lead" | "angry" | "urgent" | "failed_action" | "unknown_question";
+
+export interface CallSummaryRow {
+  id: Uuid;
+  employee_id: Uuid | null;
+  employee_name: string | null;
+  contact_id: Uuid | null;
+  contact_name: string | null;
+  phone_last4: string | null;
+  direction: ApiCallDirection;
+  status: CallStatus;
+  language: Locale | null;
+  started_at: IsoDateTime;
+  duration_seconds: number | null;
+  result: ApiCallResult | null;
+  summary: string | null;
+  rating: CallRating | null;
+}
+
+export interface CallList {
+  items: CallSummaryRow[];
+  total: number;
+}
+
+export interface CallFilters {
+  result?: ApiCallResult[];
+  employee_id?: Uuid;
+  language?: Locale;
+  date_from?: string;
+  date_to?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CallTranscriptLine {
+  speaker: "employee" | "caller";
+  text: string;
+  interrupted: boolean;
+  at_ms: number | null;
+}
+
+export interface CallActionOut {
+  name: string;
+  args: Record<string, unknown>;
+  result: Record<string, unknown>;
+  ok: boolean;
+  label: string;
+}
+
+export interface CallDetail extends CallSummaryRow {
+  ended_at: IsoDateTime | null;
+  next_step: string | null;
+  sentiment: "positive" | "neutral" | "negative" | null;
+  fields: Record<string, string>;
+  transcript: CallTranscriptLine[];
+  actions: CallActionOut[];
+  alerts: { kind: AlertKind; message: string }[];
+  unknown_questions: string[];
+  recording_uri: string | null;
+  rating_reason: string | null;
+}
+
+export interface HomeSummary {
+  date: string;
+  timezone: string;
+  has_calls: boolean;
+  stats: { calls_today: number; booked_today: number; rescued_today: number; needs_you: number; live_now: number };
+  needs_you: {
+    call_id: Uuid;
+    kind: AlertKind;
+    message: string;
+    contact_name: string | null;
+    phone_last4: string | null;
+    at: IsoDateTime;
+  }[];
+  recent_calls: CallSummaryRow[];
+}
+
+// ---------- Customers (services/core api/v1/customers.py) ----------
+
+export type CustomerTag = "hot_lead" | "booked" | "call_back" | "vip" | "opted_out";
+export type MemoryStatus = "confirmed" | "inferred";
+
+export interface CustomerRow {
+  id: Uuid;
+  name: string | null;
+  phone_last4: string;
+  language: Locale | null;
+  tags: CustomerTag[];
+  calls: number;
+  last_contact_at: IsoDateTime | null;
+  last_result: ApiCallResult | null;
+  next_step: string | null;
+}
+
+export interface CustomerList {
+  items: CustomerRow[];
+  total: number;
+}
+
+export interface MemoryFact {
+  id: Uuid;
+  key: string;
+  value: string;
+  status: MemoryStatus;
+  confidence: number;
+  source_call_id: Uuid | null;
+  expires_at: IsoDateTime | null;
+  updated_at: IsoDateTime;
+}
+
+export interface TimelineEvent {
+  kind: "call" | "action" | "commitment";
+  at: IsoDateTime;
+  title: string;
+  detail: string | null;
+  call_id: Uuid | null;
+  result: ApiCallResult | null;
+}
+
+export interface CustomerDetail extends CustomerRow {
+  created_at: IsoDateTime;
+  memory: MemoryFact[];
+  commitments: { id: Uuid; kind: string; description: string; due_at: IsoDateTime | null; status: string }[];
+  timeline: TimelineEvent[];
+}
+
+export interface ForgetOut {
+  id: Uuid;
+  forgotten: true;
+  calls_deleted: number;
+  memory_deleted: number;
 }

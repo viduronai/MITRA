@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { copy, type Scenario } from "@/content";
+import { content, type Copy, type Scenario } from "@/content";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import type { VoiceSignal } from "./VoiceSphere";
 import s from "./hear.module.css";
@@ -43,7 +43,7 @@ function envelope(ms: number) {
   return Math.min(1, 0.35 + 0.65 * syll * (0.75 + 0.25 * Math.sin(t * 0.9)));
 }
 
-export function HearIt() {
+export function HearIt({ copy = content.en }: { copy?: Copy }) {
   const { hear } = copy;
   const scenarios = hear.scenarios;
   const [index, setIndex] = useState(0);

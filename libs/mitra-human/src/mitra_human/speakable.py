@@ -15,9 +15,9 @@ from __future__ import annotations
 import re
 
 from mitra_human._datetime import apply_dates, apply_times, apply_weekdays
-from mitra_human._lang import Lang, check_lang
+from mitra_human._lang import BaseLang, Lang, base_lang, check_lang, digits_lang, is_code_mixed
 from mitra_human._lexicon import NUMBER_RANGE_WORDS, PERCENT
-from mitra_human._marks import finalize, mark, te_form_after
+from mitra_human._marks import finalize, freeze, mark, te_form_after
 from mitra_human._money import AMOUNT, apply_money, apply_scaled_numbers
 from mitra_human._num_te import TeForm
 from mitra_human._phone import apply_phones
@@ -66,22 +66,26 @@ def _restore(text: str, saved: list[str]) -> str:
     return _PLACEHOLDER.sub(lambda m: saved[ord(m.group(1)) - 0xE100], text)
 
 
-def _form(m: re.Match[str], lang: Lang) -> TeForm:
+def _form(m: re.Match[str], lang: BaseLang) -> TeForm:
     return te_form_after(m.string[m.end() :]) if lang == "te" else "plain"
 
 
-def _number(raw: str, frac: str | None, lang: Lang, form: TeForm) -> str:
+def _number(raw: str, frac: str | None, lang: BaseLang, form: TeForm, digit_lang: BaseLang) -> str:
     if frac is not None:
         return decimal(int(raw.replace(",", "")), frac, lang)
     if "," not in raw and (len(raw) >= 11 or (len(raw) > 1 and raw.startswith("0"))):
-        return digit_words(raw, lang)  # account numbers, OTP-like codes with leading zeros
+        return digit_words(raw, digit_lang)  # account numbers, codes with leading zeros
     return cardinal(int(raw.replace(",", "")), lang, form)
 
 
-def _apply_numbers(text: str, lang: Lang) -> str:
+def _apply_numbers(text: str, lang: BaseLang, *, mixed: bool = False) -> str:
+    digit_lang: BaseLang = "en" if mixed else lang
+
     def percent(m: re.Match[str]) -> str:
         form: TeForm = "attr"
-        return mark(f"{_number(m.group('n'), m.group('f'), lang, form)} {PERCENT[lang]}")
+        return mark(
+            f"{_number(m.group('n'), m.group('f'), lang, form, digit_lang)} {PERCENT[lang]}"
+        )
 
     def nth(m: re.Match[str]) -> str:
         return mark(ordinal(int(m.group("n")), lang))
@@ -92,11 +96,12 @@ def _apply_numbers(text: str, lang: Lang) -> str:
         return mark(f"{first}{NUMBER_RANGE_WORDS[lang]}{cardinal(b, lang, _form(m, lang))}")
 
     def plain(m: re.Match[str]) -> str:
-        return mark(_number(m.group("n"), m.group("f"), lang, _form(m, lang)))
+        form = _form(m, lang)
+        return mark(_number(m.group("n"), m.group("f"), lang, form, digit_lang))
 
     text = _PERCENT.sub(percent, text)
     text = _ORDINAL.sub(nth, text)
-    text = apply_weekdays(text, lang)
+    text = apply_weekdays(text, lang, english_names=mixed)
     text = apply_scaled_numbers(text, lang)
     text = _NUMBER_RANGE.sub(number_range, text)
     return _PLAIN.sub(plain, text)
@@ -108,6 +113,10 @@ def speakable(text: str, lang: Lang, *, colloquial_quarters: bool = False) -> st
     ``colloquial_quarters`` (Telugu only) reads 6:15 / 6:45 as ఆరుంబావు / ఆరుముప్పావు
     instead of ఆరు పదిహేను / ఆరు నలభై ఐదు.
 
+    Code-mixed ``"te-en"`` / ``"hi-en"``: amounts and plain numbers stay Telugu/Hindi;
+    dates, times, phone numbers and digit codes are said in English ("evening six
+    thirty కి", "eighteenth October"), keeping the native connectors.
+
     >>> speakable("Fees are ₹1,20,000/-", "en")
     'Fees are one lakh twenty thousand rupees'
     """
@@ -116,17 +125,20 @@ def speakable(text: str, lang: Lang, *, colloquial_quarters: bool = False) -> st
         return text
     working, saved = _protect(text)
     working = working.translate(_NATIVE_DIGITS)
-    working = apply_dates(working, language)
-    working = apply_times(working, language, quarters=colloquial_quarters)
-    working = apply_phones(working, language)
-    working = apply_money(working, language)
-    working = _apply_numbers(working, language)
-    return _restore(finalize(working, language), saved)
+    base, mixed = base_lang(language), is_code_mixed(language)
+    working = apply_dates(working, "en" if mixed else base)
+    working = apply_times(working, base, quarters=colloquial_quarters, mixed=mixed)
+    working = apply_phones(working, digits_lang(language))
+    if mixed:
+        working = freeze(working)  # English phrases keep కి as a separate word
+    working = apply_money(working, base)
+    working = _apply_numbers(working, base, mixed=mixed)
+    return _restore(finalize(working, base), saved)
 
 
 def spell_digits(digits: str, lang: str) -> str:
     """Read a code digit by digit: "4821" -> "four eight two one"."""
-    language = check_lang(lang)
+    language = digits_lang(check_lang(lang))
     clean = digits.translate(_NATIVE_DIGITS)
     if not clean.isascii() or not clean.isdigit():
         raise ValueError(f"expected only digits, got {digits!r}")
@@ -142,7 +154,7 @@ _EMAIL_SYMBOLS = {
 
 def spell_email(email: str, lang: str) -> str:
     """Read an email address aloud: "ravi.k@gmail.com" -> "ravi dot k at gmail dot com"."""
-    language = check_lang(lang)
+    language = digits_lang(check_lang(lang))
     address = email.strip()
     if not _EMAIL.fullmatch(address):
         raise ValueError(f"not an email address: {email!r}")

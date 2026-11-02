@@ -128,6 +128,24 @@
   gap: 10px;
 }
 
+.lang {
+  margin-right: 2px;
+}
+
+.menuLang {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.5s var(--ease-out);
+  transition-delay: calc(180ms + var(--i) * 70ms);
+}
+
+.menu[data-open] .menuLang {
+  opacity: 1;
+  transform: none;
+}
+
 .cta {
   height: 38px;
   padding: 0 16px;
@@ -280,6 +298,10 @@
 
   .burger {
     display: block;
+  }
+
+  .lang {
+    display: none;
   }
 }
 

@@ -53,6 +53,7 @@ class FakeInput(BaseInputTransport):
     def __init__(self) -> None:
         super().__init__(TransportParams(audio_in_enabled=True))
         self.speaking = False
+        self.peer: FakeOutput | None = None  # the call's output, for tests that wait on it
         self._task: asyncio.Task[None] | None = None
         self._rng = np.random.default_rng(7)
 
@@ -90,6 +91,22 @@ class FakeOutput(BaseOutputTransport):
         self.audio_bytes += len(frame.audio)
         await asyncio.sleep(len(frame.audio) / 2 / frame.sample_rate)
         return True
+
+
+async def wait_until_quiet(
+    out: FakeOutput | None, quiet_s: float = 0.4, within: float = 15.0
+) -> None:
+    """Wait until the output has played something and then stayed silent for ``quiet_s``."""
+    assert out is not None
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + within
+    last, last_change = out.audio_bytes, loop.time()
+    while out.audio_bytes == 0 or loop.time() - last_change < quiet_s:
+        if loop.time() > deadline:
+            raise TimeoutError("output never went quiet")
+        await asyncio.sleep(0.05)
+        if out.audio_bytes != last:
+            last, last_change = out.audio_bytes, loop.time()
 
 
 async def wait_for(predicate: Callable[[], bool], within: float = 10.0) -> None:

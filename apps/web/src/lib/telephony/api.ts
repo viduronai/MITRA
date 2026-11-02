@@ -1,0 +1,63 @@
+import "server-only";
+import { ApiError } from "@/lib/api";
+import type { ApiErrorBody } from "@/lib/api/types";
+import type { Forwarding, ForwardingTest, KycDocument, PhoneNumber, PhoneNumberList } from "./types";
+
+// Same server-only base URL as lib/api/http.ts; telephony keeps its own small client (like
+// billing) so the shared MitraApi interface stays untouched.
+const BASE_URL = (process.env.MITRA_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+const TIMEOUT_MS = 15_000;
+
+async function request<T>(
+  path: string,
+  token: string,
+  { method = "GET", body }: { method?: "GET" | "POST" | "PATCH"; body?: unknown } = {},
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json", Authorization: `Bearer ${token}` };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/v1${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch {
+    throw new ApiError(0, "unreachable", "The Mitra service could not be reached.");
+  }
+  const data: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = (data as ApiErrorBody | null)?.error;
+    throw new ApiError(response.status, error?.code ?? `http_${response.status}`, error?.message ?? response.statusText);
+  }
+  return data as T;
+}
+
+const enc = encodeURIComponent;
+
+export const telephonyApi = {
+  list: (token: string) => request<PhoneNumberList>("/phone-numbers", token),
+  requestNumber: (token: string, body: { city: string; type: "local" | "mobile_virtual"; employee_id?: string }) =>
+    request<PhoneNumber>("/phone-numbers/requests", token, { method: "POST", body }),
+  submitKyc: (token: string, id: string, documentType: KycDocument, fileName: string) =>
+    request<PhoneNumber>(`/phone-numbers/${enc(id)}/kyc`, token, {
+      method: "POST",
+      body: { document_type: documentType, file_name: fileName },
+    }),
+  startCallerName: (token: string, id: string) =>
+    request<PhoneNumber>(`/phone-numbers/${enc(id)}/caller-name`, token, { method: "POST" }),
+  rename: (token: string, id: string, displayName: string) =>
+    request<PhoneNumber>(`/phone-numbers/${enc(id)}`, token, { method: "PATCH", body: { display_name: displayName } }),
+  forwarding: (token: string, id: string) => request<Forwarding>(`/phone-numbers/${enc(id)}/forwarding`, token),
+  testForwarding: (token: string, id: string) =>
+    request<ForwardingTest>(`/phone-numbers/${enc(id)}/forwarding-test`, token, { method: "POST" }),
+  resume: (token: string, id: string) => request<PhoneNumber>(`/phone-numbers/${enc(id)}/resume`, token, { method: "POST" }),
+};
+
+/** The number customers are forwarded to: the first live number, with its codes. */
+export async function liveForwarding(token: string, numbers: PhoneNumber[]): Promise<Forwarding | null> {
+  const live = numbers.find((n) => n.kyc_status === "approved" && n.e164);
+  return live ? telephonyApi.forwarding(token, live.id).catch(() => null) : null;
+}

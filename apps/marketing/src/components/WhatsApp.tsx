@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { copy, type ChatMessage } from "@/content";
+import { content, type Copy, type ChatMessage } from "@/content";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { MitraMark } from "./Wordmark";
 import c from "./chat.module.css";
@@ -88,7 +88,7 @@ function Bubble({ msg, time, pressed }: { msg: ChatMessage; time: string; presse
   );
 }
 
-export function WhatsApp() {
+export function WhatsApp({ copy = content.en }: { copy?: Copy }) {
   const { whatsapp } = copy;
   const messages = whatsapp.messages;
   const ref = useRef<HTMLElement>(null);

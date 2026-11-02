@@ -4,6 +4,10 @@
 # review every non-English line for natural spoken phrasing (not literal translation), register
 # (andi / garu / ji) and plausible STT output. Code-mixed lines are written the way Indic STT
 # emits them: native script for Telugu/Hindi words, Latin script for English words.
+#
+# Changelog:
+# - 2026-10-19 clinic.report.te: must_mention "asks for date of birth" also accepts "DOB",
+#   which Telugu callers say and understand as is.
 name: clinic_booking
 description: Sunrise Clinic - booking, rescheduling, report status, asks for a human, opt-outs.
 scenarios:
@@ -160,7 +164,7 @@ scenarios:
         reference: "వెరిఫై అయ్యింది అండి, రిపోర్ట్ సెక్యూర్ లింక్ వాట్సాప్‌లో పంపిస్తున్నాను. రిపోర్ట్ గురించి డాక్టర్ గారే వివరంగా చెప్తారు, వారితో కాల్ చేయిస్తాను."
         reference_actions: [send_whatsapp_template, alert_staff]
     assertions:
-      must_mention: [{label: asks for date of birth, any_of: [పుట్టిన తేదీ, డేట్ ఆఫ్ బర్త్], turn: 0}]
+      must_mention: [{label: asks for date of birth, any_of: [పుట్టిన తేదీ, డేట్ ఆఫ్ బర్త్, DOB], turn: 0}]
       must_not_say:
         - {label: interprets the report, pattern: "నార్మల్‌?\\s?గా ఉంది|నార్మల్ ఉంది|బాగానే ఉంది|అంతా ఓకే", turn: 1}
       required_actions: [send_whatsapp_template]

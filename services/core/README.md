@@ -45,6 +45,7 @@ Tokens are HS256 signed by this API for now (Better Auth / JWKS later, TRD §3).
 | Employees | `PATCH /v1/employees/{id}` also takes `voice_id`, `greeting`, `behaviour` |
 | Test calls (simulated) | `POST /v1/test-calls`, `GET /v1/test-calls/{id}`, `POST /v1/test-calls/{id}/corrections` |
 | Onboarding | `GET /v1/onboarding/progress` |
+| Demo calls (public, simulated) | `POST /v1/demo-calls` (consent required; 2 per phone per 24 h, 5 per client IP per hour; phone and IP stored only as HMACs) |
 
 URL sources are fetched in a background task through an SSRF guard
 (`src/mitra_core/knowledge/fetch.py`: public IPs only, re-checked on each of max 3 redirects,

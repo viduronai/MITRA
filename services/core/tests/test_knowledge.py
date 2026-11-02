@@ -302,6 +302,8 @@ async def test_gaps_shrink_as_facts_are_added(client: httpx.AsyncClient) -> None
         "category": "prices",
         "key": "Consultation fee",
         "question": "What is your consultation fee?",
+        "source": "checklist",
+        "call_id": None,
     }
     await add_fact(client, headers, "prices", "Consultation fee", "₹500")
     await add_fact(client, headers, "location", "Parking", "Free basement parking")

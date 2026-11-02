@@ -7,6 +7,7 @@
 - ``GET /sessions/{id}/metrics``  per-turn latencies + p50/p95 summary
 - ``/v1/text-sessions`` (POST), ``.../{id}/turns`` (POST), ``.../{id}`` (DELETE): text-mode
   sessions for mitra-evals
+- ``/telephony/*``: carrier media streams + outbound calls (transports/telephony.py)
 - ``GET /health``
 """
 
@@ -40,12 +41,14 @@ from pipecat.workers.runner import WorkerRunner
 from pydantic import BaseModel, Field
 
 from mitra_voice.config import Settings, get_settings
+from mitra_voice.core_client import CoreCallReporter
 from mitra_voice.logging import configure_logging
 from mitra_voice.pack import Scenario, load_pack
 from mitra_voice.pipeline import build_call_pipeline, greet, make_turn_analyzers
 from mitra_voice.providers import ResolvedProviders, resolve_providers
 from mitra_voice.session import CallSession, SessionRegistry
 from mitra_voice.text_sessions import TextSessionIn, TextSessionStore, TurnIn
+from mitra_voice.transports.telephony import telephony_router
 from mitra_voice.voices import voice_registry
 from mitra_voice.warmup import warm_up
 
@@ -186,6 +189,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.sessions = SessionRegistry()
         app.state.text_sessions = TextSessionStore(settings=settings)
         app.state.tasks = set()
+        app.state.core_reporter = CoreCallReporter.from_settings(settings)
         app.state.loop_lag_max_ms = 0.0
         lag_task = asyncio.create_task(monitor_loop_lag(app.state))
         if settings.mitra_loop_watchdog:
@@ -195,8 +199,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         for task in list(app.state.tasks):
             task.cancel()
         await app.state.webrtc.close()
+        if app.state.core_reporter is not None:
+            await app.state.core_reporter.aclose()
 
     app = FastAPI(title="Mitra Voice", version="0.1.0", lifespan=lifespan)
+    # Phone calls (Exotel / Plivo media streams, outbound): transports/telephony.py.
+    app.include_router(telephony_router(settings))
 
     @app.get("/", include_in_schema=False)
     async def index() -> FileResponse:
@@ -263,7 +271,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if voice is None:
                 raise HTTPException(status_code=422, detail="unknown voice_id")
             pack = dataclasses.replace(pack, voice_id=voice.id, voice_gender=voice.gender)
-        session = CallSession(scenario=body.scenario, pack=pack, providers=state.providers)
+        session = CallSession(
+            scenario=body.scenario,
+            pack=pack,
+            providers=state.providers,
+            reporter=state.core_reporter,
+        )
         state.sessions.add(session)
 
         async def on_connection(connection: SmallWebRTCConnection) -> None:

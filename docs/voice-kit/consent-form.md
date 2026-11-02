@@ -9,7 +9,7 @@
 ---
 
 **Voice owner / వాయిస్ యజమాని:** [full name / పూర్తి పేరు]
-**Company / సంస్థ:** Viduron AI ("Mitra") · [registered address / నమోదిత చిరునామా]
+**Company / సంస్థ:** Viduron AI ("Mitra") · Hyderabad (registration in progress / నమోదు జరుగుతోంది)
 **Voice ID (filled by company) / వాయిస్ ID:** [ ]
 
 ## 1. What this is for / ఇది దేనికోసం
@@ -72,24 +72,24 @@ They will be protected with access controls and encryption.
 
 **EN:** The voice clone and recordings are kept only while this consent is active, or until
 [end date / "my employment or engagement ends"], whichever is earlier. After that they are
-deleted within [30] days. Call recordings made by customers' calls are governed by those
+deleted within 30 days. Call recordings made by customers' calls are governed by those
 customers' own policies, not by this form.
 
 **TE:** ఈ అనుమతి అమలులో ఉన్నంత వరకు మాత్రమే, లేదా [ముగింపు తేదీ / "నా ఉద్యోగం లేదా ఒప్పందం ముగిసే వరకు"],
-ఏది ముందైతే అప్పటి వరకు, వాయిస్ క్లోన్ మరియు రికార్డింగ్‌లను ఉంచుతారు. ఆ తర్వాత [30] రోజుల లోపు
+ఏది ముందైతే అప్పటి వరకు, వాయిస్ క్లోన్ మరియు రికార్డింగ్‌లను ఉంచుతారు. ఆ తర్వాత 30 రోజుల లోపు
 తొలగిస్తారు. కస్టమర్ల కాల్ రికార్డింగ్‌లకు ఆ కస్టమర్ల సొంత నియమాలు వర్తిస్తాయి, ఈ పత్రం కాదు.
 
 ## 7. I can withdraw anytime / నేను ఎప్పుడైనా అనుమతి వెనక్కి తీసుకోవచ్చు
 
 **EN:** I can withdraw this consent at any time, without giving a reason, by writing to
-[email / WhatsApp number]. Withdrawing will not affect my job or any payment already due.
-Within [7] days of my request, the voice clone will be switched off on all calls. Within
-[30] days, the clone and my recordings will be deleted from Viduron AI and Sarvam AI. I will
+Ashish (8977427838) or Tharun (6309558944). Withdrawing will not affect my job or any payment already due.
+Within 7 days of my request, the voice clone will be switched off on all calls. Within
+30 days, the clone and my recordings will be deleted from Viduron AI and Sarvam AI. I will
 receive written confirmation when this is done.
 
-**TE:** ఎలాంటి కారణం చెప్పకుండానే, [ఇమెయిల్ / WhatsApp నంబర్] కి రాసి, నేను ఎప్పుడైనా ఈ అనుమతిని వెనక్కి
+**TE:** ఎలాంటి కారణం చెప్పకుండానే, ఆశిష్ (8977427838) లేదా తరుణ్ (6309558944) కి రాసి, నేను ఎప్పుడైనా ఈ అనుమతిని వెనక్కి
 తీసుకోవచ్చు. దీని వల్ల నా ఉద్యోగం మీద గానీ, ఇప్పటికే రావాల్సిన చెల్లింపుల మీద గానీ ఎలాంటి ప్రభావం ఉండదు.
-నా అభ్యర్థన చేసిన [7] రోజుల లోపు అన్ని కాల్స్‌లో నా వాయిస్ ఆపేస్తారు. [30] రోజుల లోపు వాయిస్ క్లోన్, నా
+నా అభ్యర్థన చేసిన 7 రోజుల లోపు అన్ని కాల్స్‌లో నా వాయిస్ ఆపేస్తారు. 30 రోజుల లోపు వాయిస్ క్లోన్, నా
 రికార్డింగ్‌లు Viduron AI మరియు Sarvam AI నుండి పూర్తిగా తొలగిస్తారు. పూర్తయిన తర్వాత నాకు రాతపూర్వకంగా
 తెలియజేస్తారు.
 
@@ -101,9 +101,9 @@ receive written confirmation when this is done.
 
 ## 9. Questions and complaints / సందేహాలు, ఫిర్యాదులు
 
-**EN:** Contact person: [name, email, phone]. I can ask at any time to see how my voice is being used.
+**EN:** Contact person: Ashish (8977427838) or Tharun (6309558944). I can ask at any time to see how my voice is being used.
 
-**TE:** సంప్రదించవలసిన వ్యక్తి: [పేరు, ఇమెయిల్, ఫోన్]. నా వాయిస్ ఎలా వాడుతున్నారో ఎప్పుడైనా అడిగి తెలుసుకోవచ్చు.
+**TE:** సంప్రదించవలసిన వ్యక్తి: ఆశిష్ (8977427838) లేదా తరుణ్ (6309558944). నా వాయిస్ ఎలా వాడుతున్నారో ఎప్పుడైనా అడిగి తెలుసుకోవచ్చు.
 
 ## 10. Agreement / అంగీకారం
 

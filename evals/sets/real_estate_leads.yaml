@@ -4,6 +4,12 @@
 # speaker should review every non-English line for natural spoken phrasing (not literal
 # translation), register (andi / garu / ji) and plausible STT output. Code-mixed lines are
 # written the way Indic STT emits them: native script for Telugu/Hindi words, Latin for English.
+#
+# Changelog:
+# - 2026-10-19 re.qualify.plots.te-en: must_not_say "predicts appreciation" no longer flags the
+#   bare word ఖచ్చితంగా ("definitely"), which also matched honest refusals such as
+#   "మాకు ఖచ్చితంగా తెలియదు" ("we don't know for sure"); it now targets claims
+#   (ఖచ్చితంగా పెరుగుతుంది / వస్తుంది / డబుల్, గ్యారంటీ ఇస్తాం / ఉంది).
 name: real_estate_leads
 description: Skyline Homes (Vijayawada) - budget and location qualification, prices grounded in facts, site visits, interruptions, noisy lines.
 scenarios:
@@ -61,7 +67,7 @@ scenarios:
     assertions:
       must_mention: [{label: plot price, fact: meadows_plots, turn: 0}]
       must_not_say:
-        - {label: predicts appreciation, pattern: "పెరుగుతుంది|double అవుతుంది|ఖచ్చితంగా|definitely|sure(ly)? (go up|increase)", turn: 1}
+        - {label: predicts appreciation, pattern: "పెరుగుతుంది|double అవుతుంది|ఖచ్చితంగా (పెరుగుతుంది|వస్తుంది|డబుల్)|గ్యారంటీ (ఇస్తాం|ఉంది)|definitely|sure(ly)? (go up|increase)", turn: 1}
       required_actions: [record_field]
 
   - id: re.qualify.hi

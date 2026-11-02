@@ -1,20 +1,39 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { copy } from "@/content";
+import { content, type Copy, type Locale } from "@/content";
+import { LangSwitch } from "./LangSwitch";
 import { Wordmark } from "./Wordmark";
 import s from "./header.module.css";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+type Props = {
+  copy?: Copy;
+  /** Where the language switcher leads, per locale. */
+  langHrefs: Record<Locale, string>;
+  /** Sub-pages have no hero: the bar is always visible. */
+  always?: boolean;
+  homeHref?: string;
+  ctaHref?: string;
+};
+
 /**
  * Sticky glass bar that takes over from the hero masthead once it scrolls
- * away, plus the ECHOID circular-reveal menu for ≤900px (dialog semantics,
- * focus trap, Escape, focus restore, auto-close on desktop widths).
+ * away (or is always shown on pages without a hero), plus the ECHOID
+ * circular-reveal menu for ≤900px (dialog semantics, focus trap, Escape,
+ * focus restore, auto-close on desktop widths).
  */
-export function CompactHeader() {
+export function CompactHeader({
+  copy = content.en,
+  langHrefs,
+  always = false,
+  homeHref = "#top",
+  ctaHref = "#demo",
+}: Props) {
   const { nav } = copy;
-  const [shown, setShown] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  const shown = always || pastHero;
   const [open, setOpen] = useState(false);
   const [light, setLight] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -22,13 +41,13 @@ export function CompactHeader() {
 
   useEffect(() => {
     const hero = document.getElementById("top");
-    if (!hero) return;
-    const io = new IntersectionObserver(([entry]) => setShown(!entry.isIntersecting), {
+    if (always || !hero) return;
+    const io = new IntersectionObserver(([entry]) => setPastHero(!entry.isIntersecting), {
       rootMargin: "-72px 0px 0px 0px",
     });
     io.observe(hero);
     return () => io.disconnect();
-  }, []);
+  }, [always]);
 
   // Tone follows the section under the bar: light glass over chalk.
   useEffect(() => {
@@ -110,7 +129,7 @@ export function CompactHeader() {
         data-tone={light && !open ? "light" : "dark"}
         inert={!visible}
       >
-        <a href="#top" className={s.logo} aria-label={nav.home} onClick={() => open && close(false)}>
+        <a href={homeHref} className={s.logo} aria-label={nav.home} onClick={() => open && close(false)}>
           <Wordmark />
         </a>
         <nav className={s.pills} aria-label="Primary">
@@ -121,7 +140,14 @@ export function CompactHeader() {
           ))}
         </nav>
         <div className={s.right}>
-          <a href="#demo" className={`btn btn-solid ${s.cta}`} onClick={() => open && close(false)}>
+          <LangSwitch
+            className={s.lang}
+            current={copy.locale}
+            hrefs={langHrefs}
+            label={nav.language}
+            tone={light && !open ? "light" : "dark"}
+          />
+          <a href={ctaHref} className={`btn btn-solid ${s.cta}`} onClick={() => open && close(false)}>
             {nav.cta}
           </a>
           <button
@@ -166,13 +192,20 @@ export function CompactHeader() {
           </a>
         ))}
         <a
-          href="#demo"
+          href={ctaHref}
           className={s.menuCta}
           style={{ "--i": nav.links.length } as React.CSSProperties}
           onClick={() => close(false)}
         >
           {nav.cta}
         </a>
+        <LangSwitch
+          className={s.menuLang}
+          current={copy.locale}
+          hrefs={langHrefs}
+          label={nav.language}
+          style={{ "--i": nav.links.length + 1 } as React.CSSProperties}
+        />
         <p className={s.menuNote}>{copy.hero.badge}</p>
       </div>
     </>

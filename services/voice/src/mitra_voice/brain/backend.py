@@ -16,6 +16,9 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+# The 11 in-call tool declarations, as counted by providers (approx.).
+TOOL_TOKENS = 800
+
 
 @dataclass(frozen=True, slots=True)
 class ToolCall:
@@ -46,11 +49,12 @@ class ChatRequest:
     reasoning: str | None = None
 
     def estimated_tokens(self) -> int:
-        """Rough prompt + completion size for TPM pacing (Indic text: ~3 chars per token)."""
+        """Rough prompt + completion size for TPM pacing (Indic text: ~3 chars per token),
+        plus the tool declarations every request carries."""
         chars = len(self.system) + sum(
             len(t.text) + sum(len(str(r)) for _, r in t.results) for t in self.turns
         )
-        return chars // 3 + self.max_output_tokens
+        return chars // 3 + TOOL_TOKENS + self.max_output_tokens
 
 
 @dataclass(frozen=True, slots=True)

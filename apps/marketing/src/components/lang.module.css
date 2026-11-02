@@ -1,0 +1,75 @@
+/* Language switcher: a small segmented glass control (EN · తె · हि). */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--glass-hi);
+  border-radius: 8px;
+  background: rgba(1, 6, 26, 0.35);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--body-on-dark);
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+.option[lang="te"],
+.option[lang="hi"] {
+  font-size: 14px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.option[lang="te"] {
+  font-family: var(--font-telugu);
+}
+
+.option[lang="hi"] {
+  font-family: var(--font-devanagari);
+}
+
+.option:hover {
+  color: #fff;
+  background: rgba(220, 235, 255, 0.08);
+}
+
+.option[aria-current="page"] {
+  color: var(--ink);
+  background: linear-gradient(180deg, #ffffff 0%, #dfe8f5 100%);
+}
+
+/* On chalk */
+.switch[data-tone="light"] {
+  border-color: rgba(5, 7, 13, 0.14);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.switch[data-tone="light"] .option {
+  color: #4a4d55;
+}
+
+.switch[data-tone="light"] .option:hover {
+  color: var(--ink);
+  background: rgba(5, 7, 13, 0.06);
+}
+
+.switch[data-tone="light"] .option[aria-current="page"] {
+  color: #fff;
+  background: var(--ink);
+}

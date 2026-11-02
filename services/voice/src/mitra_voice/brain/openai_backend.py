@@ -140,16 +140,11 @@ class OpenAICompatBackend:
 
         async def events() -> AsyncIterator[ChatEvent]:
             pending: dict[int, dict[str, str]] = {}
+            usage: Any = None
             think = _ThinkFilter()
             async for chunk in response:
-                usage = getattr(chunk, "usage", None)
-                if usage is not None:
-                    details = getattr(usage, "prompt_tokens_details", None)
-                    yield UsageEvent(
-                        prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
-                        cached_tokens=getattr(details, "cached_tokens", 0) or 0,
-                        output_tokens=getattr(usage, "completion_tokens", 0) or 0,
-                    )
+                # Usage can arrive on more than one chunk (Groq repeats it); keep the last.
+                usage = getattr(chunk, "usage", None) or usage
                 for choice in getattr(chunk, "choices", None) or []:
                     delta = getattr(choice, "delta", None)
                     text = getattr(delta, "content", None)
@@ -170,6 +165,13 @@ class OpenAICompatBackend:
             rest = think.flush()
             if rest:
                 yield TextEvent(rest)
+            if usage is not None:
+                details = getattr(usage, "prompt_tokens_details", None)
+                yield UsageEvent(
+                    prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+                    cached_tokens=getattr(details, "cached_tokens", 0) or 0,
+                    output_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                )
             for _, slot in sorted(pending.items()):
                 try:
                     args = json.loads(slot["args"]) if slot["args"].strip() else {}

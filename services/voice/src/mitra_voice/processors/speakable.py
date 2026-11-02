@@ -28,7 +28,7 @@ from pipecat.services.settings import TTSSettings
 from pipecat.transcriptions.language import Language
 
 from mitra_human import speakable
-from mitra_voice.call_context import CallContext
+from mitra_voice.call_context import CallContext, human_lang_for
 from mitra_voice.intents import detect_lang
 from mitra_voice.pack import Lang
 from mitra_voice.processors.reply import ReplyLog
@@ -51,9 +51,14 @@ PIPECAT_LANGUAGE: dict[Lang, Language] = {
 _HAS_NUMBER = re.compile(r"[\d₹]")
 
 
-def spoken_form(text: str, call_language: Lang) -> str:
-    """What TTS is actually given for ``text``; pre-rendered phrases must use the same form."""
-    return speakable(text, detect_lang(text, call_language))
+def spoken_form(text: str, call_language: Lang, code_mixed: bool = False) -> str:
+    """What TTS is actually given for ``text``; pre-rendered phrases must use the same form.
+
+    The text's own script decides the language (Latin-only text reads as English); text in the
+    caller's Indic language is read with the code-mixed rules when the caller code-mixes.
+    """
+    lang = detect_lang(text, call_language)
+    return speakable(text, human_lang_for(lang, code_mixed and lang == call_language))
 
 
 def split_first_words(buffer: str, min_words: int) -> tuple[str, str] | None:
@@ -107,7 +112,7 @@ class SpeakableProcessor(FrameProcessor):
 
     def _speak(self, text: str) -> str:
         # The reply's own script decides number words; Latin text falls back to English.
-        return spoken_form(text, self._call.language)
+        return spoken_form(text, self._call.language, self._call.code_mixed)
 
     async def _sync_tts_language(self) -> None:
         if self._call.language != self._tts_language:

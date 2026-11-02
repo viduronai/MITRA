@@ -71,3 +71,6 @@ class GapOut(ResponseModel):
     category: FactCategory
     key: str
     question: str
+    # "checklist": industry must-know; "call": a caller asked and the employee had no answer.
+    source: Literal["checklist", "call"] = "checklist"
+    call_id: uuid.UUID | None = None

@@ -25,8 +25,22 @@ _WHEN = re.compile(
     r"friday|saturday|sunday|weekend|\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b|"
     r"आज|कल|परसों|सुबह|शाम|दोपहर|सोमवार|मंगलवार|बुधवार|गुरुवार|शुक्रवार|शनिवार|रविवार|"
     r"ఈరోజు|ఇవాళ|రేపు|ఎల్లుండి|ఉదయం|పొద్దున్న|సాయంత్రం|మధ్యాహ్నం|సోమవారం|మంగళవారం|బుధవారం|"
-    r"గురువారం|శుక్రవారం|శనివారం|ఆదివారం",
+    r"గురువారం|శుక్రవారం|శనివారం|ఆదివారం|बजे|గంటలకి|గంటలకు|"
+    # hour words ("ఆరు ok", "साढ़े छह")
+    r"ఒకటి|రెండు|మూడు|నాలుగు|ఐదు|ఆరు|ఏడు|ఎనిమిది|తొమ్మిది|పది|పదకొండు|పన్నెండు|"
+    r"एक|दो|तीन|चार|पांच|पाँच|छह|सात|आठ|नौ|दस|ग्यारह|बारह|साढ़े",
     re.IGNORECASE,
+)
+_QUESTION = re.compile(r"\?|\b(?:what|which|where|how|is it|do you)\b|क्या|कब|కదా|ఎంత|ఎక్కడ|ఎప్పుడు")
+_HURRIED = re.compile(
+    r"\b(?:quick(?:ly)?|fast|hurry|busy|no time|straight)\b|జల్దీ|త్వరగా|క్విక్|టైమ్ లేదు|"
+    r"time లేదు|जल्दी|फटाफट|टाइम नहीं|time नहीं|बस बोलो|jaldi",
+    re.IGNORECASE,
+)
+
+HURRIED = (
+    "PACE CUE: the caller is in a hurry. Reply in ONE short sentence with just the answer or "
+    "the confirmation; no follow-up question, no upsell."
 )
 
 _ASKED_DOB = re.compile(r"date of birth|\bdob\b|birth|जन्म|పుట్టిన|డేట్ ఆఫ్ బర్త్", re.IGNORECASE)
@@ -53,9 +67,20 @@ def dob_given(last_assistant: str | None, caller_text: str) -> bool:
 
 
 def booking_accepted(last_assistant: str | None, caller_text: str) -> bool:
+    """A yes (or a name) plus a day/time, after the assistant offered a booking. A question
+    ("OK, Saturday too?") is not an acceptance."""
     if not last_assistant or not _OFFER.search(last_assistant):
         return False
-    return bool(_YES.search(caller_text) and _WHEN.search(caller_text))
+    if _QUESTION.search(caller_text):
+        return False
+    return bool(_YES.search(caller_text) and _WHEN.search(caller_text)) or bool(
+        _WHEN.search(caller_text) and re.search(r"name|नाम|పేరు", caller_text + last_assistant)
+    )
 
 
-__all__ = ["BOOK_NOW", "SEND_REPORT", "booking_accepted", "dob_given"]
+def hurried(caller_text: str, history_callers: list[str]) -> bool:
+    """The caller signalled hurry in this or an earlier utterance of the call."""
+    return any(_HURRIED.search(t) for t in [*history_callers, caller_text])
+
+
+__all__ = ["BOOK_NOW", "HURRIED", "SEND_REPORT", "booking_accepted", "dob_given", "hurried"]

@@ -278,3 +278,27 @@ async def test_retry_filler_is_skipped_when_the_pipeline_already_spoke_one(
         await service._process_context(context)
         assert sum(isinstance(f, TTSSpeakFrame) for f in pushed) == expected
         assert call.filler_spoken
+
+
+async def test_spoken_promise_creates_the_follow_up(clinic: EmployeePack) -> None:
+    fake = FakeModels([say("Insurance details నా దగ్గర లేవు అండి, team తో confirm చేసి చెప్తాను.")])
+    result = await _brain(clinic, fake).turn([], "Insurance cashless చేస్తారా?", "te-en")
+    assert [a.name for a in result.actions] == ["schedule_callback"]
+
+
+async def test_hurried_caller_and_question_are_not_a_booking(clinic: EmployeePack) -> None:
+    fake = FakeModels([say("Haan, Saturday ko bhi 5 se 9."), say("Ok.")])
+    brain = _brain(clinic, fake)
+    offer = [Message("assistant", "Kya main appointment book kar doon?")]
+    await brain.turn(offer, "OK OK, Saturday को भी?", "hi-en")
+    note = fake.requests[0]["contents"][-1].parts[0].text
+    assert "BOOKING CUE" not in note
+    await brain.turn([], "जल्दी बताइए, evening में कब तक खुला है?", "hi-en")
+    assert "PACE CUE" in fake.requests[1]["contents"][-1].parts[0].text
+
+
+async def test_quota_exhaustion_is_flagged_not_graded(clinic: EmployeePack) -> None:
+    error = RuntimeError("429 RESOURCE_EXHAUSTED tokens per day 'retryDelay': '40000s'")
+    result = await _brain(clinic, FakeModels([Scripted([], error=error)])).turn([], "Fee?", "en")
+    assert result.failed
+    assert result.error == "rate_limited"

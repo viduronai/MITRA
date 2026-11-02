@@ -12,13 +12,21 @@ Language policy (mirror the caller, TRD §5 code-mix). Only the pack's languages
   Telugu segment as Malayalam or Kannada, which is why single-Indic packs lock the STT.
 - A switch needs evidence: native script, or at least two words. A lone "ok" or "haan" never
   flips the call language.
+
+Code-mixing (Tenglish/Hinglish) is a separate, sticky trait of the caller: it turns on when an
+Indic-language utterance carries English words in Latin script (Sarvam "codemix" output, e.g.
+"consultation fee ఎంత?") and off after a clearly native-only utterance (3+ words, no Latin).
+``human_lang`` ("te-en" / "hi-en") then drives speech normalisation, fillers and back-channels
+(mitra_human); the TTS and STT keep the base language.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
+from mitra_human import Lang as HumanLang
 from mitra_voice.pack import Lang
 
 LanguageHook = Callable[[Lang], Awaitable[None]]
@@ -41,6 +49,17 @@ def stt_lang(code: str | None) -> Lang | None:
 
 
 ALL_LANGS: tuple[Lang, ...] = ("en", "hi", "te")
+_LATIN_WORD = re.compile(r"[A-Za-z]{2,}")
+MIXED: dict[Lang, HumanLang] = {"te": "te-en", "hi": "hi-en"}
+
+
+def has_latin_words(text: str) -> bool:
+    return bool(_LATIN_WORD.search(text))
+
+
+def human_lang_for(lang: Lang, code_mixed: bool) -> HumanLang:
+    """The mitra_human language code: "te-en"/"hi-en" for a code-mixing caller."""
+    return MIXED.get(lang, lang) if code_mixed else lang
 
 
 def stt_lock_language(languages: list[Lang] | tuple[Lang, ...]) -> Lang | None:
@@ -81,6 +100,7 @@ class CallContext:
     allowed: tuple[Lang, ...] = ALL_LANGS
     stt_locked: bool = False
     language_history: list[Lang] = field(default_factory=list)
+    code_mixed: bool = False
     # True when a filler was already spoken for the current turn (set by FillerProcessor before
     # the turn's LLMContextFrame reaches the LLM): at most one filler per turn (TRD §5).
     filler_spoken: bool = False
@@ -90,15 +110,32 @@ class CallContext:
         if not self.language_history:
             self.language_history.append(self.language)
 
+    @property
+    def human_lang(self) -> HumanLang:
+        return human_lang_for(self.language, self.code_mixed)
+
+    def _observe_mixing(self, text: str) -> None:
+        if self.language not in MIXED or _script_lang(text) is None:
+            return  # only native-script utterances in an Indic call say anything about mixing
+        if has_latin_words(text):
+            self.code_mixed = True
+        elif len(text.split()) >= 3:
+            self.code_mixed = False
+
     async def observe_utterance(self, text: str, stt_code: str | None) -> bool:
-        """Update the call language from a final transcript; True if it switched."""
+        """Update the call language (and code-mix trait) from a final transcript.
+
+        Returns True if the base language switched.
+        """
         new = detect_caller_language(
             text, stt_code, self.language, allowed=self.allowed, stt_locked=self.stt_locked
         )
         if new == self.language:
+            self._observe_mixing(text)
             return False
         self.language = new
         self.language_history.append(new)
+        self._observe_mixing(text)
         for hook in list(self.on_language_change):
             await hook(new)
         return True

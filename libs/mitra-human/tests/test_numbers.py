@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from mitra_human import Lang, number_to_words, speakable
+from mitra_human._lang import BaseLang
 from mitra_human.numwords import half, ordinal, year
 
 # Hindi 1-99, typed out independently of the library table.
@@ -145,7 +146,7 @@ def test_more_cardinals(text: str, lang: Lang, expected: str) -> None:
         (100, "te", "వందవ"),
     ],
 )
-def test_ordinals(n: int, lang: Lang, expected: str) -> None:
+def test_ordinals(n: int, lang: BaseLang, expected: str) -> None:
     assert ordinal(n, lang) == expected
 
 
@@ -161,7 +162,7 @@ def test_ordinals(n: int, lang: Lang, expected: str) -> None:
         (2, "en", "two and a half"),
     ],
 )
-def test_halves(n: int, lang: Lang, expected: str) -> None:
+def test_halves(n: int, lang: BaseLang, expected: str) -> None:
     assert half(n, lang) == expected
 
 
@@ -179,7 +180,7 @@ def test_halves(n: int, lang: Lang, expected: str) -> None:
         (1995, "te", "పంతొమ్మిది వందల తొంభై ఐదు"),
     ],
 )
-def test_years(n: int, lang: Lang, expected: str) -> None:
+def test_years(n: int, lang: BaseLang, expected: str) -> None:
     assert year(n, lang) == expected
 
 

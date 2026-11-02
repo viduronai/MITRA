@@ -1,16 +1,15 @@
 "use client";
 
-import { Check, Copy, Hash, PhoneForwarded, Plug, type LucideIcon } from "lucide-react";
+import { Hash, PhoneForwarded, Plug, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useState, useTransition } from "react";
 import { finishOnboarding, type StepErrorKey } from "@/app/onboarding/actions";
+import { ForwardingCodes } from "@/components/telephony/forwarding-codes";
+import { RequestNumberForm } from "@/components/telephony/request-number";
+import { TrustedCallerCard } from "@/components/telephony/trusted-caller-card";
 import { Button } from "@/components/ui/button";
-import { FORWARD_CODES, OPERATORS, type ForwardWhen, type Operator } from "@/lib/onboarding";
-import { cn } from "@/lib/utils";
+import type { Forwarding, PhoneNumberList } from "@/lib/telephony/types";
 import { StepFooter } from "./step-footer";
-
-const WHEN: ForwardWhen[] = ["busy", "noAnswer", "unreachable"];
 
 function SoonBadge({ label }: { label: string }) {
   return (
@@ -37,81 +36,51 @@ function CardHead({ icon: Icon, title, description, badge }: { icon: LucideIcon;
   );
 }
 
-function CopyCode({ code, label }: { code: string; label: string }) {
-  const tl = useTranslations("onboarding.live");
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <div className="flex items-center gap-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm leading-5 text-text-muted">{label}</p>
-        <p className="font-mono text-[15px] leading-6 font-medium tracking-wide break-all">{code}</p>
-      </div>
-      <Button
-        variant="secondary"
-        size="sm"
-        aria-label={tl("copyCode", { label })}
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(code);
-            setCopied(true);
-            toast.success(tl("copied"));
-            window.setTimeout(() => setCopied(false), 2000);
-          } catch {
-            // Clipboard can be blocked; the code stays visible to type by hand.
-          }
-        }}
-      >
-        {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
-        <span aria-hidden>{copied ? tl("copied") : tl("copyShort")}</span>
-      </Button>
-    </div>
-  );
-}
-
-export function GoLiveStep({ employeeName }: { employeeName: string }) {
+export function GoLiveStep({
+  employeeName,
+  numbers,
+  forwarding,
+  defaultCity,
+}: {
+  employeeName: string;
+  numbers: PhoneNumberList | null;
+  forwarding: Forwarding | null;
+  defaultCity: string;
+}) {
   const t = useTranslations("onboarding");
   const tl = useTranslations("onboarding.live");
-  const group = useId();
-  const [operator, setOperator] = useState<Operator>("jio");
+  const tc = useTranslations("connect");
   const [error, setError] = useState<StepErrorKey | null>(null);
   const [pending, startTransition] = useTransition();
+  const live = numbers?.items.find((n) => n.id === forwarding?.phone_number_id) ?? null;
+  const first = numbers?.items[0] ?? null;
 
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-xl border bg-card p-5 shadow-xs md:p-6">
         <CardHead icon={PhoneForwarded} title={tl("forwardTitle")} description={tl("forwardDesc", { name: employeeName })} />
-
-        <fieldset className="mt-5">
-          <legend className="mb-2 text-sm leading-5 font-medium">{tl("network")}</legend>
-          <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-2 p-1">
-            {OPERATORS.map(({ id, name }) => (
-              <label
-                key={id}
-                className={cn(
-                  "flex h-11 cursor-pointer items-center justify-center rounded-lg text-sm font-medium text-text-muted transition-colors motion-fast has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring",
-                  operator === id && "bg-surface text-foreground shadow-xs",
-                )}
-              >
-                <input type="radio" name={group} value={id} checked={operator === id} onChange={() => setOperator(id)} className="sr-only" />
-                {name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className="mt-3 divide-y">
-          {WHEN.map((when) => (
-            <CopyCode key={when} code={FORWARD_CODES[operator][when]} label={tl(when)} />
-          ))}
+        <div className="mt-5">
+          <ForwardingCodes codes={forwarding?.operators ?? null} numberId={live?.id ?? null} testedAt={live?.forwarding_tested_at ?? null} />
         </div>
-        <p className="mt-2 text-sm leading-5 text-text-muted">{tl("dialHint")}</p>
-        <p className="mt-3 rounded-lg bg-sky-100 px-4 py-3 text-sm leading-5 text-sky-ink">{tl("forwardSoon")}</p>
       </section>
 
-      <section className="rounded-xl border border-dashed bg-card/60 p-5 md:p-6">
-        <CardHead icon={Hash} title={tl("numberTitle")} description={tl("numberDesc")} badge={tl("comingSoon")} />
-      </section>
+      {numbers ? (
+        <section className="rounded-xl border bg-card p-5 shadow-xs md:p-6">
+          <CardHead icon={Hash} title={tl("numberTitle")} description={tl("numberDesc")} />
+          {numbers.simulated && <p className="mt-4 rounded-lg bg-sky-100 px-4 py-3 text-sm leading-5 text-sky-ink">{tc("simulated")}</p>}
+          {first ? (
+            <div className="mt-4">
+              <TrustedCallerCard number={first} businessName={numbers.business_name} />
+            </div>
+          ) : (
+            <RequestNumberForm defaultCity={defaultCity} />
+          )}
+        </section>
+      ) : (
+        <section className="rounded-xl border border-dashed bg-card/60 p-5 md:p-6">
+          <CardHead icon={Hash} title={tl("numberTitle")} description={tl("numberDesc")} badge={tl("comingSoon")} />
+        </section>
+      )}
       <section className="rounded-xl border border-dashed bg-card/60 p-5 md:p-6">
         <CardHead icon={Plug} title={tl("leadsTitle")} description={tl("leadsDesc")} badge={tl("comingSoon")} />
       </section>

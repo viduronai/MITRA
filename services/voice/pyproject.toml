@@ -76,6 +76,7 @@ module = [
     "mitra_voice.latency",
     "mitra_voice.processors.*",
     "mitra_voice.providers.*",
+    "mitra_voice.transports.*",
 ]
 disallow_untyped_calls = false
 disallow_untyped_decorators = false

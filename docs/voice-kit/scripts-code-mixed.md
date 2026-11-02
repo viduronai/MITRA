@@ -2,7 +2,8 @@
 
 > Most real callers mix languages, and these scripts are written that way. English words
 > stay in English, the rest in Telugu or Hindi script. Don't "clean up" the mixing.
-> Just talk the way you would at work. Numbers are written the way you'd say them.
+> Just talk the way you would at work. In code-mixed speech, times and phone numbers are said
+> in English (the spoken form is in brackets), e.g. "evening 6:30 (six thirty) కి".
 > Record the one(s) matching your languages. Each is about 70–80 seconds.
 
 ## Tenglish (`te-en`)
@@ -12,17 +13,17 @@
 హలో అండి, Sri Sai Clinic నుండి మాట్లాడుతున్నాను. చెప్పండి, ఏం help కావాలి?
 
 అవునండి, doctor గారు ఈ రోజు available గా ఉన్నారు. మా timings Monday నుండి Saturday వరకు, morning
-తొమ్మిది నుండి night ఎనిమిది వరకు. Sunday holiday అండి.
+9 (nine) నుండి night 8 (eight) వరకు. Sunday holiday అండి.
 
 Consultation fees ఐదు వందల రూపాయలు, one week లోపు follow-up అయితే free.
 
-హ్మ్… సరే… avunu, అర్థమైంది. ఒక్క minute అండి, slots check చేస్తాను…
+హ్మ్… సరే… avunu, అర్థమైంది. one minute అండి, slots check చేస్తాను…
 
-ఆ, రేపు evening ఆరున్నరకి ఒక slot free గా ఉంది. లేదంటే ఎల్లుండి morning పదకొండు గంటలకి కూడా ఉంది. మీకు
+ఆ, రేపు evening 6:30 (six thirty) కి ఒక slot free గా ఉంది. లేదంటే ఎల్లుండి morning 11 (eleven) కి కూడా ఉంది. మీకు
 ఏది convenient?
 
-Okay అండి, రేపు evening ఆరున్నరకి book చేస్తున్నాను. మీ number తొమ్మిది ఎనిమిది ఏడు ఆరు ఐదు, నాలుగు మూడు
-రెండు ఒకటి సున్నా, correct ఏనా?
+Okay అండి, రేపు evening 6:30 (six thirty) కి book చేస్తున్నాను. మీ number 98765 43210 (nine eight seven six five, four three two one zero),
+correct ఏనా?
 
 అయ్యో, ఇంతకు ముందు call cut అయింది, really sorry అండి.
 
@@ -33,7 +34,7 @@ call చేయండి. ఇంకేమైనా help కావాలా?
 
 ### Short clip (about 10 s)
 
-హలో అండి, Sri Sai Clinic నుండి. ఒక్క minute, check చేస్తాను… ఆ, రేపు evening ఆరున్నరకి slot free గా ఉంది
+హలో అండి, Sri Sai Clinic నుండి. one minute, check చేస్తాను… ఆ, రేపు evening 6:30 (six thirty) కి slot free గా ఉంది
 అండి. Book చేయమంటారా?
 
 ## Hinglish (`hi-en`)
@@ -42,17 +43,17 @@ call చేయండి. ఇంకేమైనా help కావాలా?
 
 हेलो जी, Sri Sai Clinic से बोल रही हूँ। बताइए, क्या help चाहिए?
 
-हाँ जी, doctor साहब आज available हैं। हमारी timings Monday से Saturday, morning नौ बजे से night आठ बजे
+हाँ जी, doctor साहब आज available हैं। हमारी timings Monday से Saturday, morning 9 (nine) बजे से night 8 (eight) बजे
 तक हैं। Sunday को off रहता है।
 
 Consultation fees पाँच सौ रुपये है, और one week के अंदर follow-up free है।
 
-हम्म… अच्छा… हाँ जी, समझ गई। Just एक minute, मैं slots check करती हूँ…
+हम्म… अच्छा… हाँ जी, समझ गई। Just one minute, मैं slots check करती हूँ…
 
-जी, कल evening साढ़े छह बजे एक slot free है। या फिर परसों morning ग्यारह बजे भी मिल जाएगा। आपके लिए कौन-सा
+जी, कल evening 6:30 (six thirty) बजे एक slot free है। या फिर परसों morning 11 (eleven) बजे भी मिल जाएगा। आपके लिए कौन-सा
 convenient रहेगा?
 
-Okay जी, कल evening साढ़े छह बजे book कर रही हूँ। आपका number नौ आठ सात छह पाँच, चार तीन दो एक ज़ीरो,
+Okay जी, कल evening 6:30 (six thirty) बजे book कर रही हूँ। आपका number 98765 43210 (nine eight seven six five, four three two one zero),
 correct है ना?
 
 अरे, पहले call cut हो गई थी, really sorry जी।
@@ -67,5 +68,5 @@ correct है ना?
 
 ### Short clip (about 10 s)
 
-हेलो जी, Sri Sai Clinic से बोल रही हूँ। एक minute, check करती हूँ… जी, कल evening साढ़े छह बजे slot free
+हेलो जी, Sri Sai Clinic से बोल रही हूँ। one minute, check करती हूँ… जी, कल evening 6:30 (six thirty) बजे slot free
 है। Book कर दूँ?

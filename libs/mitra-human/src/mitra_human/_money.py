@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
-from mitra_human._lang import DEVANAGARI, TELUGU, Lang
+from mitra_human._lang import DEVANAGARI, TELUGU, BaseLang
 from mitra_human._lexicon import RANGE_WORDS
 from mitra_human._marks import mark, te_form_after
 from mitra_human._num_te import TeForm
@@ -92,7 +92,7 @@ def _split(value: Decimal) -> tuple[int, int]:
     return divmod(paise_total, 100)
 
 
-def amount_words(amount: Amount, lang: Lang, te_form: TeForm = "plain") -> str:
+def amount_words(amount: Amount, lang: BaseLang, te_form: TeForm = "plain") -> str:
     """The number part of an amount, without the currency word."""
     if isinstance(amount, Half):
         h = half(amount.whole, lang)
@@ -106,7 +106,7 @@ def amount_words(amount: Amount, lang: Lang, te_form: TeForm = "plain") -> str:
     return cardinal(rupees, lang, te_form)
 
 
-def money_words(amount: Amount, lang: Lang) -> str:
+def money_words(amount: Amount, lang: BaseLang) -> str:
     if isinstance(amount, Half):
         unit = {"en": "rupees", "hi": "रुपये", "te": "రూపాయలు"}[lang]
         return f"{amount_words(amount, lang, 'attr')} {unit}"
@@ -132,7 +132,7 @@ def money_words(amount: Amount, lang: Lang) -> str:
     return " ".join(parts) or "సున్నా రూపాయలు"
 
 
-def _range_words(a: Amount, b: Amount, lang: Lang) -> str:
+def _range_words(a: Amount, b: Amount, lang: BaseLang) -> str:
     between, after = RANGE_WORDS[lang]
     if lang == "en":
         return f"{amount_words(a, lang)}{between}{amount_words(b, lang)} rupees"
@@ -142,7 +142,7 @@ def _range_words(a: Amount, b: Amount, lang: Lang) -> str:
     return f"{first}{between}{amount_words(b, lang, 'attr')} రూపాయల{after}"
 
 
-def apply_money(text: str, lang: Lang) -> str:
+def apply_money(text: str, lang: BaseLang) -> str:
     def money_range(m: re.Match[str]) -> str:
         scale1, scale2 = m.group("scale1"), m.group("scale2")
         num1, num2 = m.group("num1"), m.group("num2")
@@ -166,7 +166,7 @@ def apply_money(text: str, lang: Lang) -> str:
     return _SUFFIXED.sub(single, text)
 
 
-def apply_scaled_numbers(text: str, lang: Lang) -> str:
+def apply_scaled_numbers(text: str, lang: BaseLang) -> str:
     """1.2 lakh -> one lakh twenty thousand, 2.5 करोड़ -> ढाई करोड़ (no currency sign)."""
 
     def scaled(m: re.Match[str]) -> str:

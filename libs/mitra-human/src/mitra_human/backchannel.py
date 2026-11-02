@@ -17,12 +17,14 @@ import random
 import re
 from typing import Final
 
-from mitra_human._lang import Lang, check_lang
+from mitra_human._lang import BaseLang, Lang, base_lang, check_lang, is_code_mixed
 
 TOKENS: Final[dict[Lang, tuple[str, ...]]] = {
     "en": ("mm-hmm", "okay", "right"),
     "hi": ("हाँ जी", "अच्छा", "हम्म"),
     "te": ("అవును", "సరే", "హ్మ్"),
+    "te-en": ("అవును", "సరే", "okay"),
+    "hi-en": ("हाँ जी", "अच्छा", "okay"),
 }
 
 _CLAUSE_SPLIT = re.compile(r"[.!?।॥,;:]+")
@@ -32,6 +34,7 @@ _EN_QUESTION_STARTS = frozenset(
     are am was were have has may shall
     """.split()
 )
+_EN_WH_WORDS = frozenset(("what", "why", "how", "when", "where", "who", "which"))
 _EN_QUESTION_TAILS = ("right", "isn't it", "aren't you", "don't you", "no")
 # "... but can you move it": an auxiliary followed by a subject, anywhere in the clause.
 _EN_INVERSION = re.compile(
@@ -57,6 +60,18 @@ _MIN_WORDS = 5
 
 
 def is_question(clause: str, lang: Lang) -> bool:
+    """Code-mixed clauses count as questions if either language's cues say so."""
+    if is_code_mixed(lang):
+        # The English part often starts mid-clause: "मैंने book किया था what is the status".
+        return (
+            _is_question(clause, base_lang(lang))
+            or _is_question(clause, "en")
+            or bool(_EN_WH_WORDS.intersection(clause.lower().split()))
+        )
+    return _is_question(clause, base_lang(lang))
+
+
+def _is_question(clause: str, lang: BaseLang) -> bool:
     words = clause.lower().split()
     if not words:
         return False

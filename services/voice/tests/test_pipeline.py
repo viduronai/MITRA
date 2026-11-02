@@ -14,7 +14,7 @@ from mitra_voice.pack import FIXTURES_DIR, load_fixture
 from mitra_voice.pipeline import CallPipeline, build_call_pipeline, greet
 from mitra_voice.providers import resolve_providers
 from mitra_voice.session import CallSession
-from tests.fakes import EnergyVAD, FakeInput, FakeOutput, wait_for
+from tests.fakes import EnergyVAD, FakeInput, FakeOutput, wait_for, wait_until_quiet
 
 
 def _settings(**overrides: Any) -> Settings:
@@ -32,6 +32,7 @@ def _settings(**overrides: Any) -> Settings:
 async def running_call(
     settings: Settings,
 ) -> AsyncIterator[tuple[CallSession, CallPipeline, FakeInput, list[dict[str, Any]]]]:
+    # The fake output is reachable as ``inp.peer`` for quiet-waits.
     session = CallSession(
         scenario="clinic",
         pack=load_fixture(FIXTURES_DIR / "sunrise-clinic.json"),
@@ -40,6 +41,7 @@ async def running_call(
     sent: list[dict[str, Any]] = []
     session.send = sent.append
     inp, out = FakeInput(), FakeOutput()
+    inp.peer = out
     call = build_call_pipeline(
         session, settings, transport_input=inp, transport_output=out, vad=EnergyVAD(), turn="vad"
     )
@@ -73,7 +75,7 @@ def _has(sent: list[dict[str, Any]], pred: Callable[[dict[str, Any]], bool]) -> 
 async def test_greets_then_answers_fee_from_the_pack() -> None:
     async with running_call(_settings()) as (session, call, inp, sent):
         await greet(call, session)
-        await asyncio.sleep(2.5)  # let the greeting play out
+        await wait_until_quiet(inp.peer)  # let the greeting play out (load-independent)
         await _speak(inp, 0.8)
 
         await wait_for(lambda: len(session.tracker.completed()) >= 1, within=10)

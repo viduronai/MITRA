@@ -76,6 +76,13 @@
   color: #fff;
 }
 
+.lang {
+  position: absolute;
+  z-index: 4;
+  top: calc(env(safe-area-inset-top, 0px) + 32 * var(--u));
+  right: clamp(14px, 3vw, 40px);
+}
+
 /* ---------- Copy ---------- */
 .gap {
   flex: 82.98 1 0;
@@ -400,5 +407,29 @@
 
   .scrollCue::after {
     animation: none;
+  }
+}
+
+/* ---------- Localised heroes (te / hi) ---------- */
+/* Indic lines run longer and need room for vowel signs above and below. */
+.hero:not([data-locale="en"]) .h1 {
+  font-size: max(calc(62 * var(--u)), 30px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.hero:not([data-locale="en"]) .line {
+  padding-top: 0.08em;
+  padding-bottom: 0.2em;
+  margin-bottom: -0.2em;
+}
+
+@media (max-width: 599.98px) and (orientation: portrait) {
+  .hero:not([data-locale="en"]) .h1 {
+    font-size: max(24px, min(calc(62 * var(--u)), calc((100vw - 48px) / 9.6)));
+  }
+
+  .lang {
+    top: calc(env(safe-area-inset-top, 0px) + 30px);
   }
 }

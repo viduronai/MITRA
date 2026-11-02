@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   // first paint needs no extra round trip.
   experimental: {
     inlineCss: true,
+    // Three root layouts (en / te / hi, each with its own <html lang>), so
+    // unmatched URLs need app/global-not-found.tsx.
+    globalNotFound: true,
   },
   turbopack: {
     rules: {
