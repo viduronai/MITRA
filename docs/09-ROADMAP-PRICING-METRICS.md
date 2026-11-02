@@ -34,6 +34,14 @@ gantt
 | **P1 → Public launch** | 15+ pilot businesses live ≥ 3 weeks; setup median ≤ 15 min; ≥ 70% human-likeness; no compliance incidents; NPS ≥ 40 |
 | **P2 → Agencies (P3)** | ≥ 150 paying businesses; month-3 retention ≥ 75%; 5 agencies on waitlist with ≥ 10 clients each |
 
+### Build waves (engineering)
+
+| Wave | Scope | Status |
+|---|---|---|
+| A | Calls & customer memory, wallet billing, telephony & compliance gate, site sub-pages | Done (2 Nov 2026) |
+| B | Dialer & campaigns, lead intake & webhooks, WhatsApp manager & approvals, AI team, routines, escalation, listen & whisper | In progress |
+| C | Missed-call number (CALL-20); UPI collections with auto-matching (ACT-05, ACT-11) | Queued |
+
 ## 2. Go-to-market
 
 1. **Founder-led pilots** — 20 clinics & builders in Hyderabad/Vijayawada; set up for them, learn daily, record case studies (with consent).

@@ -284,6 +284,7 @@ From a public-feature review of Outpero (outpero.com) and Decibyl (decibyl.ai an
 | CALL-18 | Listen & whisper | Supervisor listens live and types a private instruction the AI follows, or takes over | Should | P2 |
 | CALL-19 | Escalation ladder | Transfer tries staff A → B → owner, then takes a message and hands back to AI; shows a hand-off card | Must | P2 |
 | CALL-20 | Missed-call number | "Give a missed call on 040-xxxx" → Mitra calls back in 1 min (free for caller) | Should | P2 |
+| ACT-11 | UPI collections with auto-matching | Employee sends a UPI/Razorpay payment link during or after the call; payment webhook marks the bill paid, thanks the customer on WhatsApp and stops reminders; unpaid links feed a reminder routine | Must | P2 |
 | VOICE-17 | More languages | Tamil, Kannada, Malayalam, Marathi (after te/hi/en quality bar is met) | Should | P2 |
 | EMP-12 | "Polish my script" | One tap adds language-correct politeness (garu/andi, ji/aap) and Indian number style | Should | P1 |
 | EMP-13 | Build any role from one line | Owner describes a custom role; Mitra drafts a spec card (steps, fields, hand-offs, schedule) for review before creating it | Should | P2 |
