@@ -33,8 +33,8 @@ Samples: name = Ravi · business = Sunrise Homes · minutes = 2
 | | Body |
 |---|---|
 | en | Thanks for calling {{business}}. We'll call you back at {{time}}. |
-| hi | {{business}} को call करने के लिए धन्यवाद। हम आपको {{time}} बजे call करेंगे। |
-| te | {{business}}కి call చేసినందుకు ధన్యవాదాలు. మేము మీకు {{time}}కి తిరిగి call చేస్తాం. |
+| hi | नमस्ते! {{business}} को call करने के लिए धन्यवाद। हम आपको {{time}} बजे call करेंगे। |
+| te | నమస్కారం! {{business}}కి call చేసినందుకు ధన్యవాదాలు. మేము మీకు {{time}}కి తిరిగి call చేస్తాం. |
 
 Samples: business = Sunrise Clinic · time = 9:00 am
 
@@ -43,9 +43,9 @@ Buttons: quick reply **Change time** · URL **Get directions** (`https://maps.ap
 
 | | Body |
 |---|---|
-| en | {{name}}, your appointment at {{business}} is confirmed for {{when}}. |
-| hi | {{name}}, {{business}} में आपकी appointment {{when}} के लिए confirm हो गई है। |
-| te | {{name}} గారు, {{business}}లో మీ appointment {{when}}కి confirm అయింది. |
+| en | Hi {{name}}, your appointment at {{business}} is confirmed for {{when}}. |
+| hi | नमस्ते {{name}}, {{business}} में आपकी appointment {{when}} के लिए confirm हो गई है। |
+| te | నమస్కారం {{name}} గారు, {{business}}లో మీ appointment {{when}}కి confirm అయింది. |
 
 Samples: name = Ravi · business = Sunrise Clinic · when = Tue 21 Oct, 6:15 pm
 
@@ -76,9 +76,9 @@ Button: URL **Open map** (`https://maps.app.goo.gl/{{1}}`)
 
 | | Body |
 |---|---|
-| en | {{business}} is at {{address}}. Tap below for directions. |
-| hi | {{business}} का पता: {{address}}. रास्ते के लिए नीचे tap करें। |
-| te | {{business}} అడ్రస్: {{address}}. దారి కోసం కింద tap చేయండి. |
+| en | You can find {{business}} at {{address}}. Tap below for directions. |
+| hi | पता: {{business}}, {{address}}. रास्ते के लिए नीचे tap करें। |
+| te | అడ్రస్: {{business}}, {{address}}. దారి కోసం కింద tap చేయండి. |
 
 Samples: business = Sunrise Clinic · address = Road No. 12, Banjara Hills, Hyderabad
 
@@ -98,9 +98,9 @@ Button: URL **Pay now** (`https://rzp.io/{{1}}`; the code sends the link id)
 
 | | Body |
 |---|---|
-| en | {{name}}, here is your payment link from {{business}} for {{purpose}}: ₹{{amount}}. You can pay by UPI or card. |
-| hi | {{name}}, {{business}} की ओर से {{purpose}} के लिए आपका payment link: ₹{{amount}}. UPI या card से pay कर सकते हैं। |
-| te | {{name}} గారు, {{purpose}} కోసం {{business}} నుంచి మీ payment link: ₹{{amount}}. UPI లేదా card తో pay చేయవచ్చు. |
+| en | Hi {{name}}, here is your payment link from {{business}} for {{purpose}}: ₹{{amount}}. You can pay by UPI or card. |
+| hi | नमस्ते {{name}}, {{business}} की ओर से {{purpose}} के लिए आपका payment link: ₹{{amount}}. UPI या card से pay कर सकते हैं। |
+| te | నమస్కారం {{name}} గారు, {{purpose}} కోసం {{business}} నుంచి మీ payment link: ₹{{amount}}. UPI లేదా card తో pay చేయవచ్చు. |
 
 Samples: name = Ravi · business = Sunrise Clinic · purpose = consultation · amount = 500
 
@@ -110,8 +110,8 @@ Button: URL **Pay now** · quick reply **Already paid**
 | | Body |
 |---|---|
 | en | A gentle reminder from {{business}}: ₹{{amount}} for {{purpose}} is due on {{due}}. |
-| hi | {{business}} की ओर से एक reminder: {{purpose}} के ₹{{amount}} की due date {{due}} है। |
-| te | {{business}} నుంచి ఒక reminder: {{purpose}} కోసం ₹{{amount}} చెల్లించాల్సిన తేదీ {{due}}. |
+| hi | एक reminder, {{business}} की ओर से: {{purpose}} के ₹{{amount}} की due date {{due}} है। |
+| te | ఒక reminder, {{business}} నుంచి: {{purpose}} కోసం ₹{{amount}} చెల్లించాల్సిన తేదీ {{due}}. |
 
 Samples: business = Sunrise Clinic · amount = 500 · purpose = consultation · due = 5 Nov
 
@@ -133,9 +133,9 @@ Button: URL **Open in Mitra** (`https://app.mitra.ai/{{1}}`; the code sends the 
 
 | | Body |
 |---|---|
-| en | {{title}} at {{business}}: {{detail}} Open Mitra for details. |
-| hi | {{business}} में {{title}}: {{detail}} पूरी जानकारी Mitra में देखें। |
-| te | {{business}}లో {{title}}: {{detail}} పూర్తి వివరాలు Mitraలో చూడండి. |
+| en | Alert: {{title}} at {{business}}. {{detail}} Open Mitra for details. |
+| hi | Alert: {{business}} में {{title}}। {{detail}} पूरी जानकारी Mitra में देखें। |
+| te | Alert: {{business}}లో {{title}}. {{detail}} పూర్తి వివరాలు Mitraలో చూడండి. |
 
 Samples: title = Hot lead · business = Sunrise Homes · detail = Ravi is interested in a 2BHK and wants a site visit on Saturday.
 
@@ -155,9 +155,9 @@ Quick-reply buttons: **Approve** · **Decline** (the code sets each button's pay
 
 | | Body |
 |---|---|
-| en | {{business}}: {{employee}} needs your OK. {{summary}} Tap a button below. |
-| hi | {{business}}: {{employee}} को आपकी मंज़ूरी चाहिए। {{summary}} नीचे एक button tap करें। |
-| te | {{business}}: {{employee}}కి మీ approval కావాలి. {{summary}} కింద ఒక button tap చేయండి. |
+| en | Approval needed at {{business}}: {{employee}} needs your OK. {{summary}} Tap a button below. |
+| hi | मंज़ूरी चाहिए, {{business}}: {{employee}} को आपकी मंज़ूरी चाहिए। {{summary}} नीचे एक button tap करें। |
+| te | Approval కావాలి, {{business}}: {{employee}}కి మీ approval కావాలి. {{summary}} కింద ఒక button tap చేయండి. |
 
 Samples: business = Sunrise Homes · employee = Priya · summary = Call 120 people from the October expo list.
 
@@ -166,9 +166,9 @@ Quick-reply button: **Done**
 
 | | Body |
 |---|---|
-| en | {{business}}: please {{action}} {{customer}}. {{brief}} Tap Done when finished. |
-| hi | {{business}}: कृपया {{customer}} को {{action}}। {{brief}} हो जाने पर Done tap करें। |
-| te | {{business}}: దయచేసి {{customer}}కి {{action}}. {{brief}} అయ్యాక Done tap చేయండి. |
+| en | Task from {{business}}: please {{action}} {{customer}}. {{brief}} Tap Done when finished. |
+| hi | नया काम, {{business}} से: कृपया {{customer}} को {{action}}। {{brief}} हो जाने पर Done tap करें। |
+| te | కొత్త పని, {{business}} నుంచి: దయచేసి {{customer}}కి {{action}}. {{brief}} అయ్యాక Done tap చేయండి. |
 
 Samples: business = Sunrise Clinic · action = call back · customer = Ravi (…5678) · brief = Wants an evening slot, asked about parking.
 
