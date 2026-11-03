@@ -45,7 +45,7 @@ export function useSentence() {
       });
     }
     return t("sentenceEvent", {
-      event: t(`events.${spec.trigger.event}`),
+      event: t(`events.${spec.trigger.event.replace(".", "_")}` as never),
       employee,
       verb,
       delay: spec.trigger.delay_minutes,
@@ -123,7 +123,7 @@ export function RoutineBuilder({ employees }: { employees: EmployeeOption[] }) {
               <select aria-label={t("eventLabel")} className={selectClass} value={event} onChange={(e) => setEvent(e.target.value as RoutineEvent)}>
                 {EVENTS.map((x) => (
                   <option key={x} value={x}>
-                    {t(`events.${x}`)}
+                    {t(`events.${x.replace(".", "_")}` as never)}
                   </option>
                 ))}
               </select>

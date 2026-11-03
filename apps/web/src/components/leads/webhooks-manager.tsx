@@ -82,7 +82,7 @@ function AddWebhook({ onSecret }: { onSecret: (id: string, secret: string) => vo
                   checked={events.includes(ev)}
                   onChange={(e) => setEvents(e.target.checked ? [...events, ev] : events.filter((x) => x !== ev))}
                 />
-                {t(`eventNames.${ev}`)}
+                {t(`eventNames.${ev.replace(".", "_")}` as never)}
               </label>
             ))}
           </div>
@@ -155,7 +155,7 @@ function WebhookCard({ hook, deliveries, secret, onSecret }: { hook: Webhook; de
         <div className="min-w-0 flex-1">
           <p className="font-semibold break-all">{hook.description || hook.url}</p>
           {hook.description && <p className="text-sm break-all text-text-muted">{hook.url}</p>}
-          <p className="mt-1 text-sm text-text-muted">{hook.events.map((e) => t(`eventNames.${e}`)).join(" · ")}</p>
+          <p className="mt-1 text-sm text-text-muted">{hook.events.map((e) => t(`eventNames.${e.replace(".", "_")}` as never)).join(" · ")}</p>
         </div>
         <button
           type="button"
@@ -241,7 +241,7 @@ export function WebhooksManager({ hooks, deliveries }: { hooks: Webhook[]; deliv
           ))}
         </ul>
       )}
-      <p className="text-sm leading-5 text-text-muted">{t("signatureHelp")}</p>
+      <p className="text-sm leading-5 text-text-muted">{t.raw("signatureHelp")}</p>
       <AddWebhook onSecret={remember} />
     </div>
   );

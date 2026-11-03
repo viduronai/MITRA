@@ -92,7 +92,9 @@ export function ApprovalReview({ approval }: { approval: Approval }) {
         </div>
         {Object.entries(fields).map(([key, value]) => (
           <div key={key} className="flex flex-col gap-1.5">
-            <Label htmlFor={`field-${key}`}>{key.replaceAll("_", " ")}</Label>
+            <Label htmlFor={`field-${key}`}>
+              {t.has(`fields.${key}` as never) ? t(`fields.${key}` as never) : key.replaceAll("_", " ")}
+            </Label>
             {typeof value === "boolean" ? (
               <input
                 id={`field-${key}`}

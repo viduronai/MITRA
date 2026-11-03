@@ -53,7 +53,7 @@ export const upcomingNav: NavItem[] = [
   { key: "ask", href: "/ask", icon: Sparkles, ready: true },
   { key: "approvals", href: "/approvals", icon: CircleCheckBig, ready: true },
   { key: "payments", href: "/payments", icon: IndianRupee, ready: true },
-  { key: "connect", href: "/connect", icon: Plug },
+  { key: "connect", href: "/more/connect", icon: Plug, ready: true },
 ];
 
 export function isActive(pathname: string, href: string): boolean {

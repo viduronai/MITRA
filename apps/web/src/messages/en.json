@@ -852,11 +852,11 @@
     "url": "Your address (https://…)",
     "events": "Send when",
     "eventNames": {
-      "call.ended": "A call ends",
-      "lead.created": "A new lead arrives",
-      "campaign.finished": "A call list finishes",
-      "payment.paid": "A customer pays a payment link",
-      "payment.failed": "A customer's payment fails"
+      "call_ended": "A call ends",
+      "lead_created": "A new lead arrives",
+      "campaign_finished": "A call list finishes",
+      "payment_paid": "A customer pays a payment link",
+      "payment_failed": "A customer's payment fails"
     },
     "name": "Name (optional)",
     "headers": "Extra headers (optional)",
@@ -933,6 +933,18 @@
     "detailsTitle": "Details",
     "summaryLabel": "What is being asked",
     "noteLabel": "Note (optional)",
+    "fields": {
+      "name": "Name",
+      "contacts": "People to call",
+      "campaign_id": "Campaign ID",
+      "count": "People",
+      "routine_run_id": "Routine run ID",
+      "amount_paise": "Amount (paise)",
+      "discount_percent": "Discount (%)",
+      "purpose": "For",
+      "customer": "Customer",
+      "payment_request_id": "Payment request ID"
+    },
     "approve": "Approve",
     "approveEdited": "Save changes & approve",
     "decline": "Decline",
@@ -1417,12 +1429,12 @@
       "inactive_customers": "customers not heard from in 30 days"
     },
     "events": {
-      "lead.created": "a new lead arrives",
-      "call.missed": "a call is missed",
-      "appointment.no_show": "someone misses their appointment",
-      "booking.made": "a booking is made",
-      "payment.failed": "a payment fails",
-      "payment.overdue": "a payment link is still unpaid after its due date"
+      "lead_created": "a new lead arrives",
+      "call_missed": "a call is missed",
+      "appointment_no_show": "someone misses their appointment",
+      "booking_made": "a booking is made",
+      "payment_failed": "a payment fails",
+      "payment_overdue": "a payment link is still unpaid after its due date"
     },
     "onOff": "{name} on",
     "runNow": "Run now",

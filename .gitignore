@@ -37,3 +37,6 @@ Thumbs.db
 # Local data
 infra/data/
 *.log
+
+# Local UI walkthrough screenshots
+docs/screens/

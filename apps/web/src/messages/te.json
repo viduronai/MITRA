@@ -853,11 +853,11 @@
     "url": "మీ address (https://…)",
     "events": "ఎప్పుడు పంపాలి",
     "eventNames": {
-      "call.ended": "Call ముగిసినప్పుడు",
-      "lead.created": "కొత్త lead వచ్చినప్పుడు",
-      "campaign.finished": "Call list పూర్తయినప్పుడు",
-      "payment.paid": "కస్టమర్ పేమెంట్ లింక్‌తో చెల్లించారు",
-      "payment.failed": "కస్టమర్ పేమెంట్ విఫలమైంది"
+      "call_ended": "Call ముగిసినప్పుడు",
+      "lead_created": "కొత్త lead వచ్చినప్పుడు",
+      "campaign_finished": "Call list పూర్తయినప్పుడు",
+      "payment_paid": "కస్టమర్ పేమెంట్ లింక్‌తో చెల్లించారు",
+      "payment_failed": "కస్టమర్ పేమెంట్ విఫలమైంది"
     },
     "name": "పేరు (optional)",
     "headers": "Extra headers (optional)",
@@ -934,6 +934,18 @@
     "detailsTitle": "వివరాలు",
     "summaryLabel": "ఏం అడుగుతున్నారు",
     "noteLabel": "నోట్ (ఐచ్ఛికం)",
+    "fields": {
+      "name": "పేరు",
+      "contacts": "ఎంతమందికి call చేయాలి",
+      "campaign_id": "Campaign ID",
+      "count": "మంది",
+      "routine_run_id": "Routine run ID",
+      "amount_paise": "మొత్తం (పైసలలో)",
+      "discount_percent": "డిస్కౌంట్ (%)",
+      "purpose": "దేనికి",
+      "customer": "కస్టమర్",
+      "payment_request_id": "Payment request ID"
+    },
     "approve": "ఆమోదించండి",
     "approveEdited": "మార్పులు సేవ్ చేసి ఆమోదించండి",
     "decline": "తిరస్కరించండి",
@@ -1418,12 +1430,12 @@
       "inactive_customers": "30 రోజులుగా మాట్లాడని కస్టమర్లు"
     },
     "events": {
-      "lead.created": "కొత్త లీడ్ వస్తే",
-      "call.missed": "కాల్ మిస్ అయితే",
-      "appointment.no_show": "ఎవరైనా అపాయింట్‌మెంట్‌కి రాకపోతే",
-      "booking.made": "బుకింగ్ అయితే",
-      "payment.failed": "పేమెంట్ ఫెయిల్ అయితే",
-      "payment.overdue": "గడువు తర్వాత కూడా పేమెంట్ లింక్ చెల్లించకపోతే"
+      "lead_created": "కొత్త లీడ్ వస్తే",
+      "call_missed": "కాల్ మిస్ అయితే",
+      "appointment_no_show": "ఎవరైనా అపాయింట్‌మెంట్‌కి రాకపోతే",
+      "booking_made": "బుకింగ్ అయితే",
+      "payment_failed": "పేమెంట్ ఫెయిల్ అయితే",
+      "payment_overdue": "గడువు తర్వాత కూడా పేమెంట్ లింక్ చెల్లించకపోతే"
     },
     "onOff": "{name} ఆన్",
     "runNow": "ఇప్పుడే నడపండి",

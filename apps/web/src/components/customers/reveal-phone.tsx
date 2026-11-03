@@ -21,7 +21,7 @@ export function RevealPhone({ customerId, masked, hasPhone }: { customerId: stri
       <span className="inline-flex flex-wrap items-center gap-2">
         <a href={`tel:${phone}`} className="focus-ring inline-flex items-center gap-1 rounded-md font-medium tabular-nums text-brand-600">
           <Phone className="size-4" aria-hidden />
-          {phone}
+          {phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2")}
         </a>
         <Button variant="ghost" size="sm" onClick={() => setPhone(null)}>
           <EyeOff aria-hidden /> {t("hideNumber")}

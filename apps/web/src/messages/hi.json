@@ -853,11 +853,11 @@
     "url": "आपका address (https://…)",
     "events": "कब भेजें",
     "eventNames": {
-      "call.ended": "Call ख़त्म होने पर",
-      "lead.created": "नई lead आने पर",
-      "campaign.finished": "Call list पूरी होने पर",
-      "payment.paid": "ग्राहक ने पेमेंट लिंक से भुगतान किया",
-      "payment.failed": "ग्राहक का पेमेंट फेल हुआ"
+      "call_ended": "Call ख़त्म होने पर",
+      "lead_created": "नई lead आने पर",
+      "campaign_finished": "Call list पूरी होने पर",
+      "payment_paid": "ग्राहक ने पेमेंट लिंक से भुगतान किया",
+      "payment_failed": "ग्राहक का पेमेंट फेल हुआ"
     },
     "name": "नाम (optional)",
     "headers": "Extra headers (optional)",
@@ -934,6 +934,18 @@
     "detailsTitle": "विवरण",
     "summaryLabel": "क्या पूछा जा रहा है",
     "noteLabel": "नोट (वैकल्पिक)",
+    "fields": {
+      "name": "नाम",
+      "contacts": "कितने लोगों को call करें",
+      "campaign_id": "Campaign ID",
+      "count": "लोग",
+      "routine_run_id": "Routine run ID",
+      "amount_paise": "रकम (पैसे में)",
+      "discount_percent": "छूट (%)",
+      "purpose": "किसलिए",
+      "customer": "ग्राहक",
+      "payment_request_id": "Payment request ID"
+    },
     "approve": "मंज़ूर करें",
     "approveEdited": "बदलाव सेव करके मंज़ूर करें",
     "decline": "नामंज़ूर करें",
@@ -1418,12 +1430,12 @@
       "inactive_customers": "30 दिन से चुप ग्राहकों"
     },
     "events": {
-      "lead.created": "नया लीड आए",
-      "call.missed": "कॉल मिस हो",
-      "appointment.no_show": "कोई अपॉइंटमेंट पर न आए",
-      "booking.made": "बुकिंग हो",
-      "payment.failed": "पेमेंट फ़ेल हो",
-      "payment.overdue": "तय तारीख के बाद भी पेमेंट लिंक बाकी हो"
+      "lead_created": "नया लीड आए",
+      "call_missed": "कॉल मिस हो",
+      "appointment_no_show": "कोई अपॉइंटमेंट पर न आए",
+      "booking_made": "बुकिंग हो",
+      "payment_failed": "पेमेंट फ़ेल हो",
+      "payment_overdue": "तय तारीख के बाद भी पेमेंट लिंक बाकी हो"
     },
     "onOff": "{name} चालू",
     "runNow": "अभी चलाएँ",

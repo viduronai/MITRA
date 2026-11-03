@@ -94,7 +94,7 @@ export function TrustedCallerCard({ number, businessName }: { number: PhoneNumbe
       <div className="grid gap-5 md:grid-cols-[1fr_auto]">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-mono text-lg leading-7 font-semibold">{number.display ?? t("waitingNumber")}</h3>
+            <h3 className={cn("text-lg leading-7 font-semibold", number.display && "font-mono")}>{number.display ?? t("waitingNumber")}</h3>
             {live && <HealthPill health={number.health} />}
           </div>
           <p className="text-sm leading-5 text-text-muted">

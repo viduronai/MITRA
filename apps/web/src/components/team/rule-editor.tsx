@@ -18,7 +18,7 @@ import {
 } from "@/lib/team/types";
 
 export const selectClass =
-  "focus-ring h-10 rounded-lg border border-input bg-surface px-2 text-[15px] disabled:opacity-60";
+  "focus-ring h-10 max-w-full rounded-lg border border-input bg-surface px-2 text-[15px] disabled:opacity-60";
 const DELAYS = [0, 10, 60, 1440, 10080];
 const STAFF = "staff";
 

@@ -54,7 +54,7 @@ export function CallerPreview({
         {t("previewTitle")}
         <span className="sr-only">
           {": "}
-          {name}, {number ?? ""}, {verified ? t("previewVerified") : t("previewUnverified")}
+          {[name, number, verified ? t("previewVerified") : t("previewUnverified")].filter(Boolean).join(", ")}
         </span>
       </figcaption>
     </figure>
