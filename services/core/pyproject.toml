@@ -22,6 +22,10 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[project.optional-dependencies]
+# MITRA_PHONE_ENC_KEY_KMS (mitra_core.keystore): decrypt the phone-encryption data key with AWS KMS.
+aws = ["boto3>=1.40"]
+
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",

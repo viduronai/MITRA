@@ -64,6 +64,7 @@ def test_service_token_config_rules() -> None:
         "jwt_secret": SecretStr("s" * 40),
         "phone_hash_key": SecretStr("p" * 40),
         "otp_hash_key": SecretStr("o" * 40),
+        "phone_enc_key": SecretStr("e" * 40),
         "payment_provider": "razorpay",  # the mock provider is refused in prod
         "collections_provider": "razorpay",  # so is the Payment Links simulator
     }

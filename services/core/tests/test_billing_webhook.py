@@ -83,6 +83,7 @@ def test_mock_provider_refused_in_prod() -> None:
             jwt_secret=SecretStr("x" * 40),
             phone_hash_key=SecretStr("p" * 40),
             otp_hash_key=SecretStr("o" * 40),
+            phone_enc_key=SecretStr("e" * 40),
             service_token=SecretStr("s" * 40),
         )
 

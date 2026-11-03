@@ -68,7 +68,7 @@ Opt-out phrases ("don't call me", "call cheyakandi", "mat karo call") → acknow
 | Control | Implementation |
 |---|---|
 | Residency | All PII, recordings, transcripts, embeddings in AWS Mumbai/Hyderabad. Model providers: prefer India-hosted or zero-retention API agreements; PII redaction before any non-India processing where feasible |
-| Encryption | TLS 1.2+ everywhere; AES-256 at rest (RDS, S3, backups); phone numbers stored encrypted + HMAC-hashed index; OAuth tokens envelope-encrypted (KMS) |
+| Encryption | TLS 1.2+ everywhere; AES-256 at rest (RDS, S3, backups); phone numbers stored encrypted (AES-256-GCM, per-business keys from one master key held as a KMS-encrypted data key, decrypted only in memory; staging/prod refuse to start without it) + HMAC-hashed index; OAuth tokens envelope-encrypted (KMS) |
 | Tenancy isolation | Postgres RLS on every tenant table; per-tenant S3 prefixes + IAM conditions; automated cross-tenant access tests in CI |
 | Access control | RBAC (Owner, Manager, Staff, Agency admin, Mitra support with just-in-time, logged, customer-approved access) |
 | Secrets | AWS Secrets Manager; no secrets in repo; pre-commit secret scanning |

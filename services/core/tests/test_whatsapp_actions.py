@@ -1,5 +1,5 @@
 """In-call WhatsApp sends from knowledge, the reminder template, UPI requests, and what button
-taps do (call later / call me / not now / done / already paid)."""
+taps do (call later / call me / not now / done / already paid / I'll come / change time)."""
 
 from __future__ import annotations
 
@@ -294,6 +294,53 @@ async def test_not_now_pauses_that_follow_up_and_notes_it(
     assert status == "cancelled"
     assert note is not None
     assert note.startswith("Said “not now”")
+
+
+async def test_reminder_ill_come_and_change_time(
+    client: httpx.AsyncClient, admin_engine: AsyncEngine
+) -> None:
+    biz = await make_business(client, languages=["en"])
+    bid = uuid.UUID(biz["id"])
+    contact = await add_contact(admin_engine, biz["id"], "Ravi", CUSTOMER)
+    async with _tenant(biz) as session:
+        session.add(
+            Commitment(
+                business_id=bid, contact_id=contact, kind="appointment", description="Cleaning",
+                due_at=datetime.now(UTC) + timedelta(days=1), status=CommitmentStatus.OPEN,
+            )
+        )  # fmt: skip
+        await session.flush()
+        await send_team_message(
+            session, bid, to_phone=CUSTOMER, text="See you soon", kind="team_follow_up",
+            task="remind_appointment",
+        )  # fmt: skip
+        await session.commit()
+    card = (await _rows(admin_engine, biz["id"]))[0]
+    assert await _tap("ill_come", "wamid.forged") == "recorded"  # not our message: nothing
+    assert await _tap("ill_come", card["provider_message_id"]) == "acted"
+    reply = (await _rows(admin_engine, biz["id"]))[-1]
+    assert reply["body"].startswith("Thank you! See you on ")
+    async with admin_engine.connect() as conn:
+        note = await conn.scalar(
+            text(
+                "SELECT value FROM memory_fact"
+                " WHERE contact_id = :c AND key = 'appointment_confirmed'"
+            ),
+            {"c": contact},
+        )
+        still_open = await conn.scalar(
+            text("SELECT status FROM commitment WHERE contact_id = :c"), {"c": contact}
+        )
+    assert note is not None
+    assert note.startswith("Confirmed on WhatsApp")
+    assert str(still_open) == "open"
+
+    assert await _tap("change_time", card["provider_message_id"]) == "acted"
+    jobs = await _jobs(admin_engine, biz["id"])
+    assert [(j["source"], str(j["status"])) for j in jobs] == [("whatsapp", "queued")]
+    assert str(jobs[0]["dedupe_key"]).startswith("wa_change_time:")
+    reply = (await _rows(admin_engine, biz["id"]))[-1]
+    assert reply["body"] == "Sure, we'll call you shortly to find a new time."
 
 
 async def test_staff_done_marks_the_handoff_card(

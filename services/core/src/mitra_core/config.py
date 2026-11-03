@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal, Self
 
 from pydantic import Field, SecretStr, model_validator
@@ -65,8 +66,12 @@ class Settings(BaseSettings):
     # HMAC key for the contact phone-number index (08-COMPLIANCE-SECURITY §6).
     phone_hash_key: SecretStr = SecretStr(_DEV_PHONE_HASH_KEY)
     # Master key for encrypted customer numbers (mitra_core.phones; per-business keys via HKDF).
-    # Unset: derived from the phone-hash key (domain-separated). TODO(kms): KMS data key.
+    # One source (mitra_core.keystore): a KMS-encrypted data key, a key file (Docker secret), or
+    # the key itself. local/test with none of them: derived from the phone-hash key.
+    phone_enc_key_kms: str | None = None  # base64 KMS ciphertext of a 256-bit data key
+    phone_enc_key_file: Path | None = None
     phone_enc_key: SecretStr | None = None
+    kms_region: str = "ap-south-1"  # AWS Mumbai
 
     idempotency_ttl_hours: int = 24
 
@@ -188,6 +193,15 @@ class Settings(BaseSettings):
                 raise ValueError("MITRA_PHONE_HASH_KEY must be set outside local/test environments")
             if self.otp_hash_key.get_secret_value() == _DEV_OTP_HASH_KEY:
                 raise ValueError("MITRA_OTP_HASH_KEY must be set outside local/test environments")
+            env_key = self.phone_enc_key.get_secret_value() if self.phone_enc_key else ""
+            if not (self.phone_enc_key_kms or self.phone_enc_key_file or env_key):
+                raise ValueError(
+                    "Set MITRA_PHONE_ENC_KEY_KMS (preferred), MITRA_PHONE_ENC_KEY_FILE or"
+                    " MITRA_PHONE_ENC_KEY outside local/test environments"
+                )
+            only_env = env_key and not (self.phone_enc_key_kms or self.phone_enc_key_file)
+            if only_env and len(env_key.strip()) < 32:
+                raise ValueError("MITRA_PHONE_ENC_KEY must be at least 32 characters")
             if self.payment_provider == "mock":
                 raise ValueError("MITRA_PAYMENT_PROVIDER=mock is not allowed in staging/prod")
             if self.collections_provider == "sim":

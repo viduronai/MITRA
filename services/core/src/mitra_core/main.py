@@ -32,6 +32,7 @@ from mitra_core.api.v1 import router as v1_router
 from mitra_core.config import Settings, get_settings
 from mitra_core.db import dispose_engine
 from mitra_core.errors import register_error_handlers
+from mitra_core.keystore import check as check_phone_key
 from mitra_core.logging import configure_logging, get_logger
 
 log = get_logger("mitra_core.access")
@@ -87,6 +88,7 @@ class RequestContextMiddleware:
 
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    check_phone_key()  # a missing / undecryptable phone key fails startup, not the first call
     yield
     await dispose_engine()
 

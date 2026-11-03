@@ -9,8 +9,9 @@ key can never open another business's numbers. Sealed values are versioned text:
 - ``v1:...``: the dialer's earlier stdlib seal (no business binding). Still readable, never
   written; values are re-sealed as v2 by migration 0006_phones.
 
-The master key is ``MITRA_PHONE_ENC_KEY`` (else derived from the phone-hash key with a distinct
-label). TODO(kms): fetch a KMS-wrapped data key instead; the version prefix allows rotation.
+The master key comes from :mod:`mitra_core.keystore`: a KMS-encrypted data key, a key file or
+``MITRA_PHONE_ENC_KEY`` (local/test without one: derived from the phone-hash key with a distinct
+label). The version prefix allows a future key rotation.
 
 Reading a number back is :func:`reveal_phone`, which writes a ``phone_access_log`` row (who, why,
 when; never the number). Numbers never go into logs, webhooks or API responses: use
@@ -33,7 +34,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.clock import utcnow
-from mitra_core.config import get_settings
+from mitra_core.keystore import phone_master_key
 from mitra_core.logging import get_logger
 
 log = get_logger(__name__)
@@ -50,10 +51,7 @@ class PhoneSealError(ValueError):
 
 
 def _master() -> bytes:
-    settings = get_settings()
-    if settings.phone_enc_key is not None and settings.phone_enc_key.get_secret_value():
-        return settings.phone_enc_key.get_secret_value().encode()
-    return ("phone-enc:" + settings.phone_hash_key.get_secret_value()).encode()
+    return phone_master_key()
 
 
 @lru_cache(maxsize=1024)

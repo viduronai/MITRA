@@ -50,4 +50,6 @@ Reply to a button tap,call_me,"Sure, we'll call you shortly.","సరే, మే
 Reply to a button tap,not_now,"Okay, we won't follow up for now.","సరే, ప్రస్తుతానికి follow-up చేయము.",,,"ठीक है, अभी हम follow-up नहीं करेंगे।",,,
 Reply to a button tap,done,Marked done. Thank you!,Done అని గుర్తించాం. ధన్యవాదాలు!,,,Done मार्क किया। धन्यवाद!,,,
 Reply to a button tap,paid,Thank you! {business} will confirm your payment shortly.,ధన్యవాదాలు! {business} త్వరలో మీ payment confirm చేస్తుంది.,,,धन्यवाद! {business} जल्द आपका payment confirm करेगा।,,,
+Reply to a button tap,ill_come,Thank you! See you on {when}.,ధన్యవాదాలు! {when}న కలుద్దాం.,,,धन्यवाद! {when} को मिलते हैं।,,,
+Reply to a button tap,change_time,"Sure, we'll call you shortly to find a new time.","సరే, కొత్త సమయం నిర్ణయించడానికి మేము త్వరలో మీకు call చేస్తాం.",,,"ज़रूर, नया समय तय करने के लिए हम आपको जल्द call करेंगे।",,,
 Reply to STOP,opt-out confirmation,Done. {business} will not call or message you again.,సరే. {business} ఇకపై మీకు call లేదా message చేయదు.,,,ठीक है। {business} अब आपको call या message नहीं करेगा।,,,

@@ -11,6 +11,10 @@ payload are acted on (``payload_was_sent``), so a forged payload does nothing.
 * ``done:task|card:<id>``    -> the staff task / hand-off card is marked done.
 * ``paid:<request id>`` or a "PAID" reply -> every registered paid-claim handler is told
   (payments flags the request for the owner). Nothing here ever marks a request paid.
+* ``ill_come`` (appointment reminder) -> noted on the customer (their next appointment stays
+  open) and thanked with the appointment time.
+* ``change_time`` (booking confirmation / reminder) -> a call is queued now to find a new time
+  (the dialer waits for calling hours); the appointment stays until it is actually moved.
 """
 
 from __future__ import annotations
@@ -56,7 +60,7 @@ _PAID_WORDS = frozenset(
     }
 )
 
-Reply = Literal["call_later", "call_me", "not_now", "done", "paid"]
+Reply = Literal["call_later", "call_me", "not_now", "done", "paid", "ill_come", "change_time"]
 REPLIES: dict[Reply, dict[Lang, str]] = {
     "call_later": {
         "en": "Sure. We'll call you at {time}.",
@@ -82,6 +86,16 @@ REPLIES: dict[Reply, dict[Lang, str]] = {
         "en": "Thank you! {business} will confirm your payment shortly.",
         "hi": "धन्यवाद! {business} जल्द आपका payment confirm करेगा।",
         "te": "ధన్యవాదాలు! {business} త్వరలో మీ payment confirm చేస్తుంది.",
+    },
+    "ill_come": {
+        "en": "Thank you! See you on {when}.",
+        "hi": "धन्यवाद! {when} को मिलते हैं।",
+        "te": "ధన్యవాదాలు! {when}న కలుద్దాం.",
+    },
+    "change_time": {
+        "en": "Sure, we'll call you shortly to find a new time.",
+        "hi": "ज़रूर, नया समय तय करने के लिए हम आपको जल्द call करेंगे।",
+        "te": "సరే, కొత్త సమయం నిర్ణయించడానికి మేము త్వరలో మీకు call చేస్తాం.",
     },
 }
 
@@ -211,6 +225,37 @@ async def _cancel_queued(
             await cancel_jobs(session, business_id, dedupe_key=key, reason="customer_asked_later")
 
 
+async def _note(
+    session: AsyncSession, business_id: uuid.UUID, contact: Contact, key: str, value: str
+) -> None:
+    """Upsert one confirmed memory fact on the customer."""
+    fact = await session.scalar(
+        select(MemoryFact).where(MemoryFact.contact_id == contact.id, MemoryFact.key == key)
+    )
+    if fact is None:
+        session.add(
+            MemoryFact(
+                business_id=business_id,
+                contact_id=contact.id,
+                key=key,
+                value=value,
+                status=MemoryStatus.CONFIRMED,
+                confidence=1.0,
+            )
+        )
+    else:
+        fact.value, fact.status, fact.confidence = value, MemoryStatus.CONFIRMED, 1.0
+    await session.flush()
+
+
+async def _contact(
+    session: AsyncSession, business_id: uuid.UUID, phone_hash: str
+) -> Contact | None:
+    return await session.scalar(
+        select(Contact).where(Contact.business_id == business_id, Contact.phone_hash == phone_hash)
+    )
+
+
 async def _pause_follow_ups(
     session: AsyncSession,
     business_id: uuid.UUID,
@@ -221,30 +266,11 @@ async def _pause_follow_ups(
     from mitra_core.dialer.queue import cancel_jobs
     from mitra_core.models.team import FollowUpTask
 
-    contact = await session.scalar(
-        select(Contact).where(Contact.business_id == business_id, Contact.phone_hash == phone_hash)
-    )
+    contact = await _contact(session, business_id, phone_hash)
     if contact is None:
         return
     note = f"Said “not now” to a WhatsApp follow-up on {now:%d %b %Y}"
-    fact = await session.scalar(
-        select(MemoryFact).where(
-            MemoryFact.contact_id == contact.id, MemoryFact.key == "whatsapp_follow_up"
-        )
-    )
-    if fact is None:
-        session.add(
-            MemoryFact(
-                business_id=business_id,
-                contact_id=contact.id,
-                key="whatsapp_follow_up",
-                value=note,
-                status=MemoryStatus.CONFIRMED,
-                confidence=1.0,
-            )
-        )
-    else:
-        fact.value, fact.status, fact.confidence = note, MemoryStatus.CONFIRMED, 1.0
+    await _note(session, business_id, contact, "whatsapp_follow_up", note)
     stmt = select(FollowUpTask).where(
         FollowUpTask.business_id == business_id,
         FollowUpTask.contact_id == contact.id,
@@ -359,4 +385,26 @@ async def act(
         for handler in _paid_handlers:
             await handler(session, claim)
         return "paid", {}
-    return None  # change_time / ill_come / others: stored only
+    if head == "ill_come":
+        from mitra_core.manager.customer_sends import next_appointment_words  # avoids a cycle
+
+        when = await next_appointment_words(session, business_id, phone, now)
+        contact = await _contact(session, business_id, phone_hash)
+        if when is None or contact is None:
+            return None
+        note = f"Confirmed on WhatsApp ({now:%d %b %Y}) they will come on {when}"
+        await _note(session, business_id, contact, "appointment_confirmed", note)
+        return "ill_come", {"when": when}
+    if head == "change_time":
+        from mitra_core.manager.customer_sends import next_appointment_words  # avoids a cycle
+
+        when = await next_appointment_words(session, business_id, phone, now)
+        note = "Wants to change their appointment" + (f" ({when})" if when else "")
+        employee = await _employee_for(session, business_id, sent.ref.get("employee_id"))
+        if await _queue_call(
+            session, business_id, phone, employee, not_before=None,
+            note=note, dedupe=f"wa_change_time:{phone_hash[:32]}",
+        ):  # fmt: skip
+            return "change_time", {}
+        return None
+    return None  # others: stored only
