@@ -486,7 +486,10 @@
       "confirmAll": "सब सही है, आगे बढ़ें",
       "needOne": "कम से कम एक जानकारी जोड़ें, या अभी छोड़ें।",
       "fromLink": "आपके link से",
-      "fromNotes": "आपके notes से"
+      "fromNotes": "आपके notes से",
+      "mapsQuestion": "आपका Google Maps link",
+      "mapsHint": "Google Maps में अपना business खोलें, Share पर tap करें और link copy करें। रास्ता बताने के लिए हम इसे customers को भेजते हैं।",
+      "mapsInvalid": "Google Maps का share link paste करें। यह https://maps.app.goo.gl/ से शुरू होता है।"
     },
     "voice": {
       "title": "आवाज़ चुनें",

@@ -10,6 +10,7 @@ from mitra_core.knowledge.extract import (
     guess_category,
     phones_in,
 )
+from mitra_core.knowledge.gaps import MAPS_LINK_KEY as MAPS
 from mitra_core.knowledge.gaps import missing_gaps
 from mitra_core.models.enums import FactCategory, FactStatus, Industry
 
@@ -114,14 +115,17 @@ def test_phone_patterns() -> None:
 
 def test_gaps_by_industry() -> None:
     clinic = [g.key for g in missing_gaps(Industry.CLINIC, [])]
-    assert clinic == ["Consultation fee", "Timings", "Doctors", "Address", "Parking"]
+    assert clinic == ["Consultation fee", "Timings", "Doctors", "Address", "Parking", MAPS]
     have = [
         (FactCategory.PRICES, "Consultation fee", "₹500"),
         (FactCategory.LOCATION, "Parking", "Free"),
         (FactCategory.SERVICES, "Team", "Dr. Rao"),
     ]
-    assert [g.key for g in missing_gaps(Industry.CLINIC, have)] == ["Timings", "Address"]
+    assert [g.key for g in missing_gaps(Industry.CLINIC, have)] == ["Timings", "Address", MAPS]
     realty = [g.key for g in missing_gaps(Industry.REAL_ESTATE, [])]
-    assert realty == ["Projects", "Price range", "Address", "Site-visit timings"]
+    assert realty == ["Projects", "Price range", "Address", "Site-visit timings", MAPS]
     generic = [g.key for g in missing_gaps(Industry.EDUCATION, [])]
-    assert generic == ["Services", "Prices", "Timings", "Address", "Phone"]
+    assert generic == ["Services", "Prices", "Timings", "Address", "Phone", MAPS]
+    # A Google Maps share link fills the maps question (and the address one).
+    link = [(FactCategory.LOCATION, MAPS, "https://maps.app.goo.gl/AbC123xyz")]
+    assert MAPS not in [g.key for g in missing_gaps(Industry.EDUCATION, link)]

@@ -47,6 +47,18 @@ _LOCATION = Gap(
     keywords=_LOCATION_WORDS,
 )
 
+# Google Maps share link (maps.app.goo.gl): needed for the "Get directions" / "Open map" buttons
+# on WhatsApp booking confirmations and location messages. The key is matched by the web app,
+# which shows a translated question and validates the link.
+MAPS_LINK_KEY = "Google Maps link"
+_MAPS_LINK = Gap(
+    FactCategory.LOCATION,
+    MAPS_LINK_KEY,
+    "Paste your Google Maps link (in Google Maps, tap Share and copy the link).",
+    keywords=("maps.app.goo.gl",),
+    match_category=FactCategory.LOCATION,
+)
+
 GAPS: dict[Industry | None, tuple[Gap, ...]] = {
     Industry.CLINIC: (
         Gap(
@@ -129,5 +141,5 @@ GAPS: dict[Industry | None, tuple[Gap, ...]] = {
 
 def missing_gaps(industry: Industry, facts: Iterable[tuple[FactCategory, str, str]]) -> list[Gap]:
     known = list(facts)
-    gaps = GAPS.get(industry, GAPS[None])
+    gaps = (*GAPS.get(industry, GAPS[None]), _MAPS_LINK)
     return [g for g in gaps if not any(g.filled_by(c, k, v) for c, k, v in known)]

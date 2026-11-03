@@ -297,6 +297,7 @@ async def test_gaps_shrink_as_facts_are_added(client: httpx.AsyncClient) -> None
         "Doctors",
         "Address",
         "Parking",
+        "Google Maps link",
     ]
     assert gaps[0] == {
         "category": "prices",
@@ -308,11 +309,17 @@ async def test_gaps_shrink_as_facts_are_added(client: httpx.AsyncClient) -> None
     await add_fact(client, headers, "prices", "Consultation fee", "₹500")
     await add_fact(client, headers, "location", "Parking", "Free basement parking")
     gaps = (await client.get("/v1/knowledge/gaps", headers=headers)).json()
-    assert [g["key"] for g in gaps] == ["Timings", "Doctors", "Address"]
+    assert [g["key"] for g in gaps] == ["Timings", "Doctors", "Address", "Google Maps link"]
 
     realty = await _setup(client, industry="real_estate")
     gaps = (await client.get("/v1/knowledge/gaps", headers=realty)).json()
-    assert [g["key"] for g in gaps] == ["Projects", "Price range", "Address", "Site-visit timings"]
+    assert [g["key"] for g in gaps] == [
+        "Projects",
+        "Price range",
+        "Address",
+        "Site-visit timings",
+        "Google Maps link",
+    ]
 
 
 async def test_staff_can_read_but_not_teach(

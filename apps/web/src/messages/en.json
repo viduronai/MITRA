@@ -485,7 +485,10 @@
       "confirmAll": "Looks right, continue",
       "needOne": "Add at least one fact, or skip for now.",
       "fromLink": "from your link",
-      "fromNotes": "from your notes"
+      "fromNotes": "from your notes",
+      "mapsQuestion": "Your Google Maps link",
+      "mapsHint": "Open your business in Google Maps, tap Share and copy the link. We send it to customers for directions.",
+      "mapsInvalid": "Paste the share link from Google Maps. It starts with https://maps.app.goo.gl/"
     },
     "voice": {
       "title": "Pick a voice",

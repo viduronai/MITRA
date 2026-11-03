@@ -486,7 +486,10 @@
       "confirmAll": "అన్నీ సరైనవే, కొనసాగించండి",
       "needOne": "కనీసం ఒక వివరం జోడించండి, లేదా ఇప్పటికి వదిలేయండి.",
       "fromLink": "మీ link నుంచి",
-      "fromNotes": "మీ notes నుంచి"
+      "fromNotes": "మీ notes నుంచి",
+      "mapsQuestion": "మీ Google Maps link",
+      "mapsHint": "Google Mapsలో మీ business తెరిచి, Share tap చేసి link copy చేయండి. దారి కోసం దీన్ని customersకి పంపుతాం.",
+      "mapsInvalid": "Google Maps share link paste చేయండి. ఇది https://maps.app.goo.gl/ తో మొదలవుతుంది."
     },
     "voice": {
       "title": "గొంతు ఎంచుకోండి",

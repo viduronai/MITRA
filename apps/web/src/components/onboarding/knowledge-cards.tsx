@@ -166,34 +166,59 @@ export function KnowledgeCards({ facts, sources, busyId, onConfirm, onSave, onRe
   );
 }
 
+// Must match MAPS_LINK_KEY in services/core knowledge/gaps.py.
+const MAPS_LINK_KEY = "Google Maps link";
+const MAPS_LINK = /^https:\/\/maps\.app\.goo\.gl\/[A-Za-z0-9_-]{4,64}\/?$/;
+
 function GapRow({ gap, onAnswer }: { gap: Gap; onAnswer: (value: string) => Promise<boolean> }) {
   const t = useTranslations("onboarding.teach");
   const inputId = useId();
+  const hintId = useId();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [invalid, setInvalid] = useState(false);
+  const isMaps = gap.key === MAPS_LINK_KEY;
 
   return (
     <li>
       <form
         className="flex flex-col gap-2 rounded-xl border border-dashed bg-card p-4 md:p-5"
+        noValidate
         onSubmit={async (event) => {
           event.preventDefault();
-          if (!value.trim()) return;
+          const answer = value.trim();
+          if (!answer) return;
+          if (isMaps && !MAPS_LINK.test(answer)) {
+            setInvalid(true);
+            return;
+          }
           setBusy(true);
-          const saved = await onAnswer(value.trim());
+          const saved = await onAnswer(answer);
           setBusy(false);
           if (saved) setValue("");
         }}
       >
         <label htmlFor={inputId} className="font-medium">
-          {gap.question}
+          {isMaps ? t("mapsQuestion") : gap.question}
         </label>
+        {isMaps && (
+          <p id={hintId} className="text-sm leading-5 text-text-muted">
+            {t("mapsHint")}
+          </p>
+        )}
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             id={inputId}
+            type={isMaps ? "url" : "text"}
+            inputMode={isMaps ? "url" : undefined}
             value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder={t("answerPlaceholder")}
+            onChange={(event) => {
+              setValue(event.target.value);
+              setInvalid(false);
+            }}
+            placeholder={isMaps ? "https://maps.app.goo.gl/…" : t("answerPlaceholder")}
+            aria-invalid={invalid ? true : undefined}
+            aria-describedby={isMaps ? hintId : undefined}
             maxLength={1000}
             className="sm:flex-1"
           />
@@ -201,6 +226,11 @@ function GapRow({ gap, onAnswer }: { gap: Gap; onAnswer: (value: string) => Prom
             {t("saveAnswer")}
           </Button>
         </div>
+        {invalid && (
+          <p role="alert" className="text-sm leading-5 font-medium text-danger-fg">
+            {t("mapsInvalid")}
+          </p>
+        )}
       </form>
     </li>
   );
