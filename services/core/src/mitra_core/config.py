@@ -142,6 +142,8 @@ class Settings(BaseSettings):
 
     # Lead intake (src/mitra_core/leads). Public base URL of this API, shown in intake URLs.
     public_api_url: str = "http://localhost:8000"
+    # Where the scheduler (``python -m mitra_core.scheduler``) reaches this API's internal routes.
+    scheduler_api_url: str = "http://localhost:8000"
     lead_intake_max_per_minute: int = 60  # per business, all sources together
     lead_form_max_per_ip_hour: int = 10  # website form (no secret possible in a browser)
     # Portal enquiries (Meta, Google Ads, IndiaMART, JustDial) are service consent for this long.

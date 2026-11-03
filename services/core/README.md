@@ -20,6 +20,10 @@ uv run alembic upgrade head  # runs as `mitra`; also creates the `mitra_app` rol
 ```bash
 uv run uvicorn mitra_core.main:app --reload --port 8000
 # http://localhost:8000/docs  (OpenAPI UI)   ·   /health   ·   /health/ready
+
+# Background jobs (dialer, routines, morning reports, payment reminders, webhooks, IndiaMART
+# pull, number health), in a second terminal. `--once` runs every job one time and exits.
+uv run python -m mitra_core.scheduler
 ```
 
 Log in with a dev OTP (env=local returns the code as `dev_code`; nothing is sent by SMS yet):
