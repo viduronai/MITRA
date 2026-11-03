@@ -1,0 +1,53 @@
+﻿Area,Item,English,Telugu (as written),Telugu OK? (Y/N),Telugu rewrite,Hindi (as written),Hindi OK? (Y/N),Hindi rewrite,Note
+WhatsApp template,call_heads_up,"Hi {{name}}, this is {{business}}. We'll call you in about {{minutes}} minutes about your enquiry.","నమస్కారం {{name}}, మేము {{business}} నుంచి. మీ enquiry గురించి సుమారు {{minutes}} నిమిషాల్లో మీకు call చేస్తాం.",,,"नमस्ते {{name}}, हम {{business}} से हैं। आपकी enquiry के बारे में हम लगभग {{minutes}} मिनट में आपको call करेंगे।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,call_heads_up: Call me later,Call me later,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template button,call_heads_up: Don't call me,Don't call me,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,missed_call_callback,Thanks for calling {{business}}. We'll call you back at {{time}}.,నమస్కారం! {{business}}కి call చేసినందుకు ధన్యవాదాలు. మేము మీకు {{time}}కి తిరిగి call చేస్తాం.,,,नमस्ते! {{business}} को call करने के लिए धन्यवाद। हम आपको {{time}} बजे call करेंगे।,,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template,booking_confirmation,"Hi {{name}}, your appointment at {{business}} is confirmed for {{when}}.","నమస్కారం {{name}}, {{business}}లో మీ appointment {{when}}కి confirm అయింది.",,,"नमस्ते {{name}}, {{business}} में आपकी appointment {{when}} के लिए confirm हो गई है।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,booking_confirmation: Change time,Change time,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template button,booking_confirmation: Get directions,Get directions,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,appointment_reminder,Reminder: your appointment at {{business}} is on {{when}}.,గుర్తు చేస్తున్నాం: {{business}}లో మీ appointment {{when}}న ఉంది.,,,याद दिला रहे हैं: {{business}} में आपकी appointment {{when}} को है।,,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,appointment_reminder: I'll come,I'll come,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template button,appointment_reminder: Change time,Change time,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,share_document,Here is the {{document}} from {{business}} that you asked for.,"మీరు అడిగిన {{document}} ఇదిగో, {{business}} నుంచి.",,,"आपने जो {{document}} माँगा था, वह {{business}} की ओर से यहाँ है।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template,share_location,You can find {{business}} at {{address}}. Tap below for directions.,"అడ్రస్: {{business}}, {{address}}. దారి కోసం కింద tap చేయండి.",,,"पता: {{business}}, {{address}}. रास्ते के लिए नीचे tap करें।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,share_location: Open map,Open map,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,enquiry_follow_up,"Hi {{name}}, {{business}} here, following up on your enquiry about {{topic}}. Reply here or tap below and we'll call you.","నమస్కారం {{name}}, {{business}} నుంచి, {{topic}} గురించి మీ enquiry మీద follow-up. ఇక్కడ reply చేయండి లేదా కింద tap చేయండి, మేము call చేస్తాం.",,,"नमस्ते {{name}}, {{business}} से बात कर रहे हैं, {{topic}} के बारे में आपकी enquiry पर follow-up। यहाँ reply करें या नीचे tap करें, हम call करेंगे।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,enquiry_follow_up: Call me,Call me,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template button,enquiry_follow_up: Not now,Not now,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,payment_link,"Hi {{name}}, here is your payment link from {{business}} for {{purpose}}: ₹{{amount}}. You can pay by UPI or card.","నమస్కారం {{name}}, {{purpose}} కోసం {{business}} నుంచి మీ payment link: ₹{{amount}}. UPI లేదా card తో pay చేయవచ్చు.",,,"नमस्ते {{name}}, {{business}} की ओर से {{purpose}} के लिए आपका payment link: ₹{{amount}}. UPI या card से pay कर सकते हैं।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,payment_link: Pay now,Pay now,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,payment_reminder,A gentle reminder from {{business}}: ₹{{amount}} for {{purpose}} is due on {{due}}.,"ఒక reminder, {{business}} నుంచి: {{purpose}} కోసం ₹{{amount}} చెల్లించాల్సిన తేదీ {{due}}.",,,"एक reminder, {{business}} की ओर से: {{purpose}} के ₹{{amount}} की due date {{due}} है।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,payment_reminder: Pay now,Pay now,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template button,payment_reminder: Already paid,Already paid,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,payment_received,"Thank you, {{name}}. {{business}} has received ₹{{amount}} for {{purpose}}.",ధన్యవాదాలు {{name}}. {{purpose}} కోసం ₹{{amount}} {{business}}కి అందాయి.,,,धन्यवाद {{name}}। {{business}} को {{purpose}} के लिए ₹{{amount}} मिल गए हैं।,,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template,payment_upi_request,"Hi {{name}}, {{business}} has requested ₹{{amount}} for {{purpose}}. Please pay to UPI ID {{upi_id}}. Reply PAID once done.","నమస్కారం {{name}}, {{purpose}} కోసం {{business}} ₹{{amount}} request చేసింది. దయచేసి UPI ID {{upi_id}}కి pay చేయండి. Pay చేశాక PAID అని reply చేయండి.",,,"नमस्ते {{name}}, {{business}} ने {{purpose}} के लिए ₹{{amount}} का request भेजा है। कृपया UPI ID {{upi_id}} पर pay करें। Pay करने के बाद PAID reply करें।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template,owner_alert,Alert: {{title}} at {{business}}. {{detail}} Open Mitra for details.,Alert: {{business}}లో {{title}}. {{detail}} పూర్తి వివరాలు Mitraలో చూడండి.,,,Alert: {{business}} में {{title}}। {{detail}} पूरी जानकारी Mitra में देखें।,,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,owner_alert: Open in Mitra,Open in Mitra,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,daily_report,"Good morning! Yesterday at {{business}}: {{calls}} calls, {{booked}} booked, {{attention}} need your attention.","శుభోదయం! నిన్న {{business}}లో: {{calls}} calls, {{booked}} bookings, {{attention}} విషయాలు మీరు చూడాలి.",,,"सुप्रभात! कल {{business}} में: {{calls}} calls, {{booked}} booking, {{attention}} पर आपका ध्यान चाहिए।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,daily_report: Open report,Open report,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,approval_request,Approval needed at {{business}}: {{employee}} needs your OK. {{summary}} Tap a button below.,"Approval కావాలి, {{business}}: {{employee}}కి మీ approval కావాలి. {{summary}} కింద ఒక button tap చేయండి.",,,"मंज़ूरी चाहिए, {{business}}: {{employee}} को आपकी मंज़ूरी चाहिए। {{summary}} नीचे एक button tap करें।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,approval_request: Approve,Approve,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template button,approval_request: Decline,Decline,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+WhatsApp template,staff_handoff,Task from {{business}}: please {{action}} {{customer}}. {{brief}} Tap Done when finished.,"కొత్త పని, {{business}} నుంచి: దయచేసి {{customer}}కి {{action}}. {{brief}} అయ్యాక Done tap చేయండి.",,,"नया काम, {{business}} से: कृपया {{customer}} को {{action}}। {{brief}} हो जाने पर Done tap करें।",,,Body text. {{...}} are filled in by Mitra; keep them exactly.
+WhatsApp template button,staff_handoff: Done,Done,,,,,,,Button text: write the Telugu and Hindi (max 25 characters).
+Greeting,Unknown customer name,there,అండి,,,जी,,,"Used instead of the name, e.g. 'నమస్కారం అండి,'"
+Greeting,Telugu honorific after a known name,,గారు,,,,,,e.g. 'Ravi గారు'
+Owner alert title,hot_lead,Hot lead,హాట్ లీడ్,,,गरम लीड,,,
+Owner alert title,angry,Upset customer,కోపంగా ఉన్న కస్టమర్,,,नाराज़ ग्राहक,,,
+Owner alert title,vip,VIP caller,VIP కాలర్,,,VIP कॉलर,,,
+Owner alert title,urgent,Urgent,అత్యవసరం,,,ज़रूरी,,,
+Owner alert title,payment_failed,Payment failed,పేమెంట్ విఫలం,,,पेमेंट फेल,,,
+Owner alert title,campaign_paused,List calling paused,లిస్ట్ కాలింగ్ ఆగింది,,,लिस्ट कॉलिंग रुकी,,,
+Owner alert title,payment_claimed,Customer says they paid,కస్టమర్ పే చేశామన్నారు,,,ग्राहक ने कहा पेमेंट कर दिया,,,
+Owner alert title,whatsapp_blocked,WhatsApp not sent,WhatsApp పంపలేదు,,,WhatsApp नहीं गया,,,
+Owner alert title,team_escalation,Customer needs you,కస్టమర్‌కి మీరు కావాలి,,,ग्राहक को आपकी ज़रूरत,,,
+Staff task action,call_back,call back,call చేయండి,,,call करें,,,Fills 'please {{action}} {{customer}}'
+Staff task action,meet,meet,కలవండి,,,मिलें,,,Fills 'please {{action}} {{customer}}'
+Staff task action,help,help,సహాయం చేయండి,,,मदद करें,,,Fills 'please {{action}} {{customer}}'
+Reply to a button tap,call_later,Sure. We'll call you at {time}.,సరే. మేము మీకు {time}కి call చేస్తాం.,,,ज़रूर। हम आपको {time} पर call करेंगे।,,,
+Reply to a button tap,call_me,"Sure, we'll call you shortly.","సరే, మేము త్వరలో మీకు call చేస్తాం.",,,"ज़रूर, हम आपको जल्द call करेंगे।",,,
+Reply to a button tap,not_now,"Okay, we won't follow up for now.","సరే, ప్రస్తుతానికి follow-up చేయము.",,,"ठीक है, अभी हम follow-up नहीं करेंगे।",,,
+Reply to a button tap,done,Marked done. Thank you!,Done అని గుర్తించాం. ధన్యవాదాలు!,,,Done मार्क किया। धन्यवाद!,,,
+Reply to a button tap,paid,Thank you! {business} will confirm your payment shortly.,ధన్యవాదాలు! {business} త్వరలో మీ payment confirm చేస్తుంది.,,,धन्यवाद! {business} जल्द आपका payment confirm करेगा।,,,
+Reply to STOP,opt-out confirmation,Done. {business} will not call or message you again.,సరే. {business} ఇకపై మీకు call లేదా message చేయదు.,,,ठीक है। {business} अब आपको call या message नहीं करेगा।,,,
