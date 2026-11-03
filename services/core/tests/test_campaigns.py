@@ -225,6 +225,10 @@ async def test_skip_recent_and_calling_days(client: httpx.AsyncClient, clock: Fa
     placed = len(voice.placed)
     await tick(client)
     assert len(voice.placed) == placed + 2  # the other campaign's two people, not this one
+    waiting = (
+        await client.get(f"/v1/campaigns/{holiday['campaign']['id']}", headers=t["headers"])
+    ).json()
+    assert waiting["progress"]["starts_at"] is not None  # "Calls start Tuesday, 9:00 am"
     clock.advance(24 * 3600)
     await tick(client)
     holiday_job = [p for p in voice.placed[placed + 2 :] if p.phone_e164 == PHONES[1]]

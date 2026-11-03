@@ -20,6 +20,7 @@ export interface CampaignProgress {
   reasons: Record<string, number>;
   blocked_summary: string[];
   eta_minutes: number | null;
+  starts_at?: string | null;
   channels: number;
 }
 

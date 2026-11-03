@@ -202,6 +202,20 @@ def log_decision(
     return row
 
 
+async def number_went_live(session: AsyncSession, business_id: uuid.UUID) -> int:
+    """A number was approved: employees still in training start working. Returns how many."""
+    training = await session.scalars(
+        select(Employee).where(
+            Employee.business_id == business_id, Employee.status == EmployeeStatus.TRAINING
+        )
+    )
+    changed = 0
+    for employee in training:
+        employee.status = EmployeeStatus.WORKING
+        changed += 1
+    return changed
+
+
 # ---- inbound routing ---------------------------------------------------------------------------
 
 

@@ -1300,7 +1300,9 @@
       "blocked": "నిలిపివేశాం",
       "etaPaused": "ఆపబడింది: మళ్లీ ప్రారంభించే వరకు కాల్స్ లేవు.",
       "etaLine": "సుమారు {minutes} నిమిషాలు మిగిలాయి · ఒకేసారి {channels} · ఇప్పుడు {dialing} లైన్‌లో",
+      "startsAt": "కాల్స్ {day}, {time}కి మొదలవుతాయి (కాల్ సమయం)",
       "consentBy": "{name} {date}న లిస్ట్‌ను నిర్ధారించారు",
+      "consentByYou": "మీరు {date}న లిస్ట్‌ను నిర్ధారించారు",
       "pauseLinks": {
         "connect": "Connect తెరవండి",
         "billing": "టాప్-అప్ చేయండి"

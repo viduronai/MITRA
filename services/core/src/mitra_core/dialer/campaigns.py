@@ -300,9 +300,12 @@ class Progress:
     buckets: dict[str, int]
     reasons: dict[str, int]
     eta_minutes: int | None
+    starts_at: datetime | None = None  # set while every queued call waits (e.g. calling hours)
 
 
-async def progress(session: AsyncSession, campaign: Campaign, channels: int) -> Progress:
+async def progress(
+    session: AsyncSession, campaign: Campaign, channels: int, now: datetime
+) -> Progress:
     rows = (
         await session.execute(
             select(CampaignContact.status, CampaignContact.bucket, func.count())
@@ -337,6 +340,15 @@ async def progress(session: AsyncSession, campaign: Campaign, channels: int) -> 
             CampaignContact.campaign_id == campaign.id, CampaignContact.attempts > 0
         )
     )
+    starts_at = None
+    if remaining and not dialing and campaign.status == CampaignStatus.RUNNING:
+        first = await session.scalar(
+            select(func.min(func.coalesce(OutboundJob.not_before, now))).where(
+                OutboundJob.campaign_id == campaign.id, OutboundJob.status == JobStatus.QUEUED
+            )
+        )
+        if first is not None and first > now:
+            starts_at = first
     eta = None  # only while calls can go out: frozen (hidden) when paused or waiting
     if remaining and campaign.status in (CampaignStatus.RUNNING, CampaignStatus.DRAFT):
         eta = math.ceil(remaining * campaign.avg_call_seconds / max(channels, 1) / 60)
@@ -350,6 +362,7 @@ async def progress(session: AsyncSession, campaign: Campaign, channels: int) -> 
         buckets=buckets,
         reasons={str(code): int(n) for code, n in reason_rows},
         eta_minutes=eta,
+        starts_at=starts_at,
     )
 
 

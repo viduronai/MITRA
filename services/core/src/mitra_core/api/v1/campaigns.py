@@ -7,6 +7,7 @@ Calls are placed by the dialer worker (``mitra_core.dialer.worker``), which runs
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response
@@ -76,9 +77,11 @@ async def _get(session: AsyncSession, tenant: Tenant, campaign_id: uuid.UUID) ->
     return campaign
 
 
-async def _out(session: AsyncSession, campaign: Campaign, settings: DialerSettings) -> CampaignOut:
+async def _out(
+    session: AsyncSession, campaign: Campaign, settings: DialerSettings, now: datetime
+) -> CampaignOut:
     channels = await svc.channels_for(session, campaign.business_id, settings.default_channels)
-    p = await svc.progress(session, campaign, channels)
+    p = await svc.progress(session, campaign, channels, now)
     employee = await session.get(Employee, campaign.employee_id) if campaign.employee_id else None
     # Deferrals are temporary and skips are counted separately: neither is a "block".
     deferred = {
@@ -134,6 +137,7 @@ async def _out(session: AsyncSession, campaign: Campaign, settings: DialerSettin
             reasons=p.reasons,
             blocked_summary=owner_summary(blocked),
             eta_minutes=p.eta_minutes,
+            starts_at=p.starts_at,
             channels=channels,
         ),
     )
@@ -224,6 +228,7 @@ async def preview(
 
 @router.get("", response_model=CampaignList)
 async def list_campaigns(
+    clock: Clock = Depends(get_clock),
     settings: DialerSettings = Depends(get_dialer_settings),
     tenant: Tenant = Depends(require_business),
     session: AsyncSession = Depends(get_tenant_session),
@@ -234,7 +239,7 @@ async def list_campaigns(
         .order_by(Campaign.created_at.desc(), Campaign.id)
         .limit(100)
     )
-    return CampaignList(items=[await _out(session, c, settings) for c in rows])
+    return CampaignList(items=[await _out(session, c, settings, clock()) for c in rows])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=CampaignCreatedOut)
@@ -269,7 +274,7 @@ async def create_campaign(
     session.add(campaign)
     await session.flush()
     added, skipped = await svc.add_contacts(session, campaign, parsed, now)
-    out = await _out(session, campaign, settings)
+    out = await _out(session, campaign, settings, clock())
     await session.commit()
     return CampaignCreatedOut(
         campaign=out,
@@ -283,17 +288,19 @@ async def create_campaign(
 @router.get("/{campaign_id}", response_model=CampaignOut)
 async def get_campaign(
     campaign_id: uuid.UUID,
+    clock: Clock = Depends(get_clock),
     settings: DialerSettings = Depends(get_dialer_settings),
     tenant: Tenant = Depends(require_business),
     session: AsyncSession = Depends(get_tenant_session),
 ) -> CampaignOut:
-    return await _out(session, await _get(session, tenant, campaign_id), settings)
+    return await _out(session, await _get(session, tenant, campaign_id), settings, clock())
 
 
 @router.patch("/{campaign_id}", response_model=CampaignOut)
 async def edit_campaign(
     campaign_id: uuid.UUID,
     body: CampaignPatch,
+    clock: Clock = Depends(get_clock),
     settings: DialerSettings = Depends(get_dialer_settings),
     tenant: Tenant = Depends(_can_manage),
     session: AsyncSession = Depends(get_tenant_session),
@@ -312,7 +319,7 @@ async def edit_campaign(
     if body.retry_ladder is not None:
         await svc.set_retry_ladder(session, campaign, body.retry_ladder)
     await session.flush()
-    out = await _out(session, campaign, settings)
+    out = await _out(session, campaign, settings, clock())
     await session.commit()
     return out
 
@@ -342,7 +349,7 @@ async def _transition(
     except svc.CampaignError as e:
         raise _campaign_error(e) from e
     await session.flush()
-    out = await _out(session, campaign, settings)
+    out = await _out(session, campaign, settings, clock())
     await session.commit()
     return out
 

@@ -307,6 +307,8 @@ async def update_number(
         raise AppError(422, "number_required", "An approved number needs its e164")
     for field, value in changes.items():
         setattr(number, field, value)
+    if changes.get("kyc_status") == KycStatus.APPROVED:
+        await service.number_went_live(session, body.business_id)
     try:
         await session.commit()
     except IntegrityError as exc:  # the e164 already belongs to another number

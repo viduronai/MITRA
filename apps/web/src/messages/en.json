@@ -1299,7 +1299,9 @@
       "blocked": "Blocked",
       "etaPaused": "Paused: no calls until you resume.",
       "etaLine": "About {minutes} min left · {channels} at a time · {dialing} on the line now",
+      "startsAt": "Calls start {day}, {time} (calling hours)",
       "consentBy": "List confirmed by {name} on {date}",
+      "consentByYou": "You confirmed this list on {date}",
       "pauseLinks": {
         "connect": "Open Connect",
         "billing": "Top up"

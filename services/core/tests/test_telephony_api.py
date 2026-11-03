@@ -140,7 +140,12 @@ async def test_new_local_number_flow(client: httpx.AsyncClient, clock: FakeClock
     kyc = {"document_type": "gst", "file_name": "gst-certificate.pdf"}
     resp = await client.post(f"{url}/kyc", json=kyc, headers=t["headers"])
     assert resp.status_code == 200, resp.text
-    assert resp.json()["kyc_status"] == "submitted"
+    # The simulator approves straight away with a made-up Hyderabad number.
+    assert resp.json()["kyc_status"] == "approved"
+    assert resp.json()["e164"].startswith("+9140")
+    employees = (await client.get("/v1/employees", headers=t["headers"])).json()
+    items = employees["items"] if isinstance(employees, dict) else employees
+    assert all(e["status"] == "working" for e in items)  # live number: training is over
     assert (await client.post(f"{url}/kyc", json=kyc, headers=t["headers"])).status_code == 409
 
     resp = await client.post(f"{url}/caller-name", headers=t["headers"])

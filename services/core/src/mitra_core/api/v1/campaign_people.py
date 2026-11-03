@@ -67,7 +67,7 @@ async def add_contacts(
         added, skipped = await svc.add_contacts(session, campaign, parsed, now)
     except svc.CampaignError as e:
         raise _campaign_error(e) from e
-    out = await _out(session, campaign, settings)
+    out = await _out(session, campaign, settings, now)
     await session.commit()
     return ContactsAddedOut(
         added=added,

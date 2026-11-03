@@ -1,7 +1,8 @@
 """Phone numbers: the "Trusted Caller ID" card (07 section 3.7) and onboarding step 6 (Go live).
 
 With ``MITRA_TELEPHONY_CARRIER=sim`` (default) nothing is bought or dialled: a requested number
-waits in ``pending_kyc`` and forwarding tests pass instantly, flagged ``simulated``. Once the
+waits in ``pending_kyc`` until documents are submitted, then is approved at once with a made-up
+number; forwarding tests pass instantly, flagged ``simulated``. Once the
 carrier account is approved, ops provisions the number and reports it through
 ``PATCH /internal/v1/telephony/numbers/{id}`` (KYC approved + e164).
 """
@@ -43,7 +44,7 @@ from mitra_core.telephony.enums import (
     VerificationStatus,
 )
 from mitra_core.telephony.health import REMEDIATION
-from mitra_core.telephony.service import display_number
+from mitra_core.telephony.service import display_number, number_went_live
 
 router = APIRouter(prefix="/phone-numbers", tags=["phone numbers"])
 compliance_router = APIRouter(prefix="/compliance", tags=["compliance"])
@@ -202,6 +203,12 @@ async def submit_kyc(
         "submitted_at": clock().isoformat(),
     }
     number.kyc_status = KycStatus.SUBMITTED
+    if number.carrier == Carrier.SIM:
+        # The simulator approves at once with a made-up local number (it never dials anyone),
+        # so a demo business can run calls and campaigns end to end.
+        number.kyc_status = KycStatus.APPROVED
+        number.e164 = number.e164 or f"+9140{number.id.int % 10**8:08d}"
+        await number_went_live(session, tenant.business_id)
     await session.flush()
     await session.refresh(number)
     out = _out(number)

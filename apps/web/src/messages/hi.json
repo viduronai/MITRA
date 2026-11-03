@@ -1300,7 +1300,9 @@
       "blocked": "रोके गए",
       "etaPaused": "रुका हुआ: फिर शुरू करने तक कोई कॉल नहीं।",
       "etaLine": "लगभग {minutes} मिनट बाकी · एक साथ {channels} · अभी {dialing} लाइन पर",
+      "startsAt": "कॉल {day}, {time} से शुरू होंगी (कॉल का समय)",
       "consentBy": "{name} ने {date} को लिस्ट की पुष्टि की",
+      "consentByYou": "आपने {date} को लिस्ट की पुष्टि की",
       "pauseLinks": {
         "connect": "Connect खोलें",
         "billing": "टॉप-अप करें"

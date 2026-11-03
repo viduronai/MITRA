@@ -32,8 +32,9 @@ export async function requestOtp(phone: string): Promise<OtpRequestResult> {
       ok: true,
       requestId: out.request_id,
       resendIn: out.resend_in,
-      // The API only sends dev_code when it runs locally; never forward it from a production build.
-      devCode: process.env.NODE_ENV !== "production" ? out.dev_code : undefined,
+      // The API only sends dev_code when it runs locally. A production build forwards it only when
+      // explicitly told to (MITRA_SHOW_DEV_OTP=1, for local walkthroughs of the built app).
+      devCode: process.env.NODE_ENV !== "production" || process.env.MITRA_SHOW_DEV_OTP === "1" ? out.dev_code : undefined,
     };
   } catch (error) {
     return { ok: false, error: authError(error, "phoneInvalid") };

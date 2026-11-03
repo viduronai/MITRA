@@ -120,6 +120,7 @@ class Progress(BaseModel):
     reasons: dict[str, int]
     blocked_summary: list[str]
     eta_minutes: int | None
+    starts_at: datetime | None = None  # every queued call waits until then (calling hours)
     channels: int
 
 
