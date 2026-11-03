@@ -11,7 +11,7 @@ WhatsApp allows free-form messages only within **24 hours of the person's last m
 - **Category: Utility** for every template. Each one is about something the person asked for or already has (an enquiry, a booking, a payment, their own business). None of them carry offers. If Meta reclassifies one as Marketing, it still works but costs more and needs marketing consent, so reword it instead of accepting the change.
 - **Named variables** (`{{name}}`). They match the field names the code sends. Meta needs a sample value for each; the samples are in the tables.
 - **Telugu `{{name}}` carries the honorific.** The code sends "Ravi గారు" (sample for Meta: `Ravi గారు`), so when the name is unknown it sends "అండి" and the greeting reads "నమస్కారం అండి," (pending founder review). Hindi falls back to "जी" ("नमस्ते जी,"), English to "there".
-- **App links** ("Open in Mitra", "Open report") are `<APP_URL>/{{1}}`. **TODO (founder): confirm the app domain** before submitting; the code reads it from one setting (`MITRA_APP_BASE_URL`) and never hard-codes it.
+- **App links** ("Open in Mitra", "Open report") are `https://app.viduronai.in/{{1}}` (founder decision, 3 Nov 2026: Viduron's own domain, which also matches Meta business verification). The code reads it from one setting (`MITRA_APP_BASE_URL`); if Mitra moves to its own domain later, change the setting and re-submit these two templates.
 - A variable can't contain a line break or tab and can't be the first or last thing in the body. The code must flatten text before filling a variable (see "Code changes" below).
 - **Languages:** `en`, `hi`, `te`. Each language is a separate submission under the same template name.
 - Business names go in a variable (`{{business}}`), so one approved template works for every Mitra customer while we send from Mitra's number. When a business connects its own WhatsApp number later (Embedded Signup), the same templates are copied to its account.
@@ -142,7 +142,7 @@ Samples: name = Ravi · business = Sunrise Clinic · amount = 500 · purpose = c
 ## B. Messages to owners, managers and staff
 
 ### 11. `owner_alert`: hot lead, upset customer, VIP, urgent, payment failed, campaign paused (MGR-05, TEAM-05)
-Button: URL **Open in Mitra** (`<APP_URL>/{{1}}`; the code sends the path; domain TODO, see Rules)
+Button: URL **Open in Mitra** (`https://app.viduronai.in/{{1}}`; the code sends the path)
 
 | | Body |
 |---|---|
@@ -153,7 +153,7 @@ Button: URL **Open in Mitra** (`<APP_URL>/{{1}}`; the code sends the path; domai
 Samples: title = Hot lead · business = Sunrise Homes · detail = Ravi is interested in a 2BHK and wants a site visit on Saturday.
 
 ### 12. `daily_report`: morning summary (MGR-01)
-Button: URL **Open report** (`<APP_URL>/{{1}}`; the code sends `?from=whatsapp`)
+Button: URL **Open report** (`https://app.viduronai.in/{{1}}`; the code sends `?from=whatsapp`)
 
 | | Body |
 |---|---|
@@ -191,7 +191,7 @@ The `action` values must be translated per language by the code (en "call back",
 
 ## Code changes needed before going live
 
-Status 3 Nov 2026: all five are built (`services/core/src/mitra_core/whatsapp/`; the registry in `templates.py` is tested to match this page word for word). Still open: the app domain (TODO above) and native-speaker review.
+Status 3 Nov 2026: all five are built (`services/core/src/mitra_core/whatsapp/`; the registry in `templates.py` is tested to match this page word for word). Still open: native-speaker review.
 
 1. **Send templates outside the 24-hour window.** Today only `call_heads_up` uses a template; alerts, reports, approvals, staff messages and customer messages are sent as free text, which Meta drops outside the window. The WhatsApp service should check the window per recipient and switch to the matching template above.
 2. **Flatten variables:** no line breaks, tabs or more than 4 spaces in a row; trim long values (alert `detail` to about 300 characters).

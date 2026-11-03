@@ -49,7 +49,7 @@ __all__ = ["ButtonSpec", "record_inbound"]
 
 
 def app_suffix(path: str | None) -> str:
-    """``/calls/123`` -> ``calls/123`` for the ``https://app.mitra.ai/{{1}}`` buttons."""
+    """``/calls/123`` -> ``calls/123`` for the ``https://app.viduronai.in/{{1}}`` buttons."""
     cleaned = (path or "").strip().lstrip("/")
     return cleaned or APP_LINK_DEFAULT
 
