@@ -144,7 +144,38 @@ async def answer(
             ),
             [{"label": "team", "href": "/team"}],
         )
+    if intent.name == "payments":
+        return await _payments(session, business_id, intent, now)
+    if intent.name == "unknown":
+        return Answer(t("unknown", lang))
     return Answer(t("help", lang))
+
+
+async def _payments(
+    session: AsyncSession, business_id: uuid.UUID, intent: Intent, now: datetime
+) -> Answer:
+    """Who paid / what's pending / how much came in, from the payment requests only."""
+    lang, link = intent.lang, [{"label": "payments", "href": "/payments"}]
+    label = word(PERIOD, intent.period, lang)
+    if intent.text == "pending":
+        open_ = await tools.payments_pending(session, business_id)
+        if not open_:
+            return Answer(t("pending_none", lang), link)
+        total = _rupees(sum(p.amount_paise for p in open_))
+        lines = [t("pending_head", lang, count=len(open_), amount=total)]
+        for p in open_[:5]:
+            flag = f" ({t('says_paid', lang)})" if p.says_paid else ""
+            lines.append(f"• {p.who}: {_rupees(p.amount_paise)} · {p.purpose[:40]}{flag}")
+        return Answer("\n".join(lines), link)
+    paid = await tools.payments_paid(session, business_id, intent.period, now)
+    total = _rupees(sum(p.amount_paise for p in paid))
+    if intent.text == "collected":
+        return Answer(t("collected", lang, period=label, amount=total, count=len(paid)), link)
+    if not paid:
+        return Answer(t("paid_none", lang, period=label), link)
+    lines = [t("paid_head", lang, period=label, count=len(paid), amount=total)]
+    lines += [f"• {p.who}: {_rupees(p.amount_paise)} · {p.purpose[:40]}" for p in paid[:5]]
+    return Answer("\n".join(lines), link)
 
 
 def with_links(answer: Answer, lang: Lang) -> str:

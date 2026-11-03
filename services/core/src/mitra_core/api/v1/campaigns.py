@@ -6,34 +6,31 @@ Calls are placed by the dialer worker (``mitra_core.dialer.worker``), which runs
 
 from __future__ import annotations
 
-import csv
-import io
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.clock import Clock, get_clock
 from mitra_core.dialer import campaigns as svc
+from mitra_core.dialer import consent as list_consent
 from mitra_core.dialer.csvimport import SAMPLE_CSV, ListError, ParsedList, parse_list
-from mitra_core.dialer.enums import CampaignStatus, ContactStatus, ResultBucket
-from mitra_core.dialer.sealing import unseal
 from mitra_core.dialer.settings import DialerSettings, get_dialer_settings
 from mitra_core.errors import AppError, not_found
 from mitra_core.models import Employee
-from mitra_core.models.campaign import Campaign, CampaignContact, DialerConfig
-from mitra_core.models.enums import MemberRole
+from mitra_core.models.campaign import Campaign, DialerConfig
+from mitra_core.models.enums import Locale, MemberRole
 from mitra_core.schemas.campaign import (
     CampaignCreatedOut,
     CampaignIn,
     CampaignList,
     CampaignOut,
     CampaignPatch,
-    ContactList,
-    ContactOut,
-    ContactsAddedOut,
+    ConsentIn,
+    ConsentOut,
+    ConsentTextOut,
     DialerSettingsIn,
     DialerSettingsOut,
     ListIn,
@@ -44,6 +41,7 @@ from mitra_core.schemas.campaign import (
 )
 from mitra_core.security import Tenant, get_tenant_session, require_business, require_role
 from mitra_core.telephony.compliance import owner_summary
+from mitra_core.telephony.enums import CallPurpose
 
 router = APIRouter(prefix="/campaigns", tags=["campaigns"])
 _can_manage = require_role(MemberRole.OWNER, MemberRole.MANAGER)
@@ -108,6 +106,19 @@ async def _out(session: AsyncSession, campaign: Campaign, settings: DialerSettin
         ends_on=campaign.ends_on,
         avg_call_seconds=campaign.avg_call_seconds,
         approval_id=campaign.approval_id,
+        consent=(
+            ConsentOut(
+                scope=campaign.consent_scope,
+                text=campaign.consent_text or "",
+                text_version=campaign.consent_text_version or "",
+                by_name=campaign.consent_by_name,
+                at=campaign.consent_at,
+            )
+            if list_consent.is_attested(campaign)
+            and campaign.consent_scope is not None
+            and campaign.consent_at is not None
+            else None
+        ),
         created_at=campaign.created_at,
         started_at=campaign.started_at,
         completed_at=campaign.completed_at,
@@ -116,6 +127,8 @@ async def _out(session: AsyncSession, campaign: Campaign, settings: DialerSettin
             skipped=p.skipped,
             remaining=p.remaining,
             dialing=p.dialing,
+            called=p.called,
+            blocked=p.blocked,
             done=p.total - p.skipped - p.remaining,
             buckets=p.buckets,
             reasons=p.reasons,
@@ -169,6 +182,16 @@ async def put_settings(
         config.channels = body.channels
     await session.commit()
     return DialerSettingsOut(channels=body.channels)
+
+
+@router.get("/consent-text", response_model=ConsentTextOut, summary="Words the owner ticks")
+async def consent_text(
+    purpose: CallPurpose = CallPurpose.SERVICE,
+    language: Locale | None = None,
+    _: Tenant = Depends(require_business),
+) -> ConsentTextOut:
+    probe = Campaign(purpose=purpose)
+    return ConsentTextOut(text=list_consent.wording(probe, language), version=list_consent.VERSION)
 
 
 @router.post("/preview", response_model=ListPreviewOut, summary="Check a list before importing")
@@ -240,9 +263,12 @@ async def create_campaign(
         ends_on=body.ends_on,
         created_by=tenant.user.id,
     )
+    now = clock()
+    if body.consent_attested:
+        list_consent.attest(campaign, tenant.user, body.consent_language, now)
     session.add(campaign)
     await session.flush()
-    added, skipped = await svc.add_contacts(session, campaign, parsed, clock())
+    added, skipped = await svc.add_contacts(session, campaign, parsed, now)
     out = await _out(session, campaign, settings)
     await session.commit()
     return CampaignCreatedOut(
@@ -298,11 +324,14 @@ async def _transition(
     settings: DialerSettings,
     tenant: Tenant,
     session: AsyncSession,
+    consent: ConsentIn | None = None,
 ) -> CampaignOut:
     campaign = await _get(session, tenant, campaign_id)
     now = clock()
     try:
         if action == "start":
+            if consent is not None and consent.consent_attested:
+                list_consent.attest(campaign, tenant.user, consent.consent_language, now)
             await svc.start(session, campaign, now, user_id=tenant.user.id)
         elif action == "pause":
             svc.pause(campaign)
@@ -321,12 +350,13 @@ async def _transition(
 @router.post("/{campaign_id}/start", response_model=CampaignOut)
 async def start_campaign(
     campaign_id: uuid.UUID,
+    body: ConsentIn | None = None,
     clock: Clock = Depends(get_clock),
     settings: DialerSettings = Depends(get_dialer_settings),
     tenant: Tenant = Depends(_can_manage),
     session: AsyncSession = Depends(get_tenant_session),
 ) -> CampaignOut:
-    return await _transition("start", campaign_id, clock, settings, tenant, session)
+    return await _transition("start", campaign_id, clock, settings, tenant, session, body)
 
 
 @router.post("/{campaign_id}/pause", response_model=CampaignOut)
@@ -360,127 +390,3 @@ async def cancel_campaign(
     session: AsyncSession = Depends(get_tenant_session),
 ) -> CampaignOut:
     return await _transition("cancel", campaign_id, clock, settings, tenant, session)
-
-
-@router.post("/{campaign_id}/contacts", response_model=ContactsAddedOut, summary="Extend")
-async def add_contacts(
-    campaign_id: uuid.UUID,
-    body: ListIn,
-    clock: Clock = Depends(get_clock),
-    settings: DialerSettings = Depends(get_dialer_settings),
-    tenant: Tenant = Depends(_can_manage),
-    session: AsyncSession = Depends(get_tenant_session),
-) -> ContactsAddedOut:
-    campaign = await _get(session, tenant, campaign_id)
-    if campaign.status == CampaignStatus.CANCELLED:
-        raise AppError(409, "finished", "This campaign was cancelled")
-    if body.column_map is None:
-        body = body.model_copy(update={"column_map": dict(campaign.column_map)})
-    parsed = _parse(body, settings)
-    current = await svc.contact_count(session, campaign.id)
-    if current + len(parsed.rows) > settings.max_contacts:
-        raise AppError(422, "too_many", f"At most {settings.max_contacts} people per campaign")
-    if campaign.status == CampaignStatus.COMPLETED:  # extending a finished list reopens it
-        campaign.status, campaign.completed_at = CampaignStatus.RUNNING, None
-    try:
-        added, skipped = await svc.add_contacts(session, campaign, parsed, clock())
-    except svc.CampaignError as e:
-        raise _campaign_error(e) from e
-    out = await _out(session, campaign, settings)
-    await session.commit()
-    return ContactsAddedOut(
-        added=added,
-        skipped_recent=skipped,
-        invalid=parsed.invalid,
-        duplicates=parsed.duplicates,
-        campaign=out,
-    )
-
-
-@router.get("/{campaign_id}/contacts", response_model=ContactList)
-async def list_contacts(
-    campaign_id: uuid.UUID,
-    bucket: ResultBucket | None = None,
-    contact_status: ContactStatus | None = Query(default=None, alias="status"),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
-    tenant: Tenant = Depends(require_business),
-    session: AsyncSession = Depends(get_tenant_session),
-) -> ContactList:
-    campaign = await _get(session, tenant, campaign_id)
-    where = [CampaignContact.campaign_id == campaign.id]
-    if bucket is not None:
-        where.append(CampaignContact.bucket == bucket)
-    if contact_status is not None:
-        where.append(CampaignContact.status == contact_status)
-    total = await session.scalar(select(func.count()).where(*where))
-    rows = await session.scalars(
-        select(CampaignContact)
-        .where(*where)
-        .order_by(CampaignContact.row_number)
-        .limit(limit)
-        .offset(offset)
-    )
-    return ContactList(
-        items=[ContactOut.model_validate(r, from_attributes=True) for r in rows],
-        total=int(total or 0),
-    )
-
-
-@router.get("/{campaign_id}/export.csv", summary="Results as CSV")
-async def export_csv(
-    campaign_id: uuid.UUID,
-    tenant: Tenant = Depends(_can_manage),
-    session: AsyncSession = Depends(get_tenant_session),
-) -> Response:
-    campaign = await _get(session, tenant, campaign_id)
-    variables = list(dict.fromkeys(campaign.column_map.values()))
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-    writer.writerow(
-        [
-            "row",
-            "name",
-            "phone",
-            "status",
-            "result",
-            "reasons",
-            "attempts",
-            "last_outcome",
-            "last_called_at",
-            "summary",
-            *variables,
-        ]
-    )
-    rows = await session.scalars(
-        select(CampaignContact)
-        .where(CampaignContact.campaign_id == campaign.id)
-        .order_by(CampaignContact.row_number)
-    )
-    for c in rows:
-        writer.writerow(
-            [
-                c.row_number,
-                _safe(c.name or ""),
-                unseal(c.phone_enc, c.business_id) if c.phone_enc else "",  # '' = forgotten
-                c.status.value,
-                c.bucket.value if c.bucket else "",
-                " ".join(c.reasons),
-                c.attempts,
-                c.last_outcome.value if c.last_outcome else "",
-                c.last_called_at.isoformat() if c.last_called_at else "",
-                _safe(c.summary or ""),
-                *(_safe(str(c.variables.get(v, ""))) for v in variables),
-            ]
-        )
-    filename = f"campaign-{campaign.id.hex[:8]}.csv"
-    return Response(
-        buf.getvalue(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
-def _safe(value: str) -> str:
-    """Spreadsheet formula injection guard for cells a customer could have influenced."""
-    return "'" + value if value[:1] in ("=", "+", "-", "@") else value

@@ -45,7 +45,7 @@ export default async function LiveCallsPage() {
                 <LiveDot />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">
-                    {call.customer_name ?? (call.phone_last4 ? `…${call.phone_last4}` : t("caller"))}
+                    {call.customer_name ?? (call.phone_last4 ? `••••${call.phone_last4}` : t("caller"))}
                   </p>
                   <p className="text-sm text-text-muted">
                     {t("withEmployee", { name: call.employee_name ?? t("employee") })} ·{" "}

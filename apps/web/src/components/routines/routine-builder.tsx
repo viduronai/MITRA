@@ -26,9 +26,22 @@ interface EmployeeOption {
   name: string;
 }
 
+/** A wait in natural units: 2 min, 2 hours, 1 day ("after …" form for sentences). */
+export function useWait() {
+  const t = useTranslations("routines");
+  return (minutes: number, after = false) => {
+    const scope = after ? "waitAfter" : "wait";
+    if (minutes <= 0) return t(`${scope}.none`);
+    if (minutes % 1440 === 0) return t(`${scope}.days`, { n: minutes / 1440 });
+    if (minutes % 60 === 0) return t(`${scope}.hours`, { n: minutes / 60 });
+    return t(`${scope}.minutes`, { n: minutes });
+  };
+}
+
 /** Render a spec as the owner's sentence (AUTO-01). Shared by the list and the builder. */
 export function useSentence() {
   const t = useTranslations("routines");
+  const wait = useWait();
   return (spec: RoutineSpec, employee: string) => {
     const verb = t(`verbs.${spec.action.verb}`);
     const goal = t(`goals.${spec.action.goal}`);
@@ -48,7 +61,7 @@ export function useSentence() {
       event: t(`events.${spec.trigger.event.replace(".", "_")}` as never),
       employee,
       verb,
-      delay: spec.trigger.delay_minutes,
+      wait: wait(spec.trigger.delay_minutes, true),
       goal,
     });
   };
@@ -57,6 +70,7 @@ export function useSentence() {
 export function RoutineBuilder({ employees }: { employees: EmployeeOption[] }) {
   const t = useTranslations("routines");
   const sentence = useSentence();
+  const wait = useWait();
   const [pending, start] = useTransition();
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"schedule" | "event">("schedule");
@@ -131,7 +145,7 @@ export function RoutineBuilder({ employees }: { employees: EmployeeOption[] }) {
               <select aria-label={t("delayLabel")} className={selectClass} value={delay} onChange={(e) => setDelay(Number(e.target.value))}>
                 {[0, 2, 5, 30, 60, 1440].map((m) => (
                   <option key={m} value={m}>
-                    {t("minutes", { n: m })}
+                    {wait(m)}
                   </option>
                 ))}
               </select>

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createCampaign, previewList, type CampaignErrorKey } from "@/app/(app)/campaigns/actions";
+import { ConsentCheck } from "@/components/campaigns/consent-check";
 import { ListInput } from "@/components/campaigns/list-input";
 import { LADDERS, ScheduleFields, type Schedule } from "@/components/campaigns/schedule-fields";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,18 @@ function ErrorLine({ error, message }: { error: CampaignErrorKey | "tooBig" | "b
   );
 }
 
-export function CampaignWizard({ employees, channels }: { employees: EmployeeOption[]; channels: number }) {
+export function CampaignWizard({
+  employees,
+  channels,
+  consentTexts,
+  language,
+}: {
+  employees: EmployeeOption[];
+  channels: number;
+  /** Core's exact attestation words per kind of list, in the owner's language. */
+  consentTexts: { service: string; promotional: string };
+  language: "en" | "hi" | "te";
+}) {
   const t = useTranslations("campaigns.wizard");
   const router = useRouter();
   const ids = { name: useId(), employee: useId(), phone: useId(), nameCol: useId(), purpose: useId(), skip: useId() };
@@ -48,6 +60,7 @@ export function CampaignWizard({ employees, channels }: { employees: EmployeeOpt
   const [columnMap, setColumnMap] = useState<Record<string, string>>({});
   const [purpose, setPurpose] = useState<"service" | "promotional">("service");
   const [skipDays, setSkipDays] = useState(7);
+  const [attested, setAttested] = useState(false);
   const [schedule, setSchedule] = useState<Schedule>({
     calling_days: [0, 1, 2, 3, 4, 5],
     holidays: [],
@@ -91,6 +104,8 @@ export function CampaignWizard({ employees, channels }: { employees: EmployeeOpt
           column_map: columnMap,
           skip_recent_days: skipDays,
           ...schedule,
+          consent_attested: attested,
+          consent_language: language,
         },
         start,
       );
@@ -243,7 +258,10 @@ export function CampaignWizard({ employees, channels }: { employees: EmployeeOpt
                   id={ids.purpose}
                   className={selectClass}
                   value={purpose}
-                  onChange={(e) => setPurpose(e.target.value as "service" | "promotional")}
+                  onChange={(e) => {
+                    setPurpose(e.target.value as "service" | "promotional");
+                    setAttested(false); // the words change with the kind of list: tick again
+                  }}
                 >
                   {(["service", "promotional"] as const).map((p) => (
                     <option key={p} value={p}>
@@ -286,6 +304,18 @@ export function CampaignWizard({ employees, channels }: { employees: EmployeeOpt
               </div>
             ))}
             <p className="text-[13px] leading-5 text-text-muted sm:col-span-2">{t("reviewNote")}</p>
+            <ConsentCheck
+              className="sm:col-span-2"
+              text={consentTexts[purpose]}
+              checked={attested}
+              onChange={setAttested}
+              promotional={purpose === "promotional"}
+            />
+            {!attested && (
+              <p className="text-[13px] leading-5 font-medium text-warning-fg sm:col-span-2" role="note">
+                {t("consentNeeded")}
+              </p>
+            )}
           </dl>
         )}
 
@@ -327,7 +357,12 @@ export function CampaignWizard({ employees, channels }: { employees: EmployeeOpt
               <Save aria-hidden />
               {t("saveDraft")}
             </Button>
-            <Button type="button" disabled={pending || !name.trim()} aria-busy={pending} onClick={() => submit(true)}>
+            <Button
+              type="button"
+              disabled={pending || !name.trim() || !attested}
+              aria-busy={pending}
+              onClick={() => submit(true)}
+            >
               <Play aria-hidden />
               {t("start")}
             </Button>

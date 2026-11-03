@@ -7,6 +7,9 @@ export interface Approval {
   id: string;
   kind: string;
   summary: string;
+  /** Server-built summary (list calls, payment links): render approvals.summaries.<key>. */
+  summary_key: string | null;
+  summary_params: Record<string, string>;
   payload: Record<string, unknown>;
   version: number;
   status: ApprovalStatus;

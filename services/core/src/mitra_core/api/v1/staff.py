@@ -9,11 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.clock import Clock, get_clock
-from mitra_core.errors import not_found
+from mitra_core.errors import AppError, not_found
 from mitra_core.models import HandoffCard, StaffMember
 from mitra_core.models.enums import MemberRole
 from mitra_core.schemas.team import HandoffCardOut, StaffIn, StaffOut, StaffPatch
 from mitra_core.security import Tenant, get_tenant_session, require_business, require_role
+from mitra_core.team.humans import ring_sequence
 
 router = APIRouter(prefix="/team", tags=["team"])
 _can_manage = require_role(MemberRole.OWNER, MemberRole.MANAGER)
@@ -30,17 +31,46 @@ async def _get(session: AsyncSession, tenant: Tenant, staff_id: uuid.UUID) -> St
     return staff
 
 
-@router.get("/staff", response_model=list[StaffOut], summary="Staff and the transfer order")
+async def _check_position(
+    session: AsyncSession, tenant: Tenant, position: int | None, staff_id: uuid.UUID | None = None
+) -> None:
+    """One person per transfer position, so the ring order is never ambiguous."""
+    if position is None:
+        return
+    taken = await session.scalar(
+        select(StaffMember.name).where(
+            StaffMember.business_id == tenant.business_id,
+            StaffMember.ladder_position == position,
+            StaffMember.active.is_(True),
+            StaffMember.id != (staff_id or uuid.uuid4()),
+        )
+    )
+    if taken is not None:
+        raise AppError(
+            409,
+            "position_taken",
+            f"Transfer #{position} is already {taken}",
+            details={"position": position},
+        )
+
+
+@router.get("/staff", response_model=list[StaffOut], summary="Staff, in the order calls ring")
 async def list_staff(
     tenant: Tenant = Depends(_can_manage),
     session: AsyncSession = Depends(get_tenant_session),
-) -> list[StaffMember]:
-    rows = await session.scalars(
-        select(StaffMember)
-        .where(StaffMember.business_id == tenant.business_id)
-        .order_by(StaffMember.ladder_position.nulls_last(), StaffMember.created_at)
+) -> list[StaffOut]:
+    rows = list(
+        await session.scalars(
+            select(StaffMember).where(StaffMember.business_id == tenant.business_id)
+        )
     )
-    return list(rows)
+    ringing = ring_sequence(rows)
+    order = {s.id: i for i, s in enumerate(ringing, start=1)}
+    others = sorted((s for s in rows if s.id not in order), key=lambda s: (s.created_at, s.name))
+    return [
+        StaffOut.model_validate(s).model_copy(update={"ring_order": order.get(s.id)})
+        for s in [*ringing, *others]
+    ]
 
 
 @router.post(
@@ -51,6 +81,7 @@ async def add_staff(
     tenant: Tenant = Depends(_can_manage),
     session: AsyncSession = Depends(get_tenant_session),
 ) -> StaffMember:
+    await _check_position(session, tenant, body.ladder_position)
     staff = StaffMember(business_id=tenant.business_id, **body.model_dump())
     session.add(staff)
     await session.commit()
@@ -65,7 +96,10 @@ async def update_staff(
     session: AsyncSession = Depends(get_tenant_session),
 ) -> StaffMember:
     staff = await _get(session, tenant, staff_id)
-    for key, value in body.model_dump(exclude_unset=True).items():
+    changes = body.model_dump(exclude_unset=True)
+    if changes.get("ladder_position") is not None:
+        await _check_position(session, tenant, changes["ladder_position"], staff.id)
+    for key, value in changes.items():
         setattr(staff, key, value)
     await session.commit()
     return staff

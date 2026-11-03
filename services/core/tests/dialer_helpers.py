@@ -94,6 +94,16 @@ async def consent(client: httpx.AsyncClient, t: dict[str, Any], *phones: str) ->
         assert resp.status_code == 201, resp.text
 
 
+async def opt_out(client: httpx.AsyncClient, t: dict[str, Any], *phones: str) -> None:
+    for phone in phones:
+        resp = await client.post(
+            "/internal/v1/telephony/opt-outs",
+            json={"business_id": t["business"]["id"], "contact_phone": phone, "source": "owner"},
+            headers=SVC,
+        )
+        assert resp.status_code == 201, resp.text
+
+
 async def tick(client: httpx.AsyncClient) -> dict[str, Any]:
     resp = await client.post("/internal/v1/dialer/tick", headers=SVC)
     assert resp.status_code == 200, resp.text

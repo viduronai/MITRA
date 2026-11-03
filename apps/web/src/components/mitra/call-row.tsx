@@ -23,9 +23,9 @@ interface CallRowProps {
   className?: string;
 }
 
-/** Caller initials ("Anjali Sharma" → "AS"); null for a bare phone number. */
+/** Caller initials ("Anjali Sharma" → "AS"); null for a bare or masked phone number. */
 function callerInitials(contact: string): string | null {
-  if (/^[+\d\s()x-]+$/i.test(contact)) return null;
+  if (/^[+\d\s()x•…-]+$/i.test(contact)) return null;
   const words = contact.trim().split(/\s+/).filter(Boolean);
   return words.slice(0, 2).map((word) => [...word][0]?.toUpperCase() ?? "").join("") || null;
 }

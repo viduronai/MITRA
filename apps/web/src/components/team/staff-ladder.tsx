@@ -11,15 +11,21 @@ import { formatTime } from "@/lib/format";
 import type { HandoffCard, Staff } from "@/lib/team/types";
 import { selectClass } from "./rule-editor";
 
-/** CALL-19 / TEAM-04: who takes transfers, in order, and who gets WhatsApp briefs. */
+const POSITIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+/** CALL-19 / TEAM-04: who takes transfers, in the order they ring, and who gets briefs. */
 export function StaffLadder({ staff }: { staff: Staff[] }) {
   const t = useTranslations("teamMap");
   const [pending, start] = useTransition();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+91");
   const [role, setRole] = useState("");
-  const [ladder, setLadder] = useState<string>(String(Math.min(9, staff.length + 1)));
+  // "auto" = the next free transfer number, recomputed whenever the list changes.
+  const [ladder, setLadder] = useState<string>("auto");
   const [owner, setOwner] = useState(false);
+  const takenBy = new Map(staff.filter((s) => s.active && s.ladder_position).map((s) => [s.ladder_position, s.name]));
+  const nextFree = POSITIONS.find((n) => !takenBy.has(n));
+  const position = ladder === "auto" ? (nextFree ? String(nextFree) : "") : ladder;
 
   return (
     <section aria-labelledby="staff-title" className="rounded-xl border bg-card p-5 shadow-xs md:p-6">
@@ -31,7 +37,7 @@ export function StaffLadder({ staff }: { staff: Staff[] }) {
         {staff.map((s) => (
           <li key={s.id} className="flex items-center gap-3 py-3">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold tabular-nums">
-              {s.ladder_position ?? "–"}
+              {s.ring_order ?? "–"}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">
@@ -39,7 +45,13 @@ export function StaffLadder({ staff }: { staff: Staff[] }) {
                 {s.is_owner && <span className="ms-2 text-xs text-text-muted">{t("owner")}</span>}
               </p>
               <p className="text-sm text-text-muted">
-                {[s.role_label, `…${s.phone_e164.slice(-4)}`, t("rings", { n: s.ring_timeout_s })].filter(Boolean).join(" · ")}
+                {[
+                  s.role_label,
+                  `…${s.phone_e164.slice(-4)}`,
+                  s.ring_order ? t("rings", { n: s.ring_timeout_s }) : t("briefsOnly"),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
             <Button
@@ -65,14 +77,16 @@ export function StaffLadder({ staff }: { staff: Staff[] }) {
         onSubmit={(e) => {
           e.preventDefault();
           start(async () => {
-            const res = await addStaff({ name, phone, role, ladder: ladder ? Number(ladder) : null, owner });
+            const res = await addStaff({ name, phone, role, ladder: position ? Number(position) : null, owner });
             if (!res.ok) {
-              toast.error(t(res.error === "invalid" ? "staffInvalid" : "error"));
+              toast.error(t(res.error === "invalid" ? "staffInvalid" : res.error === "conflict" ? "positionTaken" : "error"));
               return;
             }
             setName("");
             setPhone("+91");
             setRole("");
+            setLadder("auto");
+            setOwner(false);
             toast.success(t("staffAdded"));
           });
         }}
@@ -80,13 +94,16 @@ export function StaffLadder({ staff }: { staff: Staff[] }) {
         <Input aria-label={t("staffName")} placeholder={t("staffName")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
         <Input aria-label={t("staffPhone")} inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} />
         <Input aria-label={t("staffRole")} placeholder={t("staffRole")} value={role} maxLength={60} onChange={(e) => setRole(e.target.value)} />
-        <select aria-label={t("ladderLabel")} className={selectClass} value={ladder} onChange={(e) => setLadder(e.target.value)}>
+        <select aria-label={t("ladderLabel")} className={selectClass} value={position} onChange={(e) => setLadder(e.target.value)}>
           <option value="">{t("notOnLadder")}</option>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <option key={n} value={n}>
-              {t("ladderPosition", { n })}
-            </option>
-          ))}
+          {POSITIONS.map((n) => {
+            const holder = takenBy.get(n);
+            return (
+              <option key={n} value={n} disabled={holder !== undefined}>
+                {holder ? t("positionTakenBy", { n, name: holder }) : t("ladderPosition", { n })}
+              </option>
+            );
+          })}
         </select>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-5 accent-brand-600" checked={owner} onChange={(e) => setOwner(e.target.checked)} />

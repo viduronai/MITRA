@@ -28,7 +28,7 @@ export default async function LiveCallPage({ params }: PageProps<"/live/[id]">) 
     }
     notFound();
   }
-  const who = detail.call.customer_name ?? (detail.call.phone_last4 ? `…${detail.call.phone_last4}` : t("caller"));
+  const who = detail.call.customer_name ?? (detail.call.phone_last4 ? `••••${detail.call.phone_last4}` : t("caller"));
 
   return (
     <>

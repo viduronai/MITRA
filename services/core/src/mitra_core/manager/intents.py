@@ -24,7 +24,9 @@ IntentName = Literal[
     "call_list",
     "coach",
     "payment_link",
+    "payments",
     "help",
+    "unknown",
 ]
 QUESTION_INTENTS = frozenset(
     {
@@ -37,6 +39,8 @@ QUESTION_INTENTS = frozenset(
         "unknown_questions",
         "team",
         "help",
+        "payments",
+        "unknown",
     }
 )
 COMMAND_INTENTS = frozenset({"pause", "resume", "callback", "call_list", "coach", "payment_link"})
@@ -134,6 +138,38 @@ _RESULT_WORDS = {
 }
 
 
+# Money questions (who paid / what's pending / how much collected), en / hi / te.
+_PAY_WORDS = (
+    "paid", "payment", "collect", "revenue", "earned", "pending payment", "dues", "owe", "unpaid",
+    "पेमेंट", "भुगतान", "पैसे", "पैसा", "बकाया", "किसने pay", "kisne pay", "paisa", "paise",
+    "bakaya", "पेड", "పేమెంట్", "డబ్బు", "కట్టారు", "కట్టలేదు", "చెల్లించ", "బాకీ", "వసూలు",
+    "dabbulu", "kattaru", "vasool",
+)  # fmt: skip
+_PAY_PENDING = (
+    "pending", "due", "owe", "unpaid", "not paid", "yet to pay", "बकाया", "बाकी", "baki",
+    "bakaya", "नहीं दिया", "బాకీ", "కట్టలేదు", "ఇంకా", "pending",
+)  # fmt: skip
+_PAY_COLLECTED = (
+    "collect", "revenue", "earned", "how much", "total", "कितना", "कितने", "जमा", "kitna", "ఎంత",
+    "వసూలు", "vasool", "enta",
+)  # fmt: skip
+# A call summary needs a word about calls or "what happened"; otherwise the answer is "unknown".
+_SUMMARY_WORDS = (
+    "call", "happen", "how did", "how was", "report", "summary", "update",
+    "कॉल", "हुआ", "hua", "हाल", "కాల్", "ఏమైంది", "జరిగింది", "emaindi", "jarigindi",
+)  # fmt: skip
+
+
+def _payment_question(low: str) -> str | None:
+    if not _has(low, *_PAY_WORDS):
+        return None
+    if _has(low, *_PAY_PENDING):
+        return "pending"
+    if _has(low, *_PAY_COLLECTED):
+        return "collected"
+    return "paid"
+
+
 def parse(text: str) -> Intent:
     lang = detect_language(text)
     raw = " ".join(text.split())[:500]
@@ -150,6 +186,8 @@ def parse(text: str) -> Intent:
             amount_paise=round(float(amount) * 100),
             text=purpose.group("purpose").strip() if purpose else "",
         )
+    if kind := _payment_question(low):
+        return Intent("payments", lang, period=_period(low), text=kind)
     if m := _COACH.match(raw):
         return Intent("coach", lang, query=m.group("emp") or "", text=m.group("body").strip()[:200])
     if m := _CALLBACK.search(raw):
@@ -205,4 +243,7 @@ def parse(text: str) -> Intent:
         return Intent("customer", lang, query=m.group("name").strip())
     if _has(low, "help", "what can you do", "madad", "సహాయం", "मदद"):
         return Intent("help", lang)
-    return Intent("summary", lang, period=_period(low))
+    if _has(low, *_SUMMARY_WORDS):
+        return Intent("summary", lang, period=_period(low))
+    # Never answer a different question: say so and suggest what works.
+    return Intent("unknown", lang)

@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { campaignsApi } from "@/lib/campaigns/api";
-import type { Campaign, CampaignIn, CampaignPatch, ListIn, ListPreview } from "@/lib/campaigns/types";
+import type { Campaign, CampaignIn, CampaignPatch, ConsentTick, ListIn, ListPreview } from "@/lib/campaigns/types";
 import { requireSession } from "@/lib/session";
 
 export type CampaignErrorKey =
+  | "consentRequired"
   | "invalidList"
   | "noValidRows"
   | "forbidden"
@@ -20,6 +21,13 @@ export type Result<T> = { ok: true; data: T } | { ok: false; error: CampaignErro
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_TEXT = 2_000_000;
 const ACTIONS = new Set(["start", "pause", "resume", "cancel"]);
+const LANGS = new Set(["en", "hi", "te"]);
+
+/** Only a real tick in a known language is passed on; core stores its own exact words. */
+function tick(consent: ConsentTick | undefined): ConsentTick | undefined {
+  if (consent?.consent_attested !== true || !LANGS.has(consent.consent_language)) return undefined;
+  return { consent_attested: true, consent_language: consent.consent_language };
+}
 
 async function run<T>(action: (token: string) => Promise<T>): Promise<Result<T>> {
   const { token } = await requireSession();
@@ -30,6 +38,7 @@ async function run<T>(action: (token: string) => Promise<T>): Promise<Result<T>>
       if (error.status === 401) redirect("/login?expired=1");
       if (error.status === 403) return { ok: false, error: "forbidden" };
       if (error.code === "invalid_list") return { ok: false, error: "invalidList", message: error.message };
+      if (error.code === "consent_required") return { ok: false, error: "consentRequired" };
       if (error.status === 409) return { ok: false, error: "conflict", message: error.message };
       if (error.status === 422) return { ok: false, error: "invalid", message: error.message };
     }
@@ -49,7 +58,15 @@ export async function previewList(body: ListIn): Promise<Result<ListPreview>> {
 
 export async function createCampaign(body: CampaignIn, start: boolean): Promise<Result<Campaign>> {
   if (!validList(body) || !UUID.test(body.employee_id) || !body.name?.trim()) return { ok: false, error: "invalid" };
-  const created = await run((token) => campaignsApi.create(token, { ...body, name: body.name.trim().slice(0, 80) }));
+  const consent = tick({ consent_attested: body.consent_attested === true, consent_language: body.consent_language ?? "en" });
+  const created = await run((token) =>
+    campaignsApi.create(token, {
+      ...body,
+      name: body.name.trim().slice(0, 80),
+      consent_attested: consent !== undefined,
+      consent_language: consent?.consent_language,
+    }),
+  );
   if (!created.ok) return created;
   let campaign = created.data.campaign;
   if (start) {
@@ -60,10 +77,15 @@ export async function createCampaign(body: CampaignIn, start: boolean): Promise<
   return { ok: true, data: campaign };
 }
 
-export async function campaignAction(id: string, action: string): Promise<Result<Campaign>> {
+export async function campaignAction(id: string, action: string, consent?: ConsentTick): Promise<Result<Campaign>> {
   if (!UUID.test(id) || !ACTIONS.has(action)) return { ok: false, error: "invalid" };
   const result = await run((token) =>
-    campaignsApi.transition(token, id, action as "start" | "pause" | "resume" | "cancel"),
+    campaignsApi.transition(
+      token,
+      id,
+      action as "start" | "pause" | "resume" | "cancel",
+      action === "start" ? tick(consent) : undefined,
+    ),
   );
   revalidatePath(`/campaigns/${id}`);
   revalidatePath("/campaigns");
@@ -77,9 +99,13 @@ export async function editCampaign(id: string, patch: CampaignPatch): Promise<Re
   return result;
 }
 
-export async function extendCampaign(id: string, body: ListIn): Promise<Result<{ added: number; skipped: number }>> {
+export async function extendCampaign(
+  id: string,
+  body: ListIn,
+  consent?: ConsentTick,
+): Promise<Result<{ added: number; skipped: number }>> {
   if (!UUID.test(id) || !validList(body)) return { ok: false, error: "invalidList" };
-  const result = await run((token) => campaignsApi.extend(token, id, body));
+  const result = await run((token) => campaignsApi.extend(token, id, { text: body.text, ...tick(consent) }));
   revalidatePath(`/campaigns/${id}`);
   return result.ok ? { ok: true, data: { added: result.data.added, skipped: result.data.skipped_recent } } : result;
 }

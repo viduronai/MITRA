@@ -9,6 +9,9 @@ export const BUCKETS: Bucket[] = ["interested", "call_back", "not_interested", "
 
 export interface CampaignProgress {
   total: number;
+  /** Dialled at least once (a person blocked by compliance was never dialled). */
+  called: number;
+  blocked: number;
   skipped: number;
   remaining: number;
   dialing: number;
@@ -37,10 +40,26 @@ export interface Campaign {
   ends_on: string | null;
   avg_call_seconds: number;
   approval_id: string | null;
+  /** The owner's list attestation (docs/08 §8.5); null until ticked. */
+  consent: CampaignConsent | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
   progress: CampaignProgress;
+}
+
+export interface CampaignConsent {
+  scope: "service" | "promotional";
+  text: string;
+  text_version: string;
+  by_name: string | null;
+  at: string;
+}
+
+/** The owner's tick: the server stores its own exact words for this language. */
+export interface ConsentTick {
+  consent_attested: boolean;
+  consent_language: "en" | "hi" | "te";
 }
 
 export interface ListPreview {
@@ -62,7 +81,7 @@ export interface ListIn {
   column_map?: Record<string, string> | null;
 }
 
-export interface CampaignIn extends ListIn {
+export interface CampaignIn extends ListIn, Partial<ConsentTick> {
   name: string;
   employee_id: string;
   purpose: CampaignPurpose;

@@ -13,7 +13,7 @@ from mitra_core.dialer.csvimport import ListError, normalize_phone, parse_list
 from mitra_core.dialer.voice import DialRejectedError
 from mitra_core.models.enums import CallResult
 from mitra_core.telephony.enums import AttemptOutcome
-from tests.dialer_helpers import configure, consent, morning_clock, tenant, tick
+from tests.dialer_helpers import configure, consent, morning_clock, opt_out, tenant, tick
 from tests.helpers import FakeClock
 
 CSV = (
@@ -62,7 +62,12 @@ def test_parse_list_headers_and_paste() -> None:
 
 
 async def _create(client: httpx.AsyncClient, t: dict[str, Any], **extra: Any) -> dict[str, Any]:
-    body = {"name": "Diwali offer", "employee_id": t["employee"]["id"], "text": CSV} | extra
+    body = {
+        "name": "Diwali offer",
+        "employee_id": t["employee"]["id"],
+        "text": CSV,
+        "consent_attested": True,  # the owner's list tick (docs/08 section 8.5)
+    } | extra
     resp = await client.post("/v1/campaigns", json=body, headers=t["headers"])
     assert resp.status_code == 201, resp.text
     return resp.json()  # type: ignore[no-any-return]
@@ -110,7 +115,7 @@ async def test_campaign_runs_to_buckets(
 
     monkeypatch.setattr(webhooks, "emit_event", fake_emit)
     t = await tenant(client)
-    await consent(client, t, PHONES[0], PHONES[1])  # the third has no consent
+    await opt_out(client, t, PHONES[2])  # the third asked not to be called
     created = await _create(client, t)
     assert (created["added"], created["invalid"], created["duplicates"]) == (3, 1, 1)
     campaign = created["campaign"]
@@ -132,9 +137,7 @@ async def test_campaign_runs_to_buckets(
     assert buckets["interested"] == 1
     assert buckets["not_interested"] == 1
     assert buckets["blocked"] == 1
-    assert detail["progress"]["blocked_summary"] == [
-        "1 person skipped: no consent on record for this kind of call"
-    ]
+    assert detail["progress"]["blocked_summary"] == ["1 person skipped: asked not to be called"]
     assert {p.variables["interest"] for p in voice.placed} == {"2BHK", "Plot"}
     [(event, payload)] = events
     assert event == "campaign.finished"
@@ -144,7 +147,7 @@ async def test_campaign_runs_to_buckets(
         f"/v1/campaigns/{campaign['id']}/contacts?bucket=blocked", headers=t["headers"]
     )
     assert contacts.json()["total"] == 1
-    assert contacts.json()["items"][0]["reasons"] == ["no_consent"]
+    assert contacts.json()["items"][0]["reasons"] == ["opted_out"]
 
     export = await client.get(f"/v1/campaigns/{campaign['id']}/export.csv", headers=t["headers"])
     assert export.status_code == 200
@@ -176,7 +179,7 @@ async def test_pause_resume_edit_extend(client: httpx.AsyncClient, clock: FakeCl
     )
     assert edit.status_code == 200, edit.text
     assert edit.json()["retry_ladder"] == [60]
-    assert edit.json()["progress"]["eta_minutes"] == 2
+    assert edit.json()["progress"]["eta_minutes"] is None  # frozen while paused
 
     resumed = await _action(client, t, cid, "resume")
     assert resumed.json()["status"] == "running"
@@ -184,7 +187,10 @@ async def test_pause_resume_edit_extend(client: httpx.AsyncClient, clock: FakeCl
 
     more = await client.post(
         f"/v1/campaigns/{cid}/contacts",
-        json={"text": "Name,Phone,Interest\nNew,9876500004,Shop\nRavi,9876500001,2BHK\n"},
+        json={
+            "text": "Name,Phone,Interest\nNew,9876500004,Shop\nRavi,9876500001,2BHK\n",
+            "consent_attested": True,
+        },
         headers=t["headers"],
     )
     assert more.status_code == 200, more.text

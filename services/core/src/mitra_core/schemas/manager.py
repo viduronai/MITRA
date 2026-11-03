@@ -21,6 +21,8 @@ class ApprovalOut(ResponseModel):
     id: uuid.UUID
     kind: str
     summary: str
+    summary_key: str | None
+    summary_params: dict[str, Any]
     payload: dict[str, Any]
     version: int
     status: str

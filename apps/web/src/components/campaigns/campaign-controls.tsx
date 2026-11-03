@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { campaignAction, editCampaign, extendCampaign, type CampaignErrorKey } from "@/app/(app)/campaigns/actions";
+import { ConsentCheck } from "@/components/campaigns/consent-check";
 import { ListInput } from "@/components/campaigns/list-input";
 import { ScheduleFields, type Schedule } from "@/components/campaigns/schedule-fields";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,18 @@ function useErrorToast() {
 }
 
 /** Start / pause / resume / cancel, edit the schedule, add people, export (CALL-15). */
-export function CampaignControls({ campaign, canManage }: { campaign: Campaign; canManage: boolean }) {
+export function CampaignControls({
+  campaign,
+  canManage,
+  consentText,
+  language,
+}: {
+  campaign: Campaign;
+  canManage: boolean;
+  /** Core's exact attestation words for this campaign's kind of list, in the owner's language. */
+  consentText: string;
+  language: "en" | "hi" | "te";
+}) {
   const t = useTranslations("campaigns.detail");
   const router = useRouter();
   const showError = useErrorToast();
@@ -40,25 +52,30 @@ export function CampaignControls({ campaign, canManage }: { campaign: Campaign; 
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [editing, setEditing] = useState(false);
   const [extending, setExtending] = useState(false);
+  const [confirmStart, setConfirmStart] = useState(false);
+  const [attested, setAttested] = useState(false);
   const { status } = campaign;
+  const promotional = campaign.purpose === "promotional";
   const open = status !== "completed" && status !== "cancelled";
 
-  const act = (action: Action) =>
+  const act = (action: Action, tick = false) =>
     startTransition(async () => {
-      const res = await campaignAction(campaign.id, action);
+      const consent = tick ? { consent_attested: true, consent_language: language } : undefined;
+      const res = await campaignAction(campaign.id, action, consent);
       if (!res.ok) {
         showError(res.error, res.message);
         return;
       }
       toast.success(t(`done.${action}`));
       setConfirmCancel(false);
+      setConfirmStart(false);
       router.refresh();
     });
 
   return (
     <div className="flex flex-wrap gap-2">
       {canManage && status === "draft" && (
-        <Button size="sm" disabled={pending} onClick={() => act("start")}>
+        <Button size="sm" disabled={pending} onClick={() => (campaign.consent ? act("start") : setConfirmStart(true))}>
           <Play aria-hidden />
           {t("start")}
         </Button>
@@ -102,6 +119,25 @@ export function CampaignControls({ campaign, canManage }: { campaign: Campaign; 
         </Button>
       )}
 
+      <Dialog open={confirmStart} onOpenChange={setConfirmStart}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("startTitle")}</DialogTitle>
+            <DialogDescription>{t("startBody")}</DialogDescription>
+          </DialogHeader>
+          <ConsentCheck text={consentText} checked={attested} onChange={setAttested} promotional={promotional} />
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">{t("notNow")}</Button>
+            </DialogClose>
+            <Button disabled={pending || !attested} onClick={() => act("start", true)}>
+              <Play aria-hidden />
+              {t("start")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={confirmCancel} onOpenChange={setConfirmCancel}>
         <DialogContent>
           <DialogHeader>
@@ -135,7 +171,16 @@ export function CampaignControls({ campaign, canManage }: { campaign: Campaign; 
             <SheetTitle>{t("addTitle")}</SheetTitle>
             <SheetDescription>{t("addBody")}</SheetDescription>
           </SheetHeader>
-          {extending && <ExtendForm campaignId={campaign.id} onDone={() => setExtending(false)} />}
+          {extending && (
+            <ExtendForm
+              campaignId={campaign.id}
+              needsTick={status !== "draft"}
+              consentText={consentText}
+              promotional={promotional}
+              language={language}
+              onDone={() => setExtending(false)}
+            />
+          )}
         </SheetContent>
       </Sheet>
     </div>
@@ -203,11 +248,27 @@ function EditForm({ campaign, onDone }: { campaign: Campaign; onDone: () => void
   );
 }
 
-function ExtendForm({ campaignId, onDone }: { campaignId: string; onDone: () => void }) {
+function ExtendForm({
+  campaignId,
+  needsTick,
+  consentText,
+  promotional,
+  language,
+  onDone,
+}: {
+  campaignId: string;
+  /** People added to a list that already calls are vouched for again (docs/08 §8.5). */
+  needsTick: boolean;
+  consentText: string;
+  promotional: boolean;
+  language: "en" | "hi" | "te";
+  onDone: () => void;
+}) {
   const t = useTranslations("campaigns.detail");
   const router = useRouter();
   const showError = useErrorToast();
   const [text, setText] = useState("");
+  const [attested, setAttested] = useState(false);
   const [pending, startTransition] = useTransition();
   return (
     <form
@@ -215,7 +276,8 @@ function ExtendForm({ campaignId, onDone }: { campaignId: string; onDone: () => 
       onSubmit={(e) => {
         e.preventDefault();
         startTransition(async () => {
-          const res = await extendCampaign(campaignId, { text });
+          const consent = attested ? { consent_attested: true, consent_language: language } : undefined;
+          const res = await extendCampaign(campaignId, { text }, consent);
           if (!res.ok) {
         showError(res.error, res.message);
         return;
@@ -227,7 +289,10 @@ function ExtendForm({ campaignId, onDone }: { campaignId: string; onDone: () => 
       }}
     >
       <ListInput value={text} onChange={setText} onTooBig={() => showError("tooBig")} />
-      <Button type="submit" disabled={pending || !text.trim()} aria-busy={pending}>
+      {needsTick && (
+        <ConsentCheck text={consentText} checked={attested} onChange={setAttested} promotional={promotional} />
+      )}
+      <Button type="submit" disabled={pending || !text.trim() || (needsTick && !attested)} aria-busy={pending}>
         <Plus aria-hidden />
         {t("addCta")}
       </Button>

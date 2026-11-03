@@ -369,3 +369,49 @@ def test_callback_promise() -> None:
     assert (local, day) == ("10:00", "tomorrow")
     _, local, day = callback_promise(datetime(2026, 11, 2, 1, 30, tzinfo=UTC), tz)
     assert (local, day) == ("12:00", "today")
+
+
+async def test_ring_order_is_unique_and_shown_as_it_rings(
+    client: httpx.AsyncClient, admin_engine: AsyncEngine
+) -> None:
+    configure_service()
+    t = await make_tenant(client)
+
+    async def add(name: str, phone: str, pos: int | None, **extra: Any) -> httpx.Response:
+        body = {"name": name, "phone_e164": phone, "ladder_position": pos, **extra}
+        return await client.post("/v1/team/staff", json=body, headers=t["headers"])
+
+    assert (await add("Owner Lata", "+919800000009", 1, is_owner=True)).status_code == 201
+    assert (await add("Sita", "+919800000002", 2)).status_code == 201
+    taken = await add("Ravi", "+919800000003", 2)
+    assert taken.status_code == 409
+    assert taken.json()["error"]["code"] == "position_taken"
+    assert (await add("Ram", "+919800000001", 1)).status_code == 409  # the owner holds #1
+    assert (await add("Ram", "+919800000001", 3)).status_code == 201
+    assert (await add("Desk", "+919800000004", None)).status_code == 201  # briefs only
+
+    staff = (await client.get("/v1/team/staff", headers=t["headers"])).json()
+    # Staff by position, the owner last whatever number they picked, briefs-only unnumbered.
+    assert [(s["name"], s["ring_order"]) for s in staff] == [
+        ("Sita", 1),
+        ("Ram", 2),
+        ("Owner Lata", 3),
+        ("Desk", None),
+    ]
+    ram = next(s for s in staff if s["name"] == "Ram")
+    moved = await client.patch(
+        f"/v1/team/staff/{ram['id']}", json={"ladder_position": 2}, headers=t["headers"]
+    )
+    assert moved.status_code == 409
+
+    # Rows from before the check may share a position: who was added first rings first, and
+    # the internal ladder (what actually rings) agrees with the list the owner sees.
+    async with admin_engine.begin() as conn:
+        await conn.execute(text("UPDATE staff_member SET ladder_position = 2 WHERE name = 'Ram'"))
+    staff = (await client.get("/v1/team/staff", headers=t["headers"])).json()
+    shown = [s["name"] for s in staff if s["ring_order"]]
+    assert shown == ["Sita", "Ram", "Owner Lata"]
+    ladder = await client.get(
+        f"/internal/v1/team/ladder?employee_id={t['employee']['id']}", headers=bearer(TOKEN)
+    )
+    assert [s["name"] for s in ladder.json()["steps"]] == shown

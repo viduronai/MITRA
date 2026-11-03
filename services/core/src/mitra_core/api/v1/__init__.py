@@ -6,6 +6,7 @@ from mitra_core.api.v1 import (
     billing,
     businesses,
     calls,
+    campaign_people,
     campaigns,
     catalog,
     customers,
@@ -60,6 +61,7 @@ router.include_router(phone_numbers.router)
 router.include_router(phone_numbers.compliance_router)
 router.include_router(missed_calls.router)
 router.include_router(campaigns.router)
+router.include_router(campaign_people.router)
 router.include_router(team.router)
 router.include_router(staff.router)
 router.include_router(routines.router)

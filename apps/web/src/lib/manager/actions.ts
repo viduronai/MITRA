@@ -8,7 +8,16 @@ import { managerApi } from "./api";
 import { ALERT_KINDS, type ApprovalRule, type ManagerSettingsPatch, type ThreadMessage } from "./types";
 
 /** Inputs are validated here (system boundary); core re-validates everything. */
-export type ManagerErrorKey = "generic" | "unreachable" | "invalid" | "forbidden" | "stale" | "decided";
+export type ManagerErrorKey =
+  | "generic"
+  | "unreachable"
+  | "invalid"
+  | "forbidden"
+  | "stale"
+  | "decided"
+  | "invalid_edit"
+  | "not_editable"
+  | "summary_locked";
 export type ManagerResult<T = null> = { ok: true; data: T } | { ok: false; error: ManagerErrorKey };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,9 +30,13 @@ function fail(error: unknown): { ok: false; error: ManagerErrorKey } {
     if (error.status === 401) redirect("/login?expired=1");
     if (error.status === 0) return { ok: false, error: "unreachable" };
     if (error.status === 403) return { ok: false, error: "forbidden" };
-    if (error.status === 422) return { ok: false, error: "invalid" };
+    // Specific codes first: they are 422s too, and deserve their own message.
+    if (error.code === "invalid_edit" || error.code === "not_editable" || error.code === "summary_locked") {
+      return { ok: false, error: error.code };
+    }
     if (error.code === "stale_version") return { ok: false, error: "stale" };
     if (error.code === "already_decided") return { ok: false, error: "decided" };
+    if (error.status === 422) return { ok: false, error: "invalid" };
   }
   console.error("[manager]", error instanceof Error ? error.message : error);
   return { ok: false, error: "generic" };

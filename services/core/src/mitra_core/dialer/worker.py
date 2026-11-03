@@ -252,6 +252,7 @@ async def _process(
     )
     if contact is not None:
         contact.status, contact.last_called_at = ContactStatus.QUEUED, now
+        contact.attempts = job.attempts  # counts as called from the moment we dial
     await session.commit()  # the attempt counts against caps even if the carrier fails
 
     try:

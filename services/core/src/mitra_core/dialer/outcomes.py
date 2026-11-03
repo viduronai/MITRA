@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from mitra_core.dialer import consent as list_consent
 from mitra_core.dialer import hooks
 from mitra_core.dialer.enums import CampaignStatus, ContactStatus, JobStatus, ResultBucket
 from mitra_core.models import Call, Contact
@@ -148,6 +149,7 @@ async def maybe_complete(session: AsyncSession, campaign_id: uuid.UUID, now: dat
     campaign = await session.get(Campaign, campaign_id)
     if campaign is not None and not open_count and campaign.status == CampaignStatus.RUNNING:
         campaign.status, campaign.completed_at = CampaignStatus.COMPLETED, now
+        await list_consent.expire(session, campaign, now)
         await _emit_finished(session, campaign, now)
 
 

@@ -28,7 +28,7 @@ export default async function RoutinesPage() {
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
       <div className="flex flex-col gap-6">
         <RoutineList routines={routines} employees={names} />
-        <RoutineLibrary items={library} existing={routines.map((r) => r.library_id ?? "")} />
+        <RoutineLibrary items={library} existing={routines.map((r) => r.library_id ?? "")} employees={names} />
         <RoutineBuilder employees={employees.map((e) => ({ id: e.id, name: e.name }))} />
       </div>
     </>

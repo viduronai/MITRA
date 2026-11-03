@@ -196,6 +196,8 @@ class StaffOut(ResponseModel):
     receives_briefs: bool
     is_owner: bool
     active: bool
+    # 1, 2, 3...: the order calls are actually transferred in (None = briefs only).
+    ring_order: int | None = None
 
 
 class HandoffCardOut(ResponseModel):
@@ -248,6 +250,9 @@ class RoutineOut(ResponseModel):
     id: uuid.UUID
     name: str
     library_id: str | None
+    # True while a ready-made routine keeps its stock English name: the app shows the
+    # name in the viewer's language instead (an owner's own name is shown as typed).
+    name_is_default: bool = False
     spec: dict[str, Any]
     sentence: str
     enabled: bool

@@ -8,6 +8,7 @@ import type {
   CampaignCreated,
   CampaignIn,
   CampaignPatch,
+  ConsentTick,
   ContactsAdded,
   ListIn,
   ListPreview,
@@ -55,9 +56,14 @@ export const campaignsApi = {
   create: (token: string, body: CampaignIn) => request<CampaignCreated>("/campaigns", token, "POST", body),
   edit: (token: string, id: string, body: CampaignPatch) =>
     request<Campaign>(`/campaigns/${enc(id)}`, token, "PATCH", body),
-  transition: (token: string, id: string, action: "start" | "pause" | "resume" | "cancel") =>
-    request<Campaign>(`/campaigns/${enc(id)}/${action}`, token, "POST"),
-  extend: (token: string, id: string, body: ListIn) =>
+  transition: (token: string, id: string, action: "start" | "pause" | "resume" | "cancel", consent?: ConsentTick) =>
+    request<Campaign>(`/campaigns/${enc(id)}/${action}`, token, "POST", consent),
+  consentText: (token: string, purpose: "service" | "promotional", language: string) =>
+    request<{ text: string; version: string }>(
+      `/campaigns/consent-text?${new URLSearchParams({ purpose, language })}`,
+      token,
+    ),
+  extend: (token: string, id: string, body: ListIn & Partial<ConsentTick>) =>
     request<ContactsAdded>(`/campaigns/${enc(id)}/contacts`, token, "POST", body),
   contacts: (token: string, id: string, bucket?: Bucket, offset = 0) => {
     const q = new URLSearchParams({ limit: "50", offset: String(offset) });

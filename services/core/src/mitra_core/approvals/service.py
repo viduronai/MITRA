@@ -24,7 +24,8 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mitra_core.approvals.edits import check_edit
+from mitra_core.approvals import summaries
+from mitra_core.approvals.edits import check_edit, editable_fields
 from mitra_core.approvals.rules import get_rules
 from mitra_core.clock import utcnow
 from mitra_core.config import get_settings
@@ -160,6 +161,8 @@ async def request_approval(
         business_id=business_id,
         kind=kind[:32],
         summary=summary.strip()[:500] or kind,
+        summary_key=None,
+        summary_params={},
         payload=payload,
         version=1,
         status="pending",
@@ -167,6 +170,7 @@ async def request_approval(
         expires_at=expires_at,
         default_action=default_action,
     )
+    _apply_summary(approval)
     session.add(approval)
     await session.flush()
     _log(session, approval, "requested", detail={"requested_by": approval.requested_by})
@@ -184,7 +188,10 @@ async def request_approval(
             ref={"approval_id": str(approval.id), "version": approval.version},
             # Outside the owner's 24-hour window: the approved template, same payloads.
             template="approval_request",
-            params={"employee": await requester_name(session, approval), "summary": summary},
+            params={
+                "employee": await requester_name(session, approval),
+                "summary": approval.summary,
+            },
         )
     await session.flush()
     log.info("approval.requested", business_id=str(business_id), kind=kind, id=str(approval.id))
@@ -217,6 +224,16 @@ async def _require_decider(
         raise AppError(403, "forbidden", "Only an owner or manager can decide approvals")
 
 
+def _apply_summary(approval: Approval) -> None:
+    """Server-owned summary (``summaries.py``): rebuilt from the payload, translatable."""
+    built = summaries.build(approval.kind, approval.payload or {})
+    if built is None:
+        return
+    approval.summary = built.english[:500]
+    approval.summary_key = built.key
+    approval.summary_params = built.params
+
+
 async def edit_approval(
     session: AsyncSession,
     business_id: uuid.UUID,
@@ -237,9 +254,15 @@ async def edit_approval(
         raise AppError(409, "stale_version", "This request changed; please review it again")
     before = approval.payload
     check_edit(approval.kind, before or {}, payload)
+    owned = summaries.build(approval.kind, payload) is not None or editable_fields(approval.kind)
+    if owned and summary is not None and summary.strip() and summary.strip() != approval.summary:
+        raise AppError(
+            422, "summary_locked", "This summary follows the details; change the details instead"
+        )
     approval.payload = payload
-    if summary is not None and summary.strip():
+    if not owned and summary is not None and summary.strip():
         approval.summary = summary.strip()[:500]
+    _apply_summary(approval)
     approval.version += 1
     _log(session, approval, "edited", actor=actor_user_id, via="app", detail={"before": before})
     await session.flush()

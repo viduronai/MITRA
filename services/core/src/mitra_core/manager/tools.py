@@ -302,3 +302,59 @@ async def wallet_paise(session: AsyncSession, business_id: uuid.UUID) -> int | N
     if wallet is None:
         return None
     return wallet.balance_paise + wallet.bonus_paise
+
+
+@dataclass(frozen=True, slots=True)
+class PaymentLine:
+    who: str
+    amount_paise: int
+    purpose: str
+    says_paid: bool = False
+
+
+OPEN_PAYMENT_STATUSES = ("awaiting_approval", "sent", "failed")
+
+
+async def payments_paid(
+    session: AsyncSession, business_id: uuid.UUID, period: Period, now: datetime
+) -> list[PaymentLine]:
+    """Payments received in ``period`` (newest first)."""
+    from mitra_core.models.payments import PaymentRequest
+
+    w = await window(session, business_id, period, now)
+    rows = await session.scalars(
+        select(PaymentRequest)
+        .where(
+            PaymentRequest.business_id == business_id,
+            PaymentRequest.status == "paid",
+            PaymentRequest.paid_at >= w.start,
+            PaymentRequest.paid_at < w.end,
+        )
+        .order_by(PaymentRequest.paid_at.desc())
+    )
+    return [
+        PaymentLine(_who(r.customer_name, r.phone_last4), r.amount_paise, r.purpose) for r in rows
+    ]
+
+
+async def payments_pending(session: AsyncSession, business_id: uuid.UUID) -> list[PaymentLine]:
+    """Requests still waiting for money (sent, failed or waiting for the owner's OK)."""
+    from mitra_core.models.payments import PaymentRequest
+
+    rows = await session.scalars(
+        select(PaymentRequest)
+        .where(
+            PaymentRequest.business_id == business_id,
+            PaymentRequest.status.in_(OPEN_PAYMENT_STATUSES),
+        )
+        .order_by(PaymentRequest.created_at.desc())
+    )
+    return [
+        PaymentLine(
+            _who(r.customer_name, r.phone_last4),
+            r.amount_paise,
+            r.purpose,
+            r.customer_says_paid_at is not None,
+        )
+        for r in rows
+    ]

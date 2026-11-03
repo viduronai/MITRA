@@ -94,7 +94,12 @@ def test_every_template_the_code_sends_is_registered_in_all_languages() -> None:
 
 
 def test_flatten_and_prepare() -> None:
-    assert flatten("Ravi\nwants\ta  2BHK      now ") == "Ravi wants a 2BHK now"
+    assert flatten("Ravi wants\ta  2BHK      now ") == "Ravi wants a 2BHK now"
+    # Former lines stay separate sentences (no run-on alerts).
+    assert flatten("List calling paused\nNo healthy calling number") == (
+        "List calling paused. No healthy calling number"
+    )
+    assert flatten("Done!\n\nNext step") == "Done! Next step"
     assert len(flatten("x" * 500, 300)) == 300
     values = prepare(
         "owner_alert", "en", {"title": "Hot lead", "business": "B", "detail": "y" * 900}
@@ -403,7 +408,7 @@ async def test_template_approval_card_tap_approves(
     card = (await _rows(admin_engine, biz["id"]))[0]
     assert card["template"] == "approval_request"
     assert card["body"] == (
-        "Approval needed at Sunrise Clinic: Mitra needs your OK. Refund ₹2,000 to Lakshmi "
+        "Approval needed at Sunrise Clinic: Mitra needs your OK. Refund. ₹2,000 to Lakshmi. "
         "Tap a button below."
     )
     approve = card["buttons"][0]["id"]

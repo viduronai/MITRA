@@ -117,7 +117,7 @@ async def test_template_and_staff_messages_store_no_raw_phone(
     # Neither has written to us: both go as approved templates (call_heads_up, staff_handoff).
     assert [m["kind"] for m in msgs] == ["template", "template"]
     assert msgs[1]["body"] == (
-        "Task from Sunrise Clinic: please call back Lakshmi. Hot lead Tap Done when finished."
+        "Task from Sunrise Clinic: please call back Lakshmi. Hot lead. Tap Done when finished."
     )
     assert all("+91" not in m["body"] for m in msgs)
     sim = await client.get("/v1/manager/whatsapp-sim/messages", headers=biz["headers"])

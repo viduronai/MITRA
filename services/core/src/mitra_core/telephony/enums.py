@@ -78,6 +78,7 @@ class ConsentSource(StrEnum):
     INDIAMART = "indiamart"
     JUSTDIAL = "justdial"
     OWNER_ATTESTED = "owner_attested"  # generic source: the owner confirmed people asked
+    OWNER_ATTESTED_LIST = "owner_attested_list"  # campaign list the owner vouched for (0007)
 
 
 class OptOutSource(StrEnum):

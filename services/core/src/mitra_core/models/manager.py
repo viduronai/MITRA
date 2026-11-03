@@ -65,6 +65,9 @@ class Approval(UUIDPrimaryKey, Timestamps, Base):
     )
     kind: Mapped[str] = mapped_column(String(32))
     summary: Mapped[str] = mapped_column(String(500))
+    # Server-built summaries (approvals/summaries.py): key + params, rendered per language.
+    summary_key: Mapped[str | None] = mapped_column(String(48))
+    summary_params: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}", default=dict)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}", default=dict)
     version: Mapped[int] = mapped_column(Integer, default=1)
     # pending | approved | declined | expired | cancelled

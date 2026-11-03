@@ -95,6 +95,8 @@ export interface Staff {
   receives_briefs: boolean;
   is_owner: boolean;
   active: boolean;
+  /** 1, 2, 3…: the order calls actually ring in (null = WhatsApp briefs only). */
+  ring_order: number | null;
 }
 
 export interface StaffIn {
@@ -171,6 +173,8 @@ export interface Routine {
   id: string;
   name: string;
   library_id: string | null;
+  /** A ready-made routine still named as shipped: show the name in the viewer's language. */
+  name_is_default: boolean;
   spec: RoutineSpec;
   sentence: string;
   enabled: boolean;

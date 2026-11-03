@@ -117,7 +117,7 @@ export default async function ConnectPage() {
           id="forwarding"
           icon={PhoneForwarded}
           title={t("forwardTitle")}
-          description={t("forwardDesc", { target: forwarding?.target ?? t("yourMitraNumber") })}
+          description={t("forwardDesc", { target: live?.display ?? forwarding?.target ?? t("yourMitraNumber") })}
         >
           <div className="mt-5">
             <ForwardingCodes codes={forwarding?.operators ?? null} numberId={live?.id ?? null} testedAt={live?.forwarding_tested_at ?? null} />

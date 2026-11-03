@@ -9,7 +9,7 @@ import { addFromLibrary, deleteRoutine, runRoutineNow, setRoutineEnabled } from 
 import { Button } from "@/components/ui/button";
 import type { LibraryRoutine, Routine } from "@/lib/team/types";
 import { useSentence } from "./routine-builder";
-import { label } from "@/lib/team/i18n";
+import { label, routineName } from "@/lib/team/i18n";
 
 export function RoutineList({ routines, employees }: { routines: Routine[]; employees: Record<string, string> }) {
   const t = useTranslations("routines");
@@ -34,13 +34,13 @@ export function RoutineList({ routines, employees }: { routines: Routine[]; empl
               className="size-5 accent-brand-600"
               checked={r.enabled}
               disabled={pending}
-              aria-label={t("onOff", { name: r.name })}
+              aria-label={t("onOff", { name: routineName(t, r) })}
               onChange={(e) => act(() => setRoutineEnabled(r.id, e.target.checked))}
             />
           </label>
           <div className="min-w-0 flex-1">
             <Link href={`/routines/${r.id}`} className="font-semibold hover:underline">
-              {r.name}
+              {routineName(t, r)}
             </Link>
             <p className="text-sm text-text-muted">{sentence(r.spec, employees[r.spec.action.employee_id] ?? "—")}</p>
           </div>
@@ -61,8 +61,17 @@ export function RoutineList({ routines, employees }: { routines: Routine[]; empl
   );
 }
 
-export function RoutineLibrary({ items, existing }: { items: LibraryRoutine[]; existing: string[] }) {
+export function RoutineLibrary({
+  items,
+  existing,
+  employees,
+}: {
+  items: LibraryRoutine[];
+  existing: string[];
+  employees: Record<string, string>;
+}) {
   const t = useTranslations("routines");
+  const sentence = useSentence();
   const [pending, start] = useTransition();
   const have = new Set(existing);
   const left = items.filter((i) => !have.has(i.id));
@@ -75,7 +84,20 @@ export function RoutineLibrary({ items, existing }: { items: LibraryRoutine[]; e
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {left.map((item) => (
           <li key={item.id} className="flex items-center gap-3 rounded-xl border border-dashed p-4">
-            <p className="flex-1">{label(t, `library.${item.id}`, item.name)}</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{label(t, `library.${item.id}`, item.name)}</p>
+              <p className="text-sm text-text-muted">
+                {sentence(
+                  {
+                    trigger: item.trigger,
+                    audience: item.audience,
+                    action: { verb: item.verb, employee_id: item.employee_id ?? "", goal: item.goal },
+                    approval_over: 25,
+                  },
+                  (item.employee_id && employees[item.employee_id]) || "—",
+                )}
+              </p>
+            </div>
             <Button
               variant="secondary"
               size="sm"

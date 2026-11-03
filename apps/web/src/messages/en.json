@@ -918,7 +918,10 @@
       "invalid": "That doesn't look right. Please check and try again.",
       "forbidden": "Only the owner or a manager can do this.",
       "stale": "This request changed. Please review it again.",
-      "decided": "This request was already handled."
+      "decided": "This request was already handled.",
+      "invalid_edit": "You can only lower this.",
+      "not_editable": "This detail can't be changed.",
+      "summary_locked": "The summary follows the details. Change the details instead."
     }
   },
   "approvals": {
@@ -939,7 +942,7 @@
       "campaign_id": "Campaign ID",
       "count": "People",
       "routine_run_id": "Routine run ID",
-      "amount_paise": "Amount (paise)",
+      "amount_paise": "Amount (₹)",
       "discount_percent": "Discount (%)",
       "purpose": "For",
       "customer": "Customer",
@@ -1017,7 +1020,18 @@
       "invalid": "That doesn't look right. Please check and try again.",
       "forbidden": "Only the owner or a manager can do this.",
       "stale": "This request changed. Please review it again.",
-      "decided": "This request was already handled."
+      "decided": "This request was already handled.",
+      "invalid_edit": "You can only lower this.",
+      "too_high": "You can only lower this, up to {max}.",
+      "not_editable": "This detail can't be changed.",
+      "summary_locked": "The summary follows the details. Change the details instead."
+    },
+    "summaryLocked": "Updates by itself when you change the details below.",
+    "summaries": {
+      "list_call": "Call a list of {count} people: “{name}”",
+      "list_call_unnamed": "Call a list of {count} people",
+      "payment_link": "Send {customer} a payment link: {amount} for {purpose}",
+      "payment_link_discount": "Send {customer} a payment link: {amount} ({discount}% off) for {purpose}"
     }
   },
   "managerSettings": {
@@ -1054,7 +1068,10 @@
       "invalid": "That doesn't look right. Please check and try again.",
       "forbidden": "Only the owner or a manager can do this.",
       "stale": "This request changed. Please review it again.",
-      "decided": "This request was already handled."
+      "decided": "This request was already handled.",
+      "invalid_edit": "You can only lower this.",
+      "not_editable": "This detail can't be changed.",
+      "summary_locked": "The summary follows the details. Change the details instead."
     }
   },
   "waSim": {
@@ -1219,7 +1236,8 @@
       "saveDraft": "Save as draft",
       "start": "Start calling",
       "started": "Campaign created",
-      "saved": "Draft saved"
+      "saved": "Draft saved",
+      "consentNeeded": "Tick the box to start calling. You can save a draft without it."
     },
     "errors": {
       "invalidList": "We could not read this list",
@@ -1229,7 +1247,8 @@
       "invalid": "Please check the details and try again.",
       "unavailable": "Something went wrong. Please try again.",
       "tooBig": "This file is too big (max 2 MB).",
-      "badVariable": "Variable names use small letters, digits and _ and start with a letter."
+      "badVariable": "Variable names use small letters, digits and _ and start with a letter.",
+      "consentRequired": "Confirm that the people on this list agreed to be contacted."
     },
     "detail": {
       "start": "Start calling",
@@ -1265,9 +1284,6 @@
       "total": "People",
       "doneCount": "Called",
       "remaining": "Left",
-      "etaLabel": "Time left",
-      "minutes": "{minutes} min",
-      "etaHint": "{channels} at a time · {dialing} on the line now",
       "results": "Results",
       "skipped": "{count, plural, one {# person skipped} other {# people skipped}}",
       "people": "Everyone",
@@ -1276,13 +1292,29 @@
       "attempts": "{count, plural, one {# try} other {# tries}}",
       "pages": "Pages",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "startTitle": "Start calling this list?",
+      "startBody": "Confirm the people on this list agreed to hear from you.",
+      "notNow": "Not now",
+      "blocked": "Blocked",
+      "etaPaused": "Paused: no calls until you resume.",
+      "etaLine": "About {minutes} min left · {channels} at a time · {dialing} on the line now",
+      "consentBy": "List confirmed by {name} on {date}",
+      "pauseLinks": {
+        "connect": "Open Connect",
+        "billing": "Top up"
+      }
     },
     "channels": {
       "label": "Calls at the same time",
       "hint": "How many people your employees can call at once. More lines finish lists faster.",
       "save": "Save",
       "saved": "{count, plural, one {# call at a time} other {# calls at a time}}"
+    },
+    "blocked": "{count} blocked",
+    "consent": {
+      "hint": "Saved with your name and the time. Each person can still say \"don't call me\", and Do-Not-Disturb and calling hours are checked before every call.",
+      "promotionalHint": "Promotional calls also need a registered 140-series number, the DLT script and a Do-Not-Disturb check. Saved with your name and the time."
     }
   },
   "teamMap": {
@@ -1347,7 +1379,7 @@
     "delay": {
       "now": "right away",
       "minutes": "after {n} min",
-      "hours": "after {n} h",
+      "hours": "after {n, plural, one {# hour} other {# hours}}",
       "days": "after {n, plural, one {# day} other {# days}}"
     },
     "someone": "Someone",
@@ -1369,7 +1401,7 @@
     "delayLabel": "When",
     "addRule": "Add hand-off",
     "staffTitle": "Your people",
-    "staffHint": "Calls are transferred in this order (1, 2, then the owner). Everyone gets WhatsApp briefs before visits.",
+    "staffHint": "Calls ring in the order shown: staff by transfer number, the owner last. Everyone gets WhatsApp briefs before visits.",
     "owner": "Owner",
     "rings": "rings {n}s",
     "removeStaff": "Remove {name}",
@@ -1387,7 +1419,10 @@
     "cardsTitle": "{n, plural, one {# caller is} other {# callers are}} waiting for a call back",
     "cardWho": "Caller …{last4}",
     "promisedBy": "We promised a call back by {time}",
-    "calledBack": "Called back"
+    "calledBack": "Called back",
+    "briefsOnly": "briefs only",
+    "positionTaken": "That transfer number is taken. Pick another.",
+    "positionTakenBy": "Transfer #{n} · {name}"
   },
   "routines": {
     "title": "Routines",
@@ -1395,7 +1430,7 @@
     "historyTitle": "What ran",
     "empty": "No routines yet. Add a ready-made one or write your own below.",
     "sentenceSchedule": "Every {days} at {time}, {employee} {verb} {audience} to {goal}.",
-    "sentenceEvent": "When {event}, {employee} {verb} them {delay, plural, =0 {right away} other {after # min}} to {goal}.",
+    "sentenceEvent": "When {event}, {employee} {verb} them {wait} to {goal}.",
     "everyDay": "day",
     "days": {
       "mon": "Mon",
@@ -1465,7 +1500,6 @@
     "eventLabel": "What happens",
     "after": "after",
     "delayLabel": "Wait",
-    "minutes": "{n, plural, =0 {no wait} other {# min}}",
     "employeeLabel": "Employee",
     "verbLabel": "Action",
     "audienceLabel": "Who",
@@ -1520,6 +1554,18 @@
       "no_phone": "no number",
       "opted_out": "asked not to be called",
       "no_number": "no number"
+    },
+    "wait": {
+      "none": "no wait",
+      "minutes": "{n} min",
+      "hours": "{n, plural, one {# hour} other {# hours}}",
+      "days": "{n, plural, one {# day} other {# days}}"
+    },
+    "waitAfter": {
+      "none": "right away",
+      "minutes": "after {n} min",
+      "hours": "after {n, plural, one {# hour} other {# hours}}",
+      "days": "after {n, plural, one {# day} other {# days}}"
     }
   },
   "live": {
@@ -1541,7 +1587,7 @@
     "ended": "This call has ended.",
     "waiting": "Waiting for someone to speak…",
     "whisperLabel": "Private instruction",
-    "whisperPlaceholder": "e.g. Offer the Saturday 10 am slot first",
+    "whisperPlaceholder": "e.g. Offer Saturday first",
     "whisper": "Send",
     "whisperHint": "Only your employee sees this. It can't change the AI introduction or safety rules.",
     "whisperSent": "Your employee will follow this.",

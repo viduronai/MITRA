@@ -17,8 +17,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from mitra_core.dialer.enums import CampaignStatus, ContactStatus, JobStatus, ResultBucket
 from mitra_core.models.base import Base, Timestamps, UUIDPrimaryKey, pg_enum
-from mitra_core.models.telephony import OUTCOME, PURPOSE
-from mitra_core.telephony.enums import AttemptOutcome, CallPurpose
+from mitra_core.models.telephony import CONSENT_SCOPE, OUTCOME, PURPOSE
+from mitra_core.telephony.enums import AttemptOutcome, CallPurpose, ConsentScope
 
 JOB_STATUS = pg_enum(JobStatus, "dlr_job_status")
 CAMPAIGN_STATUS = pg_enum(CampaignStatus, "dlr_campaign_status")
@@ -76,6 +76,15 @@ class Campaign(UUIDPrimaryKey, Timestamps, Base):
     )
     started_at: Mapped[datetime | None]
     completed_at: Mapped[datetime | None]
+    # The owner's list attestation (0007_campaign_consent): required before the first call.
+    consent_scope: Mapped[ConsentScope | None] = mapped_column(CONSENT_SCOPE)
+    consent_text: Mapped[str | None] = mapped_column(Text)
+    consent_text_version: Mapped[str | None] = mapped_column(String(20))
+    consent_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_user.id", ondelete="SET NULL")
+    )
+    consent_by_name: Mapped[str | None] = mapped_column(String(120))
+    consent_at: Mapped[datetime | None]
 
 
 class CampaignContact(UUIDPrimaryKey, Timestamps, Base):

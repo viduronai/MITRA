@@ -88,6 +88,11 @@ async def test_builder_validation_and_library(client: httpx.AsyncClient) -> None
     assert resp.status_code == 201, resp.text
     routine = resp.json()
     assert routine["sentence"].startswith("Every day at 18:00, Priya calls tomorrow's")
+    assert routine["name_is_default"] is True  # shown in the viewer's language
+    renamed = await client.patch(
+        f"/v1/routines/{routine['id']}", json={"name": "Shaam ki list"}, headers=t["headers"]
+    )
+    assert renamed.json()["name_is_default"] is False
     assert routine["next_run_at"] is not None
 
     off = await client.patch(

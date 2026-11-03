@@ -89,7 +89,7 @@ async def notify_owner(
         session,
         business_id,
         kind,
-        detail=f"{title}\n{body}" if title else body,
+        detail=f"{title} · {body}" if title else body,  # one line: title · what happened
         link=link,
         dedupe_key=f"{title}:{body}"[:150],
     )

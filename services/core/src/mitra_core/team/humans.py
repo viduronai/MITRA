@@ -63,17 +63,24 @@ def callback_promise(now: datetime, tz: str) -> tuple[datetime, str, str]:
     return target.astimezone(now.tzinfo), target.strftime("%H:%M"), day
 
 
-async def ladder(session: AsyncSession, business_id: uuid.UUID) -> list[Step]:
-    """Staff on the ladder by position, then the owner (staff row, else the owner login)."""
-    rows = list(
-        await session.scalars(
-            select(StaffMember)
-            .where(StaffMember.business_id == business_id, StaffMember.active.is_(True))
-            .where(StaffMember.ladder_position.is_not(None) | StaffMember.is_owner.is_(True))
-            .order_by(StaffMember.is_owner, StaffMember.ladder_position.nulls_last())
-        )
+def ring_sequence(staff: list[StaffMember]) -> list[StaffMember]:
+    """Who is rung, in order: active staff by transfer position (ties: who was added first),
+    then owners (by position, then added first). Staff with no position and not the owner only
+    get briefs. The app shows this same order, so what the owner sees is what rings.
+    """
+    on_ladder = [s for s in staff if s.active and (s.ladder_position is not None or s.is_owner)]
+    return sorted(
+        on_ladder,
+        key=lambda s: (s.is_owner, s.ladder_position or 99, s.created_at, str(s.id)),
     )
-    steps = [Step(s.name, s.phone_e164, s.ring_timeout_s, s.is_owner) for s in rows]
+
+
+async def ladder(session: AsyncSession, business_id: uuid.UUID) -> list[Step]:
+    """Staff on the ladder in ring order, then the owner (staff row, else the owner login)."""
+    rows = list(
+        await session.scalars(select(StaffMember).where(StaffMember.business_id == business_id))
+    )
+    steps = [Step(s.name, s.phone_e164, s.ring_timeout_s, s.is_owner) for s in ring_sequence(rows)]
     if not any(s.is_owner for s in steps):
         owner = await session.scalar(
             select(AppUser)

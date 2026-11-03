@@ -116,6 +116,40 @@ T: dict[str, dict[str, str]] = {
         "hi": "आपने अभी तक कोई AI कर्मचारी नहीं रखा है।",
         "te": "మీరు ఇంకా AI ఉద్యోగిని నియమించలేదు.",
     },
+    "paid_head": {
+        "en": "{period}: {count} paid, {amount} in total",
+        "hi": "{period}: {count} लोगों ने pay किया, कुल {amount}",
+        "te": "{period}: {count} మంది కట్టారు, మొత్తం {amount}",
+    },
+    "paid_none": {
+        "en": "{period}: no payments received yet.",
+        "hi": "{period}: अभी तक कोई payment नहीं आया।",
+        "te": "{period}: ఇంకా ఏ payment రాలేదు.",
+    },
+    "pending_head": {
+        "en": "{count} payments pending, {amount} in total:",
+        "hi": "{count} payment बाकी हैं, कुल {amount}:",
+        "te": "{count} payments బాకీ ఉన్నాయి, మొత్తం {amount}:",
+    },
+    "pending_none": {
+        "en": "No payments pending.",
+        "hi": "कोई payment बाकी नहीं है।",
+        "te": "ఏ payment బాకీ లేదు.",
+    },
+    "says_paid": {"en": "says paid", "hi": "कहते हैं pay किया", "te": "కట్టామంటున్నారు"},
+    "collected": {
+        "en": "{period}: {amount} collected from {count} payments.",
+        "hi": "{period}: {count} payments से {amount} आए।",
+        "te": "{period}: {count} payments నుంచి {amount} వచ్చాయి.",
+    },
+    "unknown": {
+        "en": "I'm not sure what you mean. Try asking: “What happened this week?”, "
+        "“Who paid today?” or “What needs my attention today?”.",
+        "hi": "मैं समझ नहीं पाया। ऐसे पूछिए: “इस हफ्ते क्या हुआ?”, “आज किसने pay किया?” या "
+        "“आज मुझे किस पर ध्यान देना है?”।",
+        "te": "నాకు సరిగ్గా అర్థం కాలేదు. ఇలా అడగండి: “ఈ వారం ఏమైంది?”, “ఈ రోజు ఎవరు కట్టారు?” "
+        "లేదా “ఈ రోజు నేను ఏం చూడాలి?”.",
+    },
     "help": {
         "en": "Ask me: “What happened this week?”, “What needs my attention today?”, "
         "“Who called about MRI?”. Or tell me: “Pause Priya”, “Call Ramesh back at 5”.",

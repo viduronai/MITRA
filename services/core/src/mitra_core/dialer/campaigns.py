@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.approvals import register_handler
 from mitra_core.clock import utcnow
+from mitra_core.dialer import consent as list_consent
 from mitra_core.dialer import hooks
 from mitra_core.dialer.csvimport import ParsedList
 from mitra_core.dialer.enums import CampaignStatus, ContactStatus, JobStatus, ResultBucket
@@ -101,6 +102,10 @@ async def add_contacts(
 async def _queue_pending(session: AsyncSession, campaign: Campaign, now: datetime) -> int:
     if campaign.employee_id is None:
         raise CampaignError("employee_required", "Choose which employee makes these calls")
+    if not list_consent.is_attested(campaign):
+        raise CampaignError(
+            "consent_required", "Confirm that the people on this list agreed to be contacted"
+        )
     contacts = list(
         await session.scalars(
             select(CampaignContact)
@@ -128,6 +133,7 @@ async def _queue_pending(session: AsyncSession, campaign: Campaign, now: datetim
             retry_ladder=list(campaign.retry_ladder),
         )
         c.status = ContactStatus.QUEUED
+    list_consent.record_consents(session, campaign, contacts, now)
     return len(contacts)
 
 
@@ -157,6 +163,10 @@ async def start(
     count = await contact_count(session, campaign.id)
     if count == 0:
         raise CampaignError("empty", "Add at least one person to call")
+    if not list_consent.is_attested(campaign):
+        raise CampaignError(
+            "consent_required", "Confirm that the people on this list agreed to be contacted"
+        )
     if campaign.approval_id is None and await hooks.needs_list_approval(
         session, campaign.business_id, count
     ):
@@ -261,6 +271,7 @@ async def cancel(session: AsyncSession, campaign: Campaign, now: datetime) -> Ca
         session, campaign.business_id, campaign_id=campaign.id, reason="campaign_cancelled"
     )
     campaign.status, campaign.completed_at = CampaignStatus.CANCELLED, now
+    await list_consent.expire(session, campaign, now)
     return campaign
 
 
@@ -284,6 +295,8 @@ class Progress:
     skipped: int
     remaining: int  # pending + queued
     dialing: int
+    called: int  # people actually dialled at least once (a blocked person was never dialled)
+    blocked: int
     buckets: dict[str, int]
     reasons: dict[str, int]
     eta_minutes: int | None
@@ -319,14 +332,21 @@ async def progress(session: AsyncSession, campaign: Campaign, channels: int) -> 
             OutboundJob.campaign_id == campaign.id, OutboundJob.status == JobStatus.DIALING
         )
     )
-    eta = None
-    if remaining and campaign.status != CampaignStatus.CANCELLED:
+    called = await session.scalar(
+        select(func.count()).where(
+            CampaignContact.campaign_id == campaign.id, CampaignContact.attempts > 0
+        )
+    )
+    eta = None  # only while calls can go out: frozen (hidden) when paused or waiting
+    if remaining and campaign.status in (CampaignStatus.RUNNING, CampaignStatus.DRAFT):
         eta = math.ceil(remaining * campaign.avg_call_seconds / max(channels, 1) / 60)
     return Progress(
         total=total,
         skipped=skipped,
         remaining=remaining,
         dialing=int(dialing or 0),
+        called=int(called or 0),
+        blocked=buckets[ResultBucket.BLOCKED.value],
         buckets=buckets,
         reasons={str(code): int(n) for code, n in reason_rows},
         eta_minutes=eta,

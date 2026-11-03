@@ -100,16 +100,18 @@ async def send_whatsapp(
 
     try:
         # Free text inside WhatsApp's 24-hour window, else the approved template for the kind.
-        msg = await send_team_message(
-            session,
-            business_id,
-            to_phone=to_e164,
-            text=text,
-            kind=kind,
-            task=task,
-            ref_id=ref_id,
-            name=name,
-        )
+        # A savepoint: a failed send never poisons the caller's transaction.
+        async with session.begin_nested():
+            msg = await send_team_message(
+                session,
+                business_id,
+                to_phone=to_e164,
+                text=text,
+                kind=kind,
+                task=task,
+                ref_id=ref_id,
+                name=name,
+            )
     except Exception as exc:
         log.warning("team.whatsapp_failed", kind=kind, error=type(exc).__name__)
         return None
@@ -143,9 +145,10 @@ async def notify_owner(
 
     recipients = len(await owner_recipients(session, business_id))
     try:
-        sent = await wa_notify_owner(
-            session, business_id, kind, text, ref=ref, dedupe_key=dedupe_key
-        )
+        async with session.begin_nested():
+            sent = await wa_notify_owner(
+                session, business_id, kind, text, ref=ref, dedupe_key=dedupe_key
+            )
     except Exception as exc:
         log.warning("team.notify_owner_failed", kind=kind, error=type(exc).__name__)
         return OwnerNotice(recipients=recipients, message_ids=[])
@@ -168,15 +171,16 @@ async def request_approval(
     from mitra_core.approvals import request_approval as ask
 
     try:
-        approval = await ask(
-            session,
-            business_id,
-            kind=subject,
-            summary=summary[:500],
-            payload=payload,
-            requested_by="routine",
-            default_action="decline",
-        )
+        async with session.begin_nested():
+            approval = await ask(
+                session,
+                business_id,
+                kind=subject,
+                summary=summary[:500],
+                payload=payload,
+                requested_by="routine",
+                default_action="decline",
+            )
     except Exception as exc:
         log.warning("team.approval_failed", error=type(exc).__name__)
         return None
@@ -188,6 +192,7 @@ async def withdraw_approval(session: AsyncSession, business_id: uuid.UUID, ref: 
     from mitra_core.approvals import cancel
 
     try:
-        await cancel(session, business_id, uuid.UUID(ref), reason="decided in the app")
+        async with session.begin_nested():
+            await cancel(session, business_id, uuid.UUID(ref), reason="decided in the app")
     except Exception as exc:
         log.warning("team.approval_withdraw_failed", error=type(exc).__name__)

@@ -300,7 +300,7 @@ async def test_alerts_for_call_dedupes(
     alerts = [m for m in await wa_messages(admin_engine, biz["id"]) if m["purpose"] == "alert"]
     assert len(alerts) == 1
     assert alerts[0]["body"] == (
-        "Alert: Hot lead at Sunrise Clinic. Hot lead: Ravi is interested Open Mitra for details."
+        "Alert: Hot lead at Sunrise Clinic. Hot lead: Ravi is interested. Open Mitra for details."
     )
 
 

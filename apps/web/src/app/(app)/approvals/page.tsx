@@ -48,6 +48,11 @@ export default async function ApprovalsPage() {
   const [pending, decided, rules] = data;
   // Kinds/events come from other modules too: unknown ones show their raw name.
   const label = (key: string, fallback: string) => (t.has(key as never) ? t(key as never) : fallback);
+  // Server-built summaries render in the viewer's language; the stored English is the fallback.
+  const summaryOf = (a: Approval) =>
+    a.summary_key && t.has(`summaries.${a.summary_key}` as never)
+      ? t(`summaries.${a.summary_key}` as never, a.summary_params as never)
+      : a.summary;
   const when = (iso: string) => `${formatLongDate(new Date(iso), locale)} · ${formatTime(new Date(iso), locale)}`;
 
   const row = (a: Approval) => (
@@ -57,7 +62,7 @@ export default async function ApprovalsPage() {
         className="group focus-ring flex min-h-[72px] items-center gap-4 px-4 py-3 transition-colors motion-fast hover:bg-surface-2 md:px-5"
       >
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="leading-6 font-medium">{a.summary}</span>
+          <span className="leading-6 font-medium">{summaryOf(a)}</span>
           <span className="text-[13px] leading-5 text-text-muted">
             {label(`kinds.${a.kind}`, a.kind)} · {when(a.created_at)}
             {a.status === "pending" && a.expires_at && ` · ${t("expires", { time: formatTime(new Date(a.expires_at), locale) })}`}

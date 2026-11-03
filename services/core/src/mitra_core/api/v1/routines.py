@@ -64,10 +64,12 @@ async def _employee(session: AsyncSession, tenant: Tenant, employee_id: uuid.UUI
 async def _out(session: AsyncSession, tenant: Tenant, routine: Routine) -> RoutineOut:
     spec = RoutineSpec.model_validate(routine.spec)
     employee = await session.get(Employee, spec.action.employee_id)
+    stock = LIBRARY_BY_ID.get(routine.library_id or "")
     return RoutineOut(
         id=routine.id,
         name=routine.name,
         library_id=routine.library_id,
+        name_is_default=stock is not None and routine.name == stock.name,
         spec=routine.spec,
         sentence=sentence(spec, employee.name if employee else "Your employee"),
         enabled=routine.enabled,

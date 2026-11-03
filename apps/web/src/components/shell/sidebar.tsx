@@ -16,11 +16,15 @@ export function Sidebar() {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  // Only the most specific match is highlighted (e.g. Connect, not also More, on /more/connect).
+  const activeHref = [...primaryNav, ...upcomingNav]
+    .filter((item) => (item.ready ?? true) && isActive(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   function renderItem(item: NavItem, disabled: boolean) {
     const Icon = item.icon;
     const label = t(item.key);
-    const active = !disabled && isActive(pathname, item.href);
+    const active = !disabled && item.href === activeHref;
     const classes = cn(
       "flex h-11 items-center gap-3 rounded-lg px-3 text-[15px] font-medium transition-colors motion-fast",
       collapsed && "justify-center px-0",

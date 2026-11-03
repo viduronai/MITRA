@@ -5,6 +5,7 @@ import { RunHistory } from "@/components/routines/run-history";
 import { PageHeader } from "@/components/shell/page-header";
 import { requireSession } from "@/lib/session";
 import { routinesApi } from "@/lib/team/api";
+import { routineName } from "@/lib/team/i18n";
 import { ID_RE } from "@/lib/team/run";
 
 export async function generateMetadata() {
@@ -26,7 +27,7 @@ export default async function RoutineHistoryPage({ params }: PageProps<"/routine
       <Link href="/routines" className="mb-3 inline-block text-sm text-text-muted hover:underline">
         ← {t("title")}
       </Link>
-      <PageHeader title={routine.name} subtitle={t("historyTitle")} />
+      <PageHeader title={routineName(t, routine)} subtitle={t("historyTitle")} />
       <RunHistory runs={runs} />
     </>
   );

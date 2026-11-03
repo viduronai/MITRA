@@ -1,4 +1,4 @@
-import { ArrowLeft, Clock3, PauseCircle, ShieldAlert, Users } from "lucide-react";
+import { ArrowLeft, Clock3, PauseCircle, ShieldAlert, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -17,6 +17,13 @@ import { formatLongDate, formatNumber, formatTime } from "@/lib/format";
 type Search = Record<string, string | string[] | undefined>;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE = 50;
+// Where the owner fixes what paused a campaign.
+const PAUSE_LINKS: Record<string, { href: string; label: "connect" | "billing" }> = {
+  number: { href: "/more/connect", label: "connect" },
+  carrier_rejected: { href: "/more/connect", label: "connect" },
+  spam_flagged: { href: "/more/connect", label: "connect" },
+  wallet: { href: "/more/billing", label: "billing" },
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations("campaigns");
@@ -49,10 +56,16 @@ export default async function CampaignPage({
   const rawBucket = first(search.bucket);
   const bucket = BUCKETS.includes(rawBucket as Bucket) ? (rawBucket as Bucket) : undefined;
   const page = Math.max(0, Math.min(1000, Number.parseInt(first(search.page) ?? "0", 10) || 0));
+  const language = locale === "hi" || locale === "te" ? locale : "en";
   const [campaign, contacts] = await Promise.all([
     load(() => campaignsApi.get(token, id)),
     load(() => campaignsApi.contacts(token, id, bucket, page * PAGE)),
   ]);
+  const consentText = campaign
+    ? await load(() =>
+        campaignsApi.consentText(token, campaign.purpose === "promotional" ? "promotional" : "service", language),
+      )
+    : null;
   if (!campaign) {
     return <EmptyState icon={Users} title={t("unavailableTitle")} description={t("unavailable")} />;
   }
@@ -79,12 +92,25 @@ export default async function CampaignPage({
         actions={<CampaignStatusPill status={campaign.status} />}
       />
 
-      <CampaignControls campaign={campaign} canManage={canManage} />
+      <CampaignControls
+        campaign={campaign}
+        canManage={canManage}
+        consentText={consentText?.text ?? ""}
+        language={language}
+      />
 
       {campaign.status === "paused" && campaign.pause_reason && (
         <p role="status" className="mt-4 flex items-start gap-2 rounded-lg bg-warning/14 px-4 py-3 text-sm leading-5 text-warning-fg">
           <PauseCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {known(`pauseReasons.${campaign.pause_reason}`, campaign.pause_reason)}
+          <span className="flex-1">{known(`pauseReasons.${campaign.pause_reason}`, campaign.pause_reason)}</span>
+          {PAUSE_LINKS[campaign.pause_reason] && (
+            <Link
+              href={PAUSE_LINKS[campaign.pause_reason].href}
+              className="shrink-0 font-medium underline underline-offset-4"
+            >
+              {t(`detail.pauseLinks.${PAUSE_LINKS[campaign.pause_reason].label}`)}
+            </Link>
+          )}
         </p>
       )}
       {campaign.status === "pending_approval" && (
@@ -100,14 +126,30 @@ export default async function CampaignPage({
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile label={t("detail.total")} value={formatNumber(p.total - p.skipped, locale)} />
-        <StatTile label={t("detail.doneCount")} value={formatNumber(p.done, locale)} />
+        {/* Called = really dialled; people stopped by compliance count as blocked, not called. */}
+        <StatTile label={t("detail.doneCount")} value={formatNumber(p.called, locale)} />
+        <StatTile label={t("detail.blocked")} value={formatNumber(p.blocked, locale)} href={hrefFor("blocked")} />
         <StatTile label={t("detail.remaining")} value={formatNumber(p.remaining, locale)} />
-        <StatTile
-          label={t("detail.etaLabel")}
-          value={p.eta_minutes === null ? "—" : t("detail.minutes", { minutes: p.eta_minutes })}
-          trend={{ direction: "flat", label: t("detail.etaHint", { channels: p.channels, dialing: p.dialing }) }}
-        />
       </div>
+      {p.remaining > 0 && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm leading-5 text-text-muted">
+          <Clock3 className="size-4 shrink-0" aria-hidden />
+          {campaign.status === "paused"
+            ? t("detail.etaPaused")
+            : p.eta_minutes !== null
+              ? t("detail.etaLine", { minutes: p.eta_minutes, channels: p.channels, dialing: p.dialing })
+              : null}
+        </p>
+      )}
+      {campaign.consent && (
+        <p className="mt-2 flex items-start gap-1.5 text-[13px] leading-5 text-text-muted">
+          <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          {t("detail.consentBy", {
+            name: campaign.consent.by_name ?? "—",
+            date: formatLongDate(new Date(campaign.consent.at), locale),
+          })}
+        </p>
+      )}
 
       <section className="mt-6 rounded-xl border bg-card p-4 shadow-xs md:p-5">
         <h2 className="mb-4 text-lg leading-[26px] font-semibold">{t("detail.results")}</h2>

@@ -9,8 +9,9 @@ from typing import Annotated, Self
 from pydantic import BaseModel, Field, model_validator
 
 from mitra_core.dialer.enums import CampaignStatus, ContactStatus, ResultBucket
+from mitra_core.models.enums import Locale
 from mitra_core.schemas.common import E164Phone, RequestModel
-from mitra_core.telephony.enums import AttemptOutcome, CallPurpose
+from mitra_core.telephony.enums import AttemptOutcome, CallPurpose, ConsentScope
 
 ListText = Annotated[str, Field(min_length=1, max_length=2_000_000)]
 Ladder = Annotated[list[Annotated[int, Field(ge=5, le=7 * 24 * 60)]], Field(max_length=6)]
@@ -59,6 +60,36 @@ class CampaignIn(ListIn):
     holidays: Holidays = Field(default_factory=list)
     retry_ladder: Ladder = Field(default_factory=lambda: [30, 120, 1440])
     ends_on: date | None = None
+    # The owner's list attestation (docs/08 section 8.5); without it the campaign cannot start.
+    consent_attested: bool = False
+    consent_language: Locale | None = None
+
+
+class ConsentIn(RequestModel):
+    """Start / add people: the owner's tick, in their language (exact words are stored)."""
+
+    consent_attested: bool = False
+    consent_language: Locale | None = None
+
+
+class ExtendIn(ListIn):
+    consent_attested: bool = False
+    consent_language: Locale | None = None
+
+
+class ConsentOut(BaseModel):
+    scope: ConsentScope
+    text: str
+    text_version: str
+    by_name: str | None
+    at: datetime
+
+
+class ConsentTextOut(BaseModel):
+    """The words the owner will tick for a list of this purpose, in their language."""
+
+    text: str
+    version: str
 
 
 class CampaignPatch(RequestModel):
@@ -79,6 +110,8 @@ class CampaignPatch(RequestModel):
 
 class Progress(BaseModel):
     total: int
+    called: int  # dialled at least once
+    blocked: int  # stopped by compliance before any call
     skipped: int
     remaining: int
     dialing: int
@@ -107,6 +140,7 @@ class CampaignOut(BaseModel):
     ends_on: date | None
     avg_call_seconds: int
     approval_id: uuid.UUID | None
+    consent: ConsentOut | None
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None

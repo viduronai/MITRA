@@ -48,7 +48,9 @@ The message may be Telugu, Hindi, English or a mix. Reply with ONLY a JSON objec
 summary = how did calls go; attention = what needs the owner; bookings = appointments/visits;
 search = who called about a topic; customer = details of one customer; pause/resume an
 employee; callback = call one customer back; call_list = call many people; coach = change how
-an employee behaves ("next time offer Saturday first"). Never answer the question yourself."""
+an employee behaves ("next time offer Saturday first"); payments = who paid / what is pending /
+how much was collected (text = "paid" | "pending" | "collected"); unknown = none of these.
+Never answer the question yourself."""
 
 
 class LlmPlanner:

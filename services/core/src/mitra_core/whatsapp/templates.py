@@ -278,6 +278,10 @@ ALERT_TITLES: dict[str, dict[Lang, str]] = {
 
 _PARAM = re.compile(r"\{\{(\w+)\}\}")
 _WS = re.compile(r"\s+")
+_LINES = re.compile(r"[\r\n\v\f\u2028\u2029]+")
+_ENDS = frozenset(".!?।:;…·,")
+# Parameters followed by a new sentence in every body: they must end like a sentence.
+SENTENCE_PARAMS = frozenset({"detail", "summary", "brief"})
 
 
 class TemplateError(ValueError):
@@ -296,8 +300,23 @@ def body_params(body: str) -> list[str]:
 
 
 def flatten(value: object, limit: int = DEFAULT_MAX) -> str:
-    """One line: no line breaks, tabs or runs of spaces; trimmed to ``limit`` characters."""
-    text = _WS.sub(" ", str(value)).strip()
+    """One line: no line breaks, tabs or runs of spaces; trimmed to ``limit`` characters.
+
+        Former lines stay separate sentences: joined with ". " unless the line already ends with
+        punctuation ("Paused
+    No calling number" -> "Paused. No calling number").
+    """
+    text = ""
+    for line in _LINES.split(str(value)):
+        part = _WS.sub(" ", line).strip()
+        if not part:
+            continue
+        if not text:
+            text = part
+        elif text[-1] in _ENDS:
+            text += " " + part
+        else:
+            text += ". " + part
     if len(text) > limit:
         text = text[: limit - 1].rstrip() + "…"
     return text
@@ -330,6 +349,8 @@ def prepare(name: str, lang: Lang, params: dict[str, object]) -> dict[str, str]:
         value = flatten(params[p], MAX_LEN.get(p, DEFAULT_MAX))
         if p == "name":
             value = name_value(value, lang)
+        elif p in SENTENCE_PARAMS and value and value[-1] not in _ENDS:
+            value += "."
         if not value:
             raise TemplateError(f"template {name!r}: {p} is empty")
         out[p] = value

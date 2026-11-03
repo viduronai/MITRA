@@ -71,7 +71,8 @@ export default async function CampaignsPage() {
                     <span className="block h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
                   </span>
                   <span className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] leading-5 text-text-muted">
-                    <span>{t("progress", { done: formatNumber(p.done, locale), total: formatNumber(callable, locale) })}</span>
+                    <span>{t("progress", { done: formatNumber(p.called, locale), total: formatNumber(callable, locale) })}</span>
+                    {p.blocked > 0 && <span>{t("blocked", { count: p.blocked })}</span>}
                     <span>{t("interested", { count: p.buckets.interested })}</span>
                     {c.status === "running" && p.eta_minutes !== null && <span>{t("eta", { minutes: p.eta_minutes })}</span>}
                   </span>
