@@ -77,6 +77,16 @@ LIBRARY: tuple[LibraryRoutine, ...] = (
         "collect_payment",
     ),
     LibraryRoutine(
+        "payment_reminder",
+        "Payment reminder",
+        _ALL,
+        ("payment_caller", "reminder_caller", "receptionist"),
+        # Payments has already sent a WhatsApp reminder with the link; one polite call a day
+        # later, inside calling hours and the usual frequency caps (dialer compliance).
+        {"type": "event", "event": "payment.overdue", "delay_minutes": 24 * 60},
+        "collect_payment",
+    ),
+    LibraryRoutine(
         "booking_thanks",
         "Thank-you message after a booking",
         _ALL,

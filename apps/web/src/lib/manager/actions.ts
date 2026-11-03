@@ -14,7 +14,7 @@ export type ManagerResult<T = null> = { ok: true; data: T } | { ok: false; error
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const LOCALES = ["en", "hi", "te"] as const;
-const RULE_KINDS = ["discount", "refund", "cancellation", "big_booking", "list_call"] as const;
+const RULE_KINDS = ["discount", "refund", "cancellation", "big_booking", "list_call", "payment_link"] as const;
 
 function fail(error: unknown): { ok: false; error: ManagerErrorKey } {
   if (error instanceof ApiError) {

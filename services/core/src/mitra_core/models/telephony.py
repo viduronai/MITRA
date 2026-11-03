@@ -55,6 +55,14 @@ class PhoneNumber(UUIDPrimaryKey, Timestamps, Base):
     """A business number (NUM-01/03/05/09) and its trust + health state (section 3.7 card)."""
 
     __tablename__ = "phone_number"
+    __table_args__ = (
+        Index(
+            "uq_phone_number_missed_call",
+            "business_id",
+            unique=True,
+            postgresql_where=text("missed_call"),
+        ),
+    )
 
     business_id: Mapped[uuid.UUID] = _business_fk()
     # Inbound calls to this number are answered by this employee (number -> employee routing).
@@ -88,6 +96,8 @@ class PhoneNumber(UUIDPrimaryKey, Timestamps, Base):
     health_since: Mapped[datetime | None]
     outbound_enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
     forwarding_tested_at: Mapped[datetime | None]
+    # CALL-20: calls to this number are rejected unanswered and called back (one per business).
+    missed_call: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
 
 
 class ConsentRecord(UUIDPrimaryKey, Base):
@@ -105,6 +115,12 @@ class ConsentRecord(UUIDPrimaryKey, Base):
     note: Mapped[str | None] = mapped_column(String(200))
     captured_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
     revoked_at: Mapped[datetime | None]
+    # Lead consent policy (0006): e.g. "enquiry_response"; the exact words agreed to and their
+    # version; portal enquiries expire (load_facts ignores expired rows).
+    purpose: Mapped[str | None] = mapped_column(String(40))
+    text_version: Mapped[str | None] = mapped_column(String(20))
+    consent_text: Mapped[str | None] = mapped_column(Text)
+    expires_at: Mapped[datetime | None]
 
 
 class OptOut(UUIDPrimaryKey, Base):

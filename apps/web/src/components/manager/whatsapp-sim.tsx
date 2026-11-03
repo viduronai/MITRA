@@ -44,21 +44,39 @@ export function WhatsAppSim({ messages }: { messages: WaMessage[] }) {
               <span className="mb-0.5 block text-[11px] text-text-subtle">
                 {t.has(`purpose.${m.purpose}` as never) ? t(`purpose.${m.purpose}` as never) : m.purpose} · …{m.phone_last4}
                 {m.kind === "voice" && ` · ${t("voiceNote")}`}
+                {m.template && ` · ${t("template")}`}
               </span>
               {m.body}
+              {m.status === "blocked" && (
+                <span className="mt-1 block text-[12px] font-medium text-danger-fg">{t("blocked")}</span>
+              )}
               {m.buttons.length > 0 && (
                 <div className="mt-2 flex flex-col gap-1 border-t pt-2">
-                  {m.buttons.map((b) => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      disabled={pending || !m.provider_message_id}
-                      onClick={() => reply({ kind: "button_reply", button_id: b.id, context_id: m.provider_message_id ?? "" })}
-                      className="focus-ring rounded-md py-1 text-[14px] font-medium text-info-fg hover:bg-surface-2"
-                    >
-                      {b.title}
-                    </button>
-                  ))}
+                  {m.buttons.map((b) =>
+                    b.url ? (
+                      <a
+                        key={b.url}
+                        href={b.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="focus-ring rounded-md py-1 text-center text-[14px] font-medium text-info-fg hover:bg-surface-2"
+                      >
+                        {b.title} ↗
+                      </a>
+                    ) : (
+                      <button
+                        key={b.id}
+                        type="button"
+                        disabled={pending || !m.provider_message_id || !b.id}
+                        onClick={() =>
+                          reply({ kind: "button_reply", button_id: b.id ?? "", context_id: m.provider_message_id ?? "" })
+                        }
+                        className="focus-ring rounded-md py-1 text-[14px] font-medium text-info-fg hover:bg-surface-2"
+                      >
+                        {b.title}
+                      </button>
+                    ),
+                  )}
                 </div>
               )}
             </div>

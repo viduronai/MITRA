@@ -96,6 +96,21 @@ T: dict[str, dict[str, str]] = {
         "te": "{period}: అన్ని ప్రశ్నలకు జవాబు ఇచ్చాం.",
     },
     "team_line": {"en": "{name}: {status}", "hi": "{name}: {status}", "te": "{name}: {status}"},
+    "confirm_payment_link": {
+        "en": "Send {name} a payment link for {amount} ({purpose}) on WhatsApp. Confirm?",
+        "hi": "{name} को {amount} ({purpose}) का पेमेंट लिंक WhatsApp पर भेजें। पक्का करें?",
+        "te": "{name}కి {amount} ({purpose}) పేమెంట్ లింక్ WhatsAppలో పంపాలా? నిర్ధారించండి.",
+    },
+    "payment_amount_missing": {
+        "en": "How much? Say it like “Send Ramesh a payment link for ₹2,000”.",
+        "hi": "कितने का? ऐसे कहिए: “Send Ramesh a payment link for ₹2,000”।",
+        "te": "ఎంత? ఇలా చెప్పండి: “Send Ramesh a payment link for ₹2,000”.",
+    },
+    "payments_not_set_up": {
+        "en": "Set up payment collection first (app → Payments → How you collect).",
+        "hi": "पहले पेमेंट लेना सेट करें (ऐप → Payments → How you collect)।",
+        "te": "ముందు పేమెంట్ సేకరణ సెట్ చేయండి (యాప్ → Payments → How you collect).",
+    },
     "team_none": {
         "en": "You have not hired an AI employee yet.",
         "hi": "आपने अभी तक कोई AI कर्मचारी नहीं रखा है।",

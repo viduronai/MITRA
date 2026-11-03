@@ -250,10 +250,11 @@ async def test_daily_report_once_per_day_after_time(
     assert (await tick(later + timedelta(hours=1))).reports == 0
     msgs = [m for m in await wa_messages(admin_engine, biz["id"]) if m["purpose"] == "report"]
     assert len(msgs) == 1
-    lines = msgs[0]["body"].splitlines()
-    assert lines[0] == "☀️ Sunrise Clinic · Sun 18 Oct"
-    assert lines[1] == "Yesterday: 1 calls"
-    assert len(lines) <= 6
+    # The owner has not written in 24 hours: the approved daily_report template goes out.
+    assert msgs[0]["kind"] == "template"
+    assert msgs[0]["body"].startswith(
+        "Good morning! Yesterday at Sunrise Clinic: 1 calls, 0 booked"
+    )
 
 
 async def test_tick_expires_overdue_approvals(client: httpx.AsyncClient) -> None:
@@ -298,7 +299,9 @@ async def test_alerts_for_call_dedupes(
             await session.commit()
     alerts = [m for m in await wa_messages(admin_engine, biz["id"]) if m["purpose"] == "alert"]
     assert len(alerts) == 1
-    assert alerts[0]["body"].startswith("🔥 Hot lead\nHot lead: Ravi is interested")
+    assert alerts[0]["body"] == (
+        "Alert: Hot lead at Sunrise Clinic. Hot lead: Ravi is interested Open Mitra for details."
+    )
 
 
 async def test_whatsapp_conversation_and_confirm_button(

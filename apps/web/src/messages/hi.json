@@ -21,7 +21,8 @@
     "brand": "Mitra होम",
     "ask": "Mitra से पूछें",
     "campaigns": "कैंपेन",
-    "live": "लाइव कॉल"
+    "live": "लाइव कॉल",
+    "payments": "पेमेंट"
   },
   "header": {
     "isWorking": "{name} काम कर रही है",
@@ -199,7 +200,9 @@
     "whatsapp": "WhatsApp प्रीव्यू",
     "whatsappHint": "Mitra के भेजे संदेश देखें (टेस्ट मोड)",
     "campaigns": "कैंपेन",
-    "campaignsHint": "लोगों की लिस्ट को कॉल करें"
+    "campaignsHint": "लोगों की लिस्ट को कॉल करें",
+    "payments": "पेमेंट",
+    "paymentsHint": "पेमेंट लिंक, क्या आया, पैसे कैसे लें"
   },
   "connect": {
     "network": "आपका network",
@@ -727,7 +730,14 @@
     "forgotten": "{customer} को भुला दिया गया।",
     "error": "सेव नहीं हो पाया। फिर से कोशिश करें।",
     "memoryLabel": "याद की बात",
-    "forgottenDone": "ग्राहक को भुला दिया गया। उनकी कॉल और याद मिटा दी गई।"
+    "forgottenDone": "ग्राहक को भुला दिया गया। उनकी कॉल और याद मिटा दी गई।",
+    "showNumber": "नंबर दिखाएँ",
+    "hideNumber": "छिपाएँ",
+    "revealErrors": {
+      "forbidden": "पूरा नंबर सिर्फ़ मालिक या मैनेजर देख सकते हैं।",
+      "none": "इस ग्राहक का कोई नंबर नहीं है।",
+      "generic": "नंबर नहीं दिखा पाए। फिर कोशिश करें।"
+    }
   },
   "leads": {
     "title": "मेरी leads connect करें",
@@ -780,7 +790,7 @@
       "meta": "अपना Facebook Page ID ढूँढें (आपका Page → About → Page transparency) और यहाँ paste करें। फिर ad forms की leads अपने आप आएँगी।",
       "website_form": "यह code अपनी website पर वहाँ paste करें जहाँ form दिखाना है। इसमें consent box है, जो क़ानून के लिए ज़रूरी है। पहले यह source चालू करें।",
       "google_sheets": "अपनी Google Sheet → Extensions → Apps Script खोलें। यह paste करके save करें, फिर \"sendNewRowsToMitra\" को हर मिनट चलाने वाला trigger जोड़ें।",
-      "google_forms": "अपना Google Form → ⋮ → Apps Script खोलें। यह paste करके save करें, फिर \"On form submit\" trigger जोड़ें। एक सवाल का नाम \"Phone\" रखें।",
+      "google_forms": "अपना Google Form खोलें। एक ज़रूरी \"Checkboxes\" सवाल जोड़ें जिसका अकेला option नीचे वाली consent line हो। फिर ⋮ → Apps Script: यह paste करके save करें, और \"On form submit\" trigger जोड़ें। एक सवाल का नाम \"Phone\" रखें।",
       "google_ads": "Google Ads में अपना lead form → Lead delivery → Webhook खोलें। यह address paste करें, और \"Key\" में अपनी secret key डालें।",
       "indiamart": "IndiaMART से कहें कि leads इस address पर push करे, या नीचे अपनी IndiaMART CRM key डालें, Mitra हर कुछ मिनट में नई enquiries ले आएगा।",
       "justdial": "यह address अपने JustDial account manager को भेजें और leads इस पर push करने को कहें।",
@@ -809,7 +819,8 @@
       "blocked": "Call नहीं हुआ: {reason}",
       "no_consent": "Call नहीं हुआ: consent नहीं",
       "no_employee": "Call नहीं हुआ: कोई AI employee free नहीं",
-      "failed": "Call शुरू नहीं हो पाया"
+      "failed": "Call शुरू नहीं हो पाया",
+      "no_attestation": "Call नहीं हुआ: consent confirm नहीं"
     },
     "recentTitle": "नई enquiries",
     "recentEmpty": "Enquiries आते ही यहाँ दिखेंगी।",
@@ -821,6 +832,14 @@
       "invalid": "आपने जो डाला है उसे जाँचकर फिर कोशिश करें।",
       "forbidden": "इसे सिर्फ़ owner या manager बदल सकते हैं।",
       "conflict": "यह पहले से किसी दूसरे Mitra business से जुड़ा है।"
+    },
+    "consent": {
+      "needsAttestation": "यहाँ की leads save होती हैं, पर नीचे confirm करने तक call नहीं होगा।",
+      "attestHint": "सिर्फ़ तभी tick करें जब यहाँ से आए हर व्यक्ति ने संपर्क करने को कहा हो। किसने और कब tick किया, यह log होता है।",
+      "attestedBy": "{name} ने {time} को confirm किया। यहाँ की नई leads को call रोकने के लिए untick करें।",
+      "portalRule": "यहाँ से आई enquiry पर Mitra सिर्फ़ उसी enquiry के बारे में 30 दिन तक call या WhatsApp कर सकता है। Offers के लिए कभी नहीं।",
+      "portalTip": "सुझाव: वहाँ अपने form में यह consent line जोड़ें",
+      "formRule": "Code में एक खाली consent box है जिसे लोगों को tick करना होता है। Tick के बिना हम call या message नहीं करते।"
     }
   },
   "webhooks": {
@@ -833,7 +852,9 @@
     "eventNames": {
       "call.ended": "Call ख़त्म होने पर",
       "lead.created": "नई lead आने पर",
-      "campaign.finished": "Call list पूरी होने पर"
+      "campaign.finished": "Call list पूरी होने पर",
+      "payment.paid": "ग्राहक ने पेमेंट लिंक से भुगतान किया",
+      "payment.failed": "ग्राहक का पेमेंट फेल हुआ"
     },
     "name": "नाम (optional)",
     "headers": "Extra headers (optional)",
@@ -930,14 +951,16 @@
         "refund": "रिफ़ंड का वादा हो",
         "cancellation": "बुकिंग कैंसल हो",
         "big_booking": "बड़ी बुकिंग हो",
-        "list_call": "लोगों की लिस्ट को कॉल हो"
+        "list_call": "लोगों की लिस्ट को कॉल हो",
+        "payment_link": "आपका AI कर्मचारी पेमेंट लिंक भेजे"
       },
       "above": {
         "discount": "इससे ज़्यादा (%)",
         "refund": "इससे ज़्यादा (₹)",
         "cancellation": "हमेशा",
         "big_booking": "इससे ज़्यादा (₹)",
-        "list_call": "इससे ज़्यादा (लोग)"
+        "list_call": "इससे ज़्यादा (लोग)",
+        "payment_link": "इससे ज़्यादा (₹)"
       }
     },
     "kinds": {
@@ -947,7 +970,8 @@
       "big_booking": "बड़ी बुकिंग",
       "list_call": "लिस्ट को कॉल",
       "manager_command": "आपका आदेश",
-      "behaviour_update": "व्यवहार में बदलाव"
+      "behaviour_update": "व्यवहार में बदलाव",
+      "payment_link": "पेमेंट लिंक"
     },
     "status": {
       "pending": "आपका इंतज़ार",
@@ -1041,7 +1065,9 @@
       "manager": "मैनेजर",
       "customer": "ग्राहक",
       "staff": "स्टाफ"
-    }
+    },
+    "template": "मंज़ूर टेम्पलेट",
+    "blocked": "नहीं भेजा: 24 घंटे की सीमा के बाहर और कोई टेम्पलेट नहीं, या व्यक्ति ने मना किया है।"
   },
   "campaigns": {
     "title": "कैंपेन",
@@ -1393,7 +1419,8 @@
       "call.missed": "कॉल मिस हो",
       "appointment.no_show": "कोई अपॉइंटमेंट पर न आए",
       "booking.made": "बुकिंग हो",
-      "payment.failed": "पेमेंट फ़ेल हो"
+      "payment.failed": "पेमेंट फ़ेल हो",
+      "payment.overdue": "तय तारीख के बाद भी पेमेंट लिंक बाकी हो"
     },
     "onOff": "{name} चालू",
     "runNow": "अभी चलाएँ",
@@ -1410,7 +1437,8 @@
       "hot_lead_follow_up": "इच्छुक लीड का हफ़्ते में 3 बार फ़ॉलो-अप",
       "emi_reminder": "EMI या फ़ीस पेमेंट फ़ेल होने पर याद दिलाएँ",
       "booking_thanks": "बुकिंग के बाद WhatsApp पर धन्यवाद",
-      "win_back": "चुप हो गए ग्राहकों को वापस जोड़ें"
+      "win_back": "चुप हो गए ग्राहकों को वापस जोड़ें",
+      "payment_reminder": "समय पर पेमेंट न करने वालों को विनम्रता से याद दिलाएँ"
     },
     "builderTitle": "अपना लिखें",
     "needEmployee": "पहले एक कर्मचारी रखें।",
@@ -1510,5 +1538,181 @@
     "takeoverLog": "आपने कॉल लेनी चाही",
     "delivered": "देखा गया",
     "pendingDelivery": "भेजा जा रहा है"
+  },
+  "missedCall": {
+    "title": "मिस्ड कॉल नंबर",
+    "desc": "ग्राहक मिस्ड कॉल दें, Mitra एक मिनट में वापस कॉल करेगा। उनके लिए मुफ़्त।",
+    "numberLabel": "मिस्ड कॉल के लिए यह नंबर इस्तेमाल करें",
+    "off": "बंद",
+    "pendingNumber": "नंबर तैयार हो रहा है ({city})",
+    "needNumber": "पहले ऊपर एक लोकल नंबर लें, फिर उसे मिस्ड कॉल के लिए इस्तेमाल करें।",
+    "notLive": "यह नंबर अभी तैयार हो रहा है। चालू होते ही मिस्ड कॉल काम करने लगेंगे।",
+    "posterTitle": "इसे अपने बोर्ड या WhatsApp स्टेटस पर लगाएँ",
+    "copy": "कॉपी",
+    "copied": "कॉपी हो गया",
+    "copyLine": "{lang} लाइन कॉपी करें",
+    "lang": {
+      "en": "अंग्रेज़ी",
+      "hi": "हिंदी",
+      "te": "तेलुगु"
+    },
+    "printCard": "QR कोड वाला काउंटर कार्ड प्रिंट करें",
+    "statsTitle": "पिछले {days} दिन",
+    "stats": {
+      "missed": "मिस्ड कॉल",
+      "calledBack": "वापस कॉल किया",
+      "answered": "बात हुई"
+    },
+    "recentTitle": "हाल के मिस्ड कॉल",
+    "status": {
+      "queued": "वापस कॉल तय",
+      "deduped": "पहले से कॉल हो रहा है",
+      "rate_limited": "बहुत ज़्यादा कॉल, छोड़ा गया",
+      "blocked": "ब्लॉक"
+    },
+    "block": "ब्लॉक करें",
+    "blocked": "कॉलर ब्लॉक हुआ",
+    "alreadyBlocked": "यह कॉलर पहले से ब्लॉक है",
+    "blocksTitle": "ब्लॉक किए गए कॉलर",
+    "unblock": "अनब्लॉक",
+    "unblocked": "कॉलर अनब्लॉक हुआ",
+    "saved": "मिस्ड कॉल नंबर सेव हुआ",
+    "turnedOff": "मिस्ड कॉल नंबर बंद किया",
+    "errors": {
+      "generic": "कुछ गलत हुआ। फिर से कोशिश करें।",
+      "unreachable": "Mitra से संपर्क नहीं हो पाया। इंटरनेट देखें।",
+      "invalid": "यह नंबर मिस्ड कॉल के लिए नहीं चल सकता।",
+      "forbidden": "सिर्फ़ मालिक या मैनेजर इसे बदल सकते हैं।",
+      "conflict": "पेज रिफ्रेश करके फिर कोशिश करें।"
+    },
+    "cardTitle": "मिस्ड कॉल कार्ड",
+    "back": "फ़ोन और कनेक्शन पर वापस",
+    "print": "प्रिंट",
+    "cardKicker": "मिस्ड कॉल दें। हम वापस कॉल करेंगे।",
+    "qrLabel": "{number} डायल करने वाला QR कोड",
+    "scanHint": "डायल करने के लिए फ़ोन कैमरे से स्कैन करें",
+    "free": "मिस्ड कॉल मुफ़्त है। काम के समय में हम एक मिनट में वापस कॉल करते हैं।"
+  },
+  "payments": {
+    "title": "पेमेंट",
+    "subtitle": "ग्राहक जो पैसे देते हैं, सीधे आपके अपने खाते में।",
+    "settingsLink": "पैसे कैसे लें",
+    "loadError": "पेमेंट नहीं खुल पाए। कृपया फिर से कोशिश करें।",
+    "setupTitle": "लिंक से पेमेंट लें",
+    "setupBody": "अपना Razorpay खाता जोड़ें या अपनी UPI ID डालें। फिर आपकी टीम WhatsApp पर पेमेंट लिंक भेज सकती है, और ग्राहक के पेमेंट करते ही रिमाइंडर रुक जाते हैं।",
+    "setupCta": "सेट करें",
+    "collected": "इस महीने मिले",
+    "paidCount": "{count, plural, =0 {अभी कुछ नहीं} one {# पेमेंट} other {# पेमेंट}}",
+    "waiting": "बाकी पेमेंट",
+    "openCount": "{count, plural, =0 {कोई खुला लिंक नहीं} one {# खुला लिंक} other {# खुले लिंक}}",
+    "failedTitle": "फेल हुए पेमेंट",
+    "failedHint": "लिंक अब भी चलता है; आपको WhatsApp पर बता दिया है",
+    "manualNote": "आप UPI ID से पैसे लेते हैं, इसलिए हमें पेमेंट आता नहीं दिखता। पैसे खाते में आने पर “पेमेंट मिला” दबाएँ।",
+    "simulatedNote": "टेस्ट मोड: लिंक एक अभ्यास पेज खोलता है जहाँ आप पेमेंट कर सकते हैं या फेल करा सकते हैं। असली पैसा नहीं जाता।",
+    "newTitle": "पेमेंट लिंक भेजें",
+    "toCustomer": "{name} को, WhatsApp पर।",
+    "thisCustomer": "इस ग्राहक",
+    "phone": "ग्राहक का मोबाइल नंबर",
+    "name": "नाम (वैकल्पिक)",
+    "amount": "रकम (₹)",
+    "purpose": "किस लिए",
+    "purposePlaceholder": "कंसल्टेशन फीस",
+    "due": "कब तक (वैकल्पिक)",
+    "dueHint": "तब तक पेमेंट न हो तो हम एक विनम्र याद दिलाएँगे।",
+    "send": "WhatsApp पर भेजें",
+    "created": "पेमेंट लिंक भेज दिया।",
+    "listTitle": "पेमेंट लिंक",
+    "filter": "दिखाएँ",
+    "all": "सभी",
+    "empty": "अभी कोई पेमेंट लिंक नहीं।",
+    "discount": "{pct}% छूट",
+    "forgotten": "हटाया गया ग्राहक",
+    "dueOn": "{date} तक",
+    "paidOn": "{date} को मिला",
+    "reviewApproval": "आपकी मंज़ूरी बाकी: देखें",
+    "resend": "फिर से भेजें",
+    "resent": "फिर से भेज दिया।",
+    "markPaid": "पेमेंट मिला",
+    "markPaidConfirm": "इसे पेमेंट मिला मानें? ऐसा तभी करें जब पैसा आपके खाते में आ गया हो।",
+    "markedPaid": "पेमेंट मिला मान लिया। ग्राहक को धन्यवाद भेज दिया।",
+    "copy": "लिंक कॉपी करें",
+    "copied": "लिंक कॉपी हो गया।",
+    "cancel": "रद्द करें",
+    "cancelConfirm": "यह पेमेंट लिंक रद्द करें? रिमाइंडर भी रुक जाएँगे।",
+    "cancelled": "पेमेंट लिंक रद्द कर दिया।",
+    "back": "पेमेंट",
+    "customerTitle": "पेमेंट",
+    "customerEmpty": "इस ग्राहक के लिए कोई पेमेंट लिंक नहीं।",
+    "sendLink": "पेमेंट लिंक भेजें",
+    "status": {
+      "awaiting_approval": "आपकी मंज़ूरी बाकी",
+      "sent": "अभी बाकी",
+      "paid": "मिल गया",
+      "failed": "पेमेंट फेल",
+      "expired": "समय खत्म",
+      "cancelled": "रद्द"
+    },
+    "source": {
+      "owner": "आपने भेजा",
+      "employee": "आपके AI कर्मचारी ने भेजा",
+      "manager": "आपके WhatsApp आदेश से"
+    },
+    "sendError": {
+      "no_phone": "नंबर नहीं है, लिंक कॉपी करके भेजें",
+      "whatsapp_failed": "WhatsApp नहीं पहुँचा, लिंक कॉपी करके भेजें"
+    },
+    "timeline": {
+      "awaiting_approval": "पेमेंट लिंक आपकी मंज़ूरी के इंतज़ार में",
+      "sent": "पेमेंट लिंक भेजा",
+      "paid": "पेमेंट मिला",
+      "failed": "पेमेंट फेल",
+      "expired": "पेमेंट लिंक का समय खत्म",
+      "cancelled": "पेमेंट लिंक रद्द"
+    },
+    "errors": {
+      "generic": "कुछ गड़बड़ हुई। कृपया फिर से कोशिश करें।",
+      "unreachable": "Mitra से अभी जुड़ नहीं पा रहे। एक मिनट बाद कोशिश करें।",
+      "invalid": "यह सही नहीं लग रहा। नंबर, रकम और जानकारी जाँचें।",
+      "forbidden": "पेमेंट सिर्फ़ मालिक या मैनेजर देख सकते हैं। पैसे लेने का तरीका सिर्फ़ मालिक बदल सकते हैं।",
+      "notConnected": "पहले पैसे लेने का तरीका सेट करें।",
+      "notOpen": "यह पेमेंट अब बदला नहीं जा सकता।"
+    },
+    "settings": {
+      "title": "पैसे कैसे लें",
+      "subtitle": "पेमेंट सीधे आपके अपने खाते में आते हैं। Mitra आपका पैसा कभी नहीं रखता।",
+      "howTitle": "इससे लें",
+      "modes": {
+        "razorpay": "Razorpay",
+        "upi": "UPI ID",
+        "none": "बंद"
+      },
+      "modeHints": {
+        "razorpay": "पेमेंट अपने आप पक्के होते हैं",
+        "upi": "आसान, पर पेमेंट मिलने पर आप खुद निशान लगाते हैं",
+        "none": "कोई पेमेंट लिंक नहीं"
+      },
+      "simulated": "टेस्ट मोड: कोई भी Razorpay टेस्ट की चलेगी और लिंक अभ्यास पेज खोलते हैं।",
+      "keyId": "Key ID",
+      "keySecret": "Key secret",
+      "webhookSecret": "Webhook secret",
+      "savedSecret": "सेव है। रखने के लिए खाली छोड़ें",
+      "webhookUrl": "आपका webhook पता",
+      "copyUrl": "webhook पता कॉपी करें",
+      "copied": "कॉपी हो गया।",
+      "webhookHelp": "Razorpay Dashboard में Webhooks खोलें, यह पता उसी webhook secret के साथ जोड़ें, और payment_link.paid, payment_link.expired, payment_link.cancelled और payment.failed चुनें।",
+      "upiWarning": "सिर्फ़ UPI ID से हमें पता नहीं चलता कि किसने पेमेंट किया। ग्राहकों को UPI लिंक मिलता है; बैंक में पैसा आने पर आप हर पेमेंट को “मिला” करें।",
+      "vpa": "आपकी UPI ID",
+      "payee": "ग्राहकों को दिखने वाला नाम (वैकल्पिक)",
+      "reminders": "तय तारीख के बाद भी पेमेंट न हो तो एक विनम्र याद दिलाएँ",
+      "remindersHint": "अगली सुबह एक WhatsApp। अगर “पेमेंट रिमाइंडर” रूटीन चालू है तो एक दिन बाद, कॉल के समय में एक कॉल। पेमेंट होते ही सब रुक जाता है।",
+      "save": "सेव करें",
+      "saved": "सेव हो गया।",
+      "expiry": "लिंक कितने दिन चले",
+      "expiryHint": "आम तौर पर 15। लिंक बंद होने से 2 दिन पहले एक याद भेजी जाती है।",
+      "lender": "हम कर्ज़ देते हैं (लोन, EMI, गोल्ड लोन)",
+      "lenderHint": "तब पेमेंट याद दिलाने वाली कॉल सिर्फ़ सुबह 8 से शाम 7 बजे के बीच होंगी, जैसा RBI कर्ज़दाताओं से चाहता है।"
+    },
+    "customerSaysPaid": "ग्राहक कहते हैं पेमेंट कर दिया: जाँचें और “पेमेंट मिला” करें",
+    "expiresOn": "लिंक {date} तक चलेगा"
   }
 }

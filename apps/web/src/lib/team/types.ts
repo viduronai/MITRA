@@ -121,8 +121,21 @@ export interface HandoffCard {
 
 export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 export const WEEKDAYS: Weekday[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-export type RoutineEvent = "lead.created" | "call.missed" | "appointment.no_show" | "booking.made" | "payment.failed";
-export const EVENTS: RoutineEvent[] = ["lead.created", "call.missed", "appointment.no_show", "booking.made", "payment.failed"];
+export type RoutineEvent =
+  | "lead.created"
+  | "call.missed"
+  | "appointment.no_show"
+  | "booking.made"
+  | "payment.failed"
+  | "payment.overdue";
+export const EVENTS: RoutineEvent[] = [
+  "lead.created",
+  "call.missed",
+  "appointment.no_show",
+  "booking.made",
+  "payment.failed",
+  "payment.overdue",
+];
 export type Audience =
   | "tomorrows_appointments"
   | "todays_appointments"

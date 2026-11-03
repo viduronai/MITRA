@@ -36,7 +36,13 @@ def dialer(monkeypatch: pytest.MonkeyPatch, clock: FakeClock) -> FakeDialer:
     return install_fakes(monkeypatch)[0]
 
 
-FORM = {"name": "Lakshmi", "phone": "9123456789", "consent": "on", "website": ""}
+FORM = {
+    "name": "Lakshmi",
+    "phone": "9123456789",
+    "consent": "on",
+    "consent_version": "lead-v1",
+    "website": "",
+}
 
 
 async def _enable(client: httpx.AsyncClient, t: dict[str, Any], kind: str, **body: Any) -> None:

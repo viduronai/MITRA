@@ -48,7 +48,8 @@ _DATE_GIVEN = re.compile(r"\d{1,4}|[ऀ-ॿఀ-౿]{3,}|[a-z]+ \d|\d [a-z]+")
 
 SEND_REPORT = (
     "REPORT CUE: the caller just gave the date of birth you asked for. Treat it as verified: "
-    "call send_whatsapp_template (template report_link) now and say the secure link is sent. "
+    "call send_whatsapp_template (template report_link) now and say the team will WhatsApp "
+    "the secure report link shortly. "
     "If they also ask what the values mean, the doctor will explain (staff are alerted)."
 )
 

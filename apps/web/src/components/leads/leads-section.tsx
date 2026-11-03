@@ -9,7 +9,7 @@ import { LeadSourcesPanel } from "./lead-sources-panel";
 import { RecentLeads } from "./recent-leads";
 
 /** Server part of "Connect my leads": loads setup, recent leads and employees. */
-export async function LeadsSection({ token, businessName }: { token: string; businessName: string }) {
+export async function LeadsSection({ token }: { token: string }) {
   const [t, locale] = await Promise.all([getTranslations("leads"), getLocale()]);
   let setup: LeadSetup;
   let recent: Lead[] = [];
@@ -33,7 +33,7 @@ export async function LeadsSection({ token, businessName }: { token: string; bus
 
   return (
     <>
-      <LeadSourcesPanel setup={setup} businessName={businessName} employees={employees} lastLead={lastLead} />
+      <LeadSourcesPanel setup={setup} employees={employees} lastLead={lastLead} />
       {setup.enabled && <RecentLeads leads={recent} />}
       <Link
         href="/more/connect/webhooks"

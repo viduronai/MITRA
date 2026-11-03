@@ -1,15 +1,15 @@
 "use client";
 
 import { ChevronDown, FlaskConical, Send } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { pullIndiaMart, sendTestLead, updateLeadSource, type LeadResult } from "@/app/(app)/more/connect/lead-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { curlSnippet, formsSnippet, keyedUrl, sheetsSnippet, websiteFormSnippet } from "@/lib/leads/snippets";
-import type { Lead, IntakeUrls, LeadSource, LeadSourcePatch } from "@/lib/leads/types";
+import { curlSnippet, formsSnippet, keyedUrl, sheetsSnippet, websiteFormSnippet, type ConsentBox } from "@/lib/leads/snippets";
+import type { ConsentLang, IntakeUrls, Lead, LeadSetup, LeadSource, LeadSourcePatch } from "@/lib/leads/types";
 import { cn } from "@/lib/utils";
 import { CopyBlock } from "./copy-block";
 
@@ -18,6 +18,9 @@ const SELECT =
   "h-12 w-full rounded-lg border border-input bg-surface px-4 text-base shadow-xs focus-visible:border-ring md:text-[15px]";
 
 export type EmployeeOption = { id: string; name: string };
+export type ConsentCopy = Pick<LeadSetup, "consent_version" | "consent_texts" | "attestation_texts">;
+
+const asLang = (locale: string): ConsentLang => (locale === "hi" || locale === "te" ? locale : "en");
 
 function Switch({ checked, label, disabled, onChange }: { checked: boolean; label: string; disabled?: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -47,18 +50,20 @@ export function SourceCard({
   source,
   urls,
   secret,
-  businessName,
+  consent,
   employees,
   lastLeadText,
 }: {
   source: LeadSource;
   urls: IntakeUrls;
   secret: string | null;
-  businessName: string;
+  consent: ConsentCopy;
   employees: EmployeeOption[];
   lastLeadText: string | null;
 }) {
   const t = useTranslations("leads");
+  const lang = asLang(useLocale());
+  const box: ConsentBox = { text: consent.consent_texts[lang], version: consent.consent_version, lang };
   const ids = useId();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -99,6 +104,9 @@ export function SourceCard({
             {status}
             {source.lead_count > 0 && ` · ${t("count", { count: source.lead_count })}`}
           </p>
+          {source.consent_policy === "owner_attestation" && !source.attested_at && (
+            <p className="mt-1 text-sm leading-5 font-medium text-warning-fg">{t("consent.needsAttestation")}</p>
+          )}
           {source.last_error && <p className="mt-1 text-sm leading-5 font-medium text-danger-fg">{t("problem", { message: source.last_error })}</p>}
         </div>
         <Switch checked={on} label={t("toggle", { source: name })} disabled={pending} onChange={(v) => save({ enabled: v })} />
@@ -118,7 +126,34 @@ export function SourceCard({
       {open && (
         <div id={`${ids}-body`} className="mt-3 flex flex-col gap-4">
           <p className="text-sm leading-5">{t(`steps.${source.kind}`)}</p>
-          <SetupDetails kind={source.kind} urls={urls} secret={secret} businessName={businessName} />
+          <SetupDetails kind={source.kind} urls={urls} secret={secret} consent={box} />
+
+          {source.consent_policy === "owner_attestation" && (
+            <div className="rounded-lg border p-3">
+              <label className="flex min-h-11 items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-5 shrink-0 accent-[var(--color-primary)]"
+                  checked={Boolean(source.attested_at)}
+                  disabled={pending}
+                  onChange={(e) => save({ consent_attested: e.target.checked })}
+                />
+                <span className="font-medium">{consent.attestation_texts[lang]}</span>
+              </label>
+              <p className="mt-1 text-sm leading-5 text-text-muted">
+                {source.attested_at
+                  ? t("consent.attestedBy", { name: source.attested_by ?? "", time: callTime(source.attested_at) })
+                  : t("consent.attestHint")}
+              </p>
+            </div>
+          )}
+          {source.consent_policy === "portal_enquiry" && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm leading-5">{t("consent.portalRule")}</p>
+              <CopyBlock label={t("consent.portalTip")} value={box.text} />
+            </div>
+          )}
+          {source.consent_policy === "form_checkbox" && <p className="text-sm leading-5 text-text-muted">{t("consent.formRule")}</p>}
 
           {source.kind === "meta" && (
             <div className="flex flex-col gap-2">
@@ -227,18 +262,18 @@ export function SourceCard({
   );
 }
 
-function SetupDetails({ kind, urls, secret, businessName }: { kind: LeadSource["kind"]; urls: IntakeUrls; secret: string | null; businessName: string }) {
+function SetupDetails({ kind, urls, secret, consent }: { kind: LeadSource["kind"]; urls: IntakeUrls; secret: string | null; consent: ConsentBox }) {
   const t = useTranslations("leads");
   const secretHeader = `X-Mitra-Secret: ${secret ?? "…"}`;
   switch (kind) {
     case "meta":
       return <CopyBlock label={t("metaWebhook")} value={urls.meta_webhook} />;
     case "website_form":
-      return <CopyBlock label={t("code")} value={websiteFormSnippet(urls.form, businessName)} multiline />;
+      return <CopyBlock label={t("code")} value={websiteFormSnippet(urls.form, consent)} multiline />;
     case "google_sheets":
       return <CopyBlock label={t("code")} value={sheetsSnippet(urls.generic, secret)} multiline />;
     case "google_forms":
-      return <CopyBlock label={t("code")} value={formsSnippet(urls.generic, secret)} multiline />;
+      return <CopyBlock label={t("code")} value={formsSnippet(urls.generic, secret, consent)} multiline />;
     case "google_ads":
       return <CopyBlock label={t("url")} value={urls.google_ads} />;
     case "indiamart":

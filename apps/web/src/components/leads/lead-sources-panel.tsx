@@ -16,12 +16,10 @@ import { SourceCard, type EmployeeOption } from "./source-card";
  */
 export function LeadSourcesPanel({
   setup: initial,
-  businessName,
   employees,
   lastLead,
 }: {
   setup: LeadSetup;
-  businessName: string;
   employees: EmployeeOption[];
   lastLead: Record<string, string>;
 }) {
@@ -85,7 +83,7 @@ export function LeadSourcesPanel({
             source={source}
             urls={setup.urls!}
             secret={secret}
-            businessName={businessName}
+            consent={setup}
             employees={employees}
             lastLeadText={lastLead[source.kind] ?? null}
           />

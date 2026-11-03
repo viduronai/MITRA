@@ -34,7 +34,7 @@ export interface ApprovalEvent {
 }
 
 export interface ApprovalRule {
-  kind: "discount" | "refund" | "cancellation" | "big_booking" | "list_call";
+  kind: "discount" | "refund" | "cancellation" | "big_booking" | "list_call" | "payment_link";
   enabled: boolean;
   threshold: number | null;
   timeout_minutes: number | null;
@@ -86,7 +86,8 @@ export interface WaMessage {
   phone_last4: string;
   body: string;
   template: string | null;
-  buttons: { id: string; title: string }[];
+  /** Reply buttons carry an id (payload); template URL buttons carry the full url. */
+  buttons: { id?: string; url?: string; title: string }[];
   ref: Record<string, unknown>;
   provider_message_id: string | null;
   status: string;

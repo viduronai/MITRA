@@ -17,7 +17,10 @@ from mitra_core.api.v1 import (
     live_calls,
     manager,
     me,
+    missed_calls,
     onboarding,
+    payments,
+    payments_public,
     phone_numbers,
     routines,
     staff,
@@ -48,11 +51,14 @@ router.include_router(test_calls.router)
 router.include_router(onboarding.router)
 router.include_router(demo_calls.router)
 router.include_router(billing.router)
+router.include_router(payments_public.router)
+router.include_router(payments.router)
 router.include_router(calls.router)
 router.include_router(customers.router)
 router.include_router(home.router)
 router.include_router(phone_numbers.router)
 router.include_router(phone_numbers.compliance_router)
+router.include_router(missed_calls.router)
 router.include_router(campaigns.router)
 router.include_router(team.router)
 router.include_router(staff.router)

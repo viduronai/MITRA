@@ -67,8 +67,21 @@ async def send_report_if_due(
         return False
     lang: Lang = settings.language.value if settings.language else "en"
     body = await build_report(session, business_id, lang, now)
+    stats = await tools.call_stats(session, business_id, "yesterday", now)
+    attention = await tools.needs_attention(session, business_id, now)
     await notify_owner(
-        session, business_id, "daily_report", body, dedupe_key=local.date().isoformat()
+        session,
+        business_id,
+        "daily_report",
+        body,
+        dedupe_key=local.date().isoformat(),
+        # Outside the owner's 24-hour window (the usual case at 8 am): the approved template.
+        template="daily_report",
+        params={
+            "calls": str(stats.total),
+            "booked": str(stats.by_result.get("booked", 0)),
+            "attention": str(len(attention)),
+        },
     )
     settings.last_report_on = local.date()
     return True

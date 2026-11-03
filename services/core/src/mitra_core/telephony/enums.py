@@ -69,6 +69,15 @@ class ConsentSource(StrEnum):
     EXISTING_CUSTOMER = "existing_customer"
     EXPLICIT_OPT_IN = "explicit_opt_in"
     INBOUND_CALL = "inbound_call"
+    MISSED_CALL = "missed_call"  # gave a missed call to the business's missed-call number
+    # Lead consent policy (migration 0006_lead_consent): the form or portal it came from.
+    WEBSITE_FORM = "website_form"
+    GOOGLE_FORMS = "google_forms"
+    META = "meta"
+    GOOGLE_ADS = "google_ads"
+    INDIAMART = "indiamart"
+    JUSTDIAL = "justdial"
+    OWNER_ATTESTED = "owner_attested"  # generic source: the owner confirmed people asked
 
 
 class OptOutSource(StrEnum):

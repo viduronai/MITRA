@@ -32,6 +32,7 @@ ActionName = Literal[
     "reschedule",
     "cancel",
     "send_whatsapp_template",
+    "send_payment_link",
     "transfer_to_human",
     "schedule_callback",
     "lookup_fact",

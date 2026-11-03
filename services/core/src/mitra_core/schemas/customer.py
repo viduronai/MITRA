@@ -60,16 +60,21 @@ class CommitmentOut(ResponseModel):
 
 
 class TimelineEvent(ResponseModel):
-    kind: Literal["call", "action", "commitment"]
+    kind: Literal["call", "action", "commitment", "payment"]
     at: datetime
     title: str
     detail: str | None = None
     call_id: uuid.UUID | None = None
     result: CallResult | None = None
+    payment_request_id: uuid.UUID | None = None
+    payment_status: str | None = None  # sent / paid / failed / ... (kind "payment")
 
 
 class CustomerDetail(CustomerRow):
     created_at: datetime
+    # Masked ("+91 ••••• •3210"); the full number only via POST /customers/{id}/phone (logged).
+    phone_masked: str | None = None
+    has_phone: bool = False
     memory: list[MemoryFactOut]
     commitments: list[CommitmentOut]
     timeline: list[TimelineEvent]
@@ -80,3 +85,10 @@ class ForgetOut(ResponseModel):
     forgotten: Literal[True] = True
     calls_deleted: int
     memory_deleted: int
+
+
+class PhoneRevealOut(ResponseModel):
+    """An owner/manager tapped "show number": returned once, written to the access log."""
+
+    phone: str
+    phone_masked: str | None

@@ -20,6 +20,7 @@ export type LeadStatus =
   | "not_called"
   | "blocked"
   | "no_consent"
+  | "no_attestation"
   | "no_employee"
   | "failed";
 
@@ -47,7 +48,14 @@ export interface LeadSource {
   lead_count: number;
   last_error: string | null;
   simulated: boolean;
+  consent_policy: ConsentPolicy;
+  attested_at: string | null;
+  attested_by: string | null;
 }
+
+/** Lead consent policy (docs/08): how each source proves people asked to be contacted. */
+export type ConsentPolicy = "form_checkbox" | "portal_enquiry" | "owner_attestation";
+export type ConsentLang = "en" | "hi" | "te";
 
 export interface LeadSetup {
   enabled: boolean;
@@ -59,6 +67,9 @@ export interface LeadSetup {
   dedupe_minutes: number;
   urls: IntakeUrls | null;
   sources: LeadSource[];
+  consent_version: string;
+  consent_texts: Record<ConsentLang, string>;
+  attestation_texts: Record<ConsentLang, string>;
 }
 
 export interface LeadSourcePatch {
@@ -69,6 +80,8 @@ export interface LeadSourcePatch {
   employee_id?: string | null;
   external_id?: string | null;
   credential?: string | null;
+  consent_attested?: boolean;
+  attestation_lang?: ConsentLang;
 }
 
 export interface Lead {
@@ -94,7 +107,7 @@ export interface PullResult {
   error: string | null;
 }
 
-export const WEBHOOK_EVENTS = ["call.ended", "lead.created", "campaign.finished"] as const;
+export const WEBHOOK_EVENTS = ["call.ended", "lead.created", "campaign.finished", "payment.paid", "payment.failed"] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 
 export interface Webhook {

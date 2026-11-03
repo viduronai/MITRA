@@ -2,6 +2,7 @@ import {
   CircleCheckBig,
   Ellipsis,
   House,
+  IndianRupee,
   Megaphone,
   Phone,
   Plug,
@@ -23,6 +24,7 @@ export type NavKey =
   | "campaigns"
   | "live"
   | "approvals"
+  | "payments"
   | "ask"
   | "connect";
 
@@ -50,6 +52,7 @@ export const upcomingNav: NavItem[] = [
   { key: "live", href: "/live", icon: Radio, ready: true },
   { key: "ask", href: "/ask", icon: Sparkles, ready: true },
   { key: "approvals", href: "/approvals", icon: CircleCheckBig, ready: true },
+  { key: "payments", href: "/payments", icon: IndianRupee, ready: true },
   { key: "connect", href: "/connect", icon: Plug },
 ];
 

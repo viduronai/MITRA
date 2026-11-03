@@ -1,10 +1,11 @@
-import { CalendarDays, Cable, FlaskConical, Hash, MessageCircle, PhoneForwarded, Plug, type LucideIcon } from "lucide-react";
+import { CalendarDays, Cable, FlaskConical, Hash, MessageCircle, PhoneForwarded, PhoneMissed, Plug, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { LeadsSection } from "@/components/leads/leads-section";
 import { PageHeader } from "@/components/shell/page-header";
 import { ForwardingCodes } from "@/components/telephony/forwarding-codes";
+import { MissedCallCard } from "@/components/telephony/missed-call-card";
 import { RequestNumberForm } from "@/components/telephony/request-number";
 import { TrustedCallerCard } from "@/components/telephony/trusted-caller-card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,12 @@ function Section({
 
 export default async function ConnectPage() {
   const { token } = await requireSession();
-  const [t, tLeads, business] = await Promise.all([getTranslations("connect"), getTranslations("leads"), getBusiness()]);
+  const [t, tLeads, tMissed, business] = await Promise.all([
+    getTranslations("connect"),
+    getTranslations("leads"),
+    getTranslations("missedCall"),
+    getBusiness(),
+  ]);
 
   let numbers;
   try {
@@ -70,7 +76,10 @@ export default async function ConnectPage() {
       </>
     );
   }
-  const forwarding = await liveForwarding(token, numbers.items);
+  const [forwarding, missedCall] = await Promise.all([
+    liveForwarding(token, numbers.items),
+    telephonyApi.missedCall(token).catch(() => null),
+  ]);
   const live = numbers.items.find((n) => n.id === forwarding?.phone_number_id) ?? null;
   const support = process.env.MITRA_SUPPORT_EMAIL;
   const soon: { key: "calendar" | "whatsapp"; icon: LucideIcon }[] = [
@@ -115,6 +124,12 @@ export default async function ConnectPage() {
           </div>
         </Section>
 
+        {missedCall && (
+          <Section id="missed-call" icon={PhoneMissed} title={tMissed("title")} description={tMissed("desc")}>
+            <MissedCallCard setup={missedCall} numbers={numbers.items} />
+          </Section>
+        )}
+
         <Section id="byo" icon={Cable} title={t("byoTitle")} description={t("byoDesc")}>
           <Button asChild variant="secondary" className="mt-4 w-full sm:w-fit">
             {support ? (
@@ -126,7 +141,7 @@ export default async function ConnectPage() {
         </Section>
 
         <Section id="leads" icon={Plug} title={tLeads("title")} description={tLeads("desc")}>
-          <LeadsSection token={token} businessName={numbers.business_name} />
+          <LeadsSection token={token} />
         </Section>
 
         <div className="grid gap-4 md:grid-cols-2">

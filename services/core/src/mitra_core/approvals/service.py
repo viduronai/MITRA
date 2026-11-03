@@ -30,7 +30,7 @@ from mitra_core.clock import utcnow
 from mitra_core.config import get_settings
 from mitra_core.errors import AppError, not_found
 from mitra_core.logging import get_logger
-from mitra_core.models import Approval, ApprovalEvent, Business, Membership
+from mitra_core.models import Approval, ApprovalEvent, Business, Employee, Membership
 from mitra_core.models.enums import MemberRole
 from mitra_core.whatsapp import notify_owner
 
@@ -110,6 +110,23 @@ def card_text(approval: Approval, timezone: str = "Asia/Kolkata") -> str:
     return "\n".join(lines)
 
 
+async def requester_name(session: AsyncSession, approval: Approval) -> str:
+    """Who is asking, for the card: the AI employee's name when known, else "Mitra"."""
+    kind, _, ident = approval.requested_by.partition(":")
+    if kind == "employee" and ident:
+        try:
+            name = await session.scalar(
+                select(Employee.name).where(
+                    Employee.business_id == approval.business_id, Employee.id == uuid.UUID(ident)
+                )
+            )
+        except ValueError:
+            name = None
+        if name:
+            return name
+    return "Mitra"
+
+
 async def request_approval(
     session: AsyncSession,
     business_id: uuid.UUID,
@@ -165,6 +182,9 @@ async def request_approval(
                 (button_id(approval, "decline"), "Decline"),
             ],
             ref={"approval_id": str(approval.id), "version": approval.version},
+            # Outside the owner's 24-hour window: the approved template, same payloads.
+            template="approval_request",
+            params={"employee": await requester_name(session, approval), "summary": summary},
         )
     await session.flush()
     log.info("approval.requested", business_id=str(business_id), kind=kind, id=str(approval.id))

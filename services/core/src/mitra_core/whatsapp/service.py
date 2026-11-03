@@ -1,14 +1,24 @@
-"""Business-scoped WhatsApp sending: every message is stored in ``wa_message`` (tenant table).
+"""Business-scoped WhatsApp sending, built on ``outbox.deliver`` (24-hour window + templates).
 
 All functions take a session already bound to ``business_id`` (RLS) and never commit; the
 caller owns the transaction. Raw phone numbers are used only to send: rows keep an HMAC and
 the last 4 digits. Owner/manager numbers come from ``app_user`` (they are users, not customers).
+
+Entry points:
+
+* ``send_customer_message`` — anything to a customer: an approved template name + named params,
+  and optionally the free text to use instead while the 24-hour window is open.
+* ``notify_owner`` — alerts, reports, approval cards to owners/managers (template per kind).
+* ``send_staff_task`` — a staff hand-off / brief / call-back card (``staff_handoff``).
+* ``send_text`` / ``send_buttons`` — free text only: sent inside the window, otherwise stored
+  as ``blocked`` and the owner is told. Prefer the entry points above.
 """
 
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from collections.abc import Mapping
+from typing import Any, Literal
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -17,70 +27,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mitra_core.logging import get_logger
 from mitra_core.models import AppUser, ManagerSettings, Membership, WaMessage
 from mitra_core.models.enums import MemberRole
-from mitra_core.pii import hash_phone, phone_last4
-from mitra_core.whatsapp.provider import Button, SendResult, get_provider
+from mitra_core.whatsapp.outbox import (
+    ButtonSpec,
+    as_lang,
+    business_name,
+    customer_language,
+    deliver,
+    record_inbound,
+)
+from mitra_core.whatsapp.provider import Document
+from mitra_core.whatsapp.templates import STAFF_ACTIONS, Lang, alert_title, spec
 
 log = get_logger(__name__)
 
 # Instant alert kinds the owner can switch off in manager settings (MGR-05).
 ALERT_KINDS = ("hot_lead", "angry", "vip", "payment_failed", "campaign_paused")
 OWNER_ROLES = (MemberRole.OWNER, MemberRole.MANAGER)
+APP_LINK_DEFAULT = "?from=whatsapp"
 
-ButtonSpec = tuple[str, str]  # (id, title)
-
-
-async def _store(
-    session: AsyncSession,
-    business_id: uuid.UUID,
-    *,
-    phone: str,
-    kind: str,
-    purpose: str,
-    body: str,
-    result: SendResult,
-    provider: str,
-    user_id: uuid.UUID | None = None,
-    template: str | None = None,
-    params: dict[str, str] | None = None,
-    buttons: list[Button] | None = None,
-    ref: dict[str, Any] | None = None,
-    dedupe_key: str | None = None,
-) -> WaMessage:
-    msg = WaMessage(
-        id=uuid.uuid4(),
-        business_id=business_id,
-        direction="out",
-        kind=kind,
-        purpose=purpose,
-        user_id=user_id,
-        phone_hash=hash_phone(phone),
-        phone_last4=phone_last4(phone),
-        body=body,
-        template=template,
-        params=params or {},
-        buttons=[{"id": b.id, "title": b.title} for b in buttons or []],
-        ref=ref or {},
-        provider=provider,
-        provider_message_id=result.message_id,
-        status="sent" if result.ok else "failed",
-        dedupe_key=dedupe_key,
-    )
-    session.add(msg)
-    await session.flush()
-    return msg
+__all__ = ["ButtonSpec", "record_inbound"]
 
 
-async def _already_sent(
-    session: AsyncSession, business_id: uuid.UUID, phone: str, dedupe_key: str
-) -> bool:
-    found = await session.scalar(
-        select(WaMessage.id).where(
-            WaMessage.business_id == business_id,
-            WaMessage.phone_hash == hash_phone(phone),
-            WaMessage.dedupe_key == dedupe_key,
-        )
-    )
-    return found is not None
+def app_suffix(path: str | None) -> str:
+    """``/calls/123`` -> ``calls/123`` for the ``https://app.mitra.ai/{{1}}`` buttons."""
+    cleaned = (path or "").strip().lstrip("/")
+    return cleaned or APP_LINK_DEFAULT
 
 
 async def send_text(
@@ -94,20 +65,13 @@ async def send_text(
     user_id: uuid.UUID | None = None,
     dedupe_key: str | None = None,
 ) -> WaMessage | None:
-    """Free-form text. Returns ``None`` when ``dedupe_key`` was already used for this number."""
-    if dedupe_key and await _already_sent(session, business_id, to_phone, dedupe_key):
-        return None
-    provider = get_provider()
-    result = await provider.send_text(to_phone, text)
-    return await _store(
+    """Free text. ``None`` = dedupe hit. Outside the window the row is ``blocked``."""
+    return await deliver(
         session,
         business_id,
-        phone=to_phone,
-        kind="text",
+        to_phone=to_phone,
         purpose=purpose,
-        body=text,
-        result=result,
-        provider=provider.name,
+        text=text,
         user_id=user_id,
         ref=ref,
         dedupe_key=dedupe_key,
@@ -126,22 +90,55 @@ async def send_buttons(
     user_id: uuid.UUID | None = None,
     dedupe_key: str | None = None,
 ) -> WaMessage | None:
-    if dedupe_key and await _already_sent(session, business_id, to_phone, dedupe_key):
-        return None
-    provider = get_provider()
-    specs = [Button(id=i, title=t) for i, t in buttons]
-    result = await provider.send_buttons(to_phone, text, specs)
-    return await _store(
+    return await deliver(
         session,
         business_id,
-        phone=to_phone,
-        kind="buttons",
+        to_phone=to_phone,
         purpose=purpose,
-        body=text,
-        result=result,
-        provider=provider.name,
+        text=text,
+        buttons=buttons,
         user_id=user_id,
-        buttons=specs,
+        ref=ref,
+        dedupe_key=dedupe_key,
+    )
+
+
+async def send_customer_message(
+    session: AsyncSession,
+    business_id: uuid.UUID,
+    *,
+    to_phone: str,
+    template: str,
+    params: Mapping[str, object],
+    text: str | None = None,
+    language: Lang | None = None,
+    buttons: list[ButtonSpec] | None = None,
+    url_suffix: str | None = None,
+    document: Document | None = None,
+    ref: dict[str, Any] | None = None,
+    dedupe_key: str | None = None,
+) -> WaMessage | None:
+    """A message to a customer: ``text`` inside the 24-hour window (if given), else the
+    approved ``template`` with named ``params``. ``business`` is filled in when omitted.
+
+    ``buttons`` (payload, title) become the template's quick-reply payloads, in order.
+    ``language`` defaults to the customer's remembered language. Check ``msg.status``.
+    """
+    values = dict(params)
+    if "business" not in values:
+        values["business"] = await business_name(session, business_id)
+    return await deliver(
+        session,
+        business_id,
+        to_phone=to_phone,
+        purpose="customer",
+        text=text,
+        template=template,
+        params=values,
+        language=language or await customer_language(session, business_id, to_phone),
+        buttons=buttons,
+        url_suffix=url_suffix,
+        document=document,
         ref=ref,
         dedupe_key=dedupe_key,
     )
@@ -157,25 +154,25 @@ async def send_template(
     params: dict[str, str] | None = None,
     purpose: str = "customer",
     ref: dict[str, Any] | None = None,
+    url_suffix: str | None = None,
 ) -> WaMessage:
-    """An approved template (needed outside the 24-hour window). ``params`` keep their order."""
-    provider = get_provider()
-    values = list((params or {}).values())
-    result = await provider.send_template(to_phone, template, language, values)
-    body = f"[{template}] " + " · ".join(values)
-    return await _store(
+    """Always the template (no free-text alternative). ``business`` is filled in if omitted."""
+    values: dict[str, object] = dict(params or {})
+    if "business" in spec(template).params and "business" not in values:
+        values["business"] = await business_name(session, business_id)
+    msg = await deliver(
         session,
         business_id,
-        phone=to_phone,
-        kind="template",
+        to_phone=to_phone,
         purpose=purpose,
-        body=body,
-        result=result,
-        provider=provider.name,
         template=template,
-        params=params,
+        params=values,
+        language=as_lang(language),
+        url_suffix=url_suffix,
         ref=ref,
     )
+    assert msg is not None  # noqa: S101  (no dedupe key, so never a dedupe hit)
+    return msg
 
 
 async def manager_settings(session: AsyncSession, business_id: uuid.UUID) -> ManagerSettings:
@@ -215,11 +212,18 @@ async def notify_owner(
     buttons: list[ButtonSpec] | None = None,
     ref: dict[str, Any] | None = None,
     dedupe_key: str | None = None,
+    template: str | None = None,
+    params: dict[str, object] | None = None,
+    url_suffix: str | None = None,
+    title: str | None = None,
 ) -> list[WaMessage]:
-    """Message the business's owners/managers (alerts, approvals, reports, campaign news).
+    """Message the business's owners/managers; returns the messages actually sent.
 
-    Alert kinds in ``ALERT_KINDS`` respect the owner's switches; ``daily_report`` goes to the
-    report recipients, everything else to the alert recipients.
+    ``text`` goes out as-is inside the 24-hour window. Outside it, ``template`` + ``params`` are
+    used; without a template every kind except ``daily_report`` / ``approval`` maps to
+    ``owner_alert`` (title from the kind, detail = ``text``, button = ``url_suffix``). Alert
+    kinds in ``ALERT_KINDS`` respect the owner's switches; ``daily_report`` goes to the report
+    recipients, everything else to the alert recipients. Each recipient gets their language.
     """
     settings = await manager_settings(session, business_id)
     if kind in ALERT_KINDS and kind not in settings.alert_kinds:
@@ -227,37 +231,90 @@ async def notify_owner(
     report = kind == "daily_report"
     purpose = "report" if report else "approval" if kind == "approval" else "alert"
     only = settings.report_user_ids if report else settings.alert_user_ids
+    business = await business_name(session, business_id)
+    suffix = url_suffix or app_suffix((ref or {}).get("link"))
     sent: list[WaMessage] = []
     for user in await owner_recipients(session, business_id, only=list(only)):
-        key = f"{kind}:{dedupe_key}" if dedupe_key else None
-        full_ref = {"kind": kind, **(ref or {})}
-        if buttons:
-            msg = await send_buttons(
-                session,
-                business_id,
-                to_phone=user.phone_e164,
-                text=text,
-                buttons=buttons,
-                purpose=purpose,
-                ref=full_ref,
-                user_id=user.id,
-                dedupe_key=key,
-            )
-        else:
-            msg = await send_text(
-                session,
-                business_id,
-                to_phone=user.phone_e164,
-                text=text,
-                purpose=purpose,
-                ref=full_ref,
-                user_id=user.id,
-                dedupe_key=key,
-            )
-        if msg is not None:
+        lang = as_lang(settings.language or user.preferred_locale)
+        use_template, values = template, dict(params or {})
+        if use_template is None and kind not in {"daily_report", "approval"}:
+            use_template = "owner_alert"
+            detail = values.get("detail", text)
+            values = {"title": title or alert_title(kind, lang), "detail": detail}
+        if use_template is not None:
+            values.setdefault("business", business)
+        msg = await deliver(
+            session,
+            business_id,
+            to_phone=user.phone_e164,
+            purpose=purpose,
+            text=text,
+            template=use_template,
+            params=values,
+            language=lang,
+            buttons=buttons,
+            url_suffix=suffix,
+            user_id=user.id,
+            ref={"kind": kind, **(ref or {})},
+            dedupe_key=f"{kind}:{dedupe_key}" if dedupe_key else None,
+        )
+        if msg is not None and msg.status == "sent":
             sent.append(msg)
     log.info("whatsapp.notify_owner", business_id=str(business_id), kind=kind, sent=len(sent))
     return sent
+
+
+async def _member_phone(session: AsyncSession, business_id: uuid.UUID, user_id: uuid.UUID) -> str:
+    user = await session.scalar(
+        select(AppUser)
+        .join(Membership, Membership.user_id == AppUser.id)
+        .where(Membership.business_id == business_id, AppUser.id == user_id)
+    )
+    if user is None:
+        raise ValueError("user is not a member of this business")
+    return user.phone_e164
+
+
+async def send_staff_task(
+    session: AsyncSession,
+    business_id: uuid.UUID,
+    *,
+    text: str,
+    action: Literal["call_back", "meet", "help"],
+    customer: str,
+    brief: str,
+    to_phone: str | None = None,
+    user_id: uuid.UUID | None = None,
+    language: Lang = "en",
+    done_payload: str | None = None,
+    ref: dict[str, Any] | None = None,
+    dedupe_key: str | None = None,
+) -> WaMessage | None:
+    """TEAM-04 / CALL-19: a task card for one staff member (``staff_handoff`` outside the
+    window, ``text`` inside it). ``done_payload`` is the "Done" button's payload."""
+    phone = await _member_phone(session, business_id, user_id) if user_id else to_phone
+    if not phone:
+        raise ValueError("user_id or to_phone is required")
+    payload = done_payload or f"task_done:{uuid.uuid4().hex[:12]}"
+    return await deliver(
+        session,
+        business_id,
+        to_phone=phone,
+        purpose="staff",
+        text=text,
+        template="staff_handoff",
+        params={
+            "business": await business_name(session, business_id),
+            "action": STAFF_ACTIONS[action][language],
+            "customer": customer,
+            "brief": brief,
+        },
+        language=language,
+        buttons=[(payload, "Done")],
+        user_id=user_id,
+        ref=ref,
+        dedupe_key=dedupe_key,
+    )
 
 
 async def notify_staff(
@@ -270,17 +327,9 @@ async def notify_staff(
     ref: dict[str, Any] | None = None,
     dedupe_key: str | None = None,
 ) -> WaMessage | None:
-    """ACT-06: message one staff member (a member of the business, or a given number)."""
-    phone = to_phone
-    if user_id is not None:
-        user = await session.scalar(
-            select(AppUser)
-            .join(Membership, Membership.user_id == AppUser.id)
-            .where(Membership.business_id == business_id, AppUser.id == user_id)
-        )
-        if user is None:
-            raise ValueError("user is not a member of this business")
-        phone = user.phone_e164
+    """ACT-06: free text to one staff member (blocked outside the window; prefer
+    ``send_staff_task``, which has a template)."""
+    phone = await _member_phone(session, business_id, user_id) if user_id else to_phone
     if not phone:
         raise ValueError("user_id or to_phone is required")
     return await send_text(
@@ -295,38 +344,6 @@ async def notify_staff(
     )
 
 
-async def record_inbound(
-    session: AsyncSession,
-    business_id: uuid.UUID,
-    *,
-    phone: str,
-    user_id: uuid.UUID | None,
-    kind: str,
-    body: str,
-    provider: str,
-    provider_message_id: str | None,
-    ref: dict[str, Any] | None = None,
-) -> WaMessage:
-    msg = WaMessage(
-        id=uuid.uuid4(),
-        business_id=business_id,
-        direction="in",
-        kind=kind,
-        purpose="manager",
-        user_id=user_id,
-        phone_hash=hash_phone(phone),
-        phone_last4=phone_last4(phone),
-        body=body,
-        ref=ref or {},
-        provider=provider,
-        provider_message_id=provider_message_id,
-        status="received",
-    )
-    session.add(msg)
-    await session.flush()
-    return msg
-
-
 async def send_heads_up(
     session: AsyncSession,
     business_id: uuid.UUID,
@@ -337,21 +354,28 @@ async def send_heads_up(
     eta_seconds: int,
     source: str,
 ) -> None:
-    """NUM-07: "Hi Ravi, Sunrise Homes will call you in 2 min about your enquiry" (template)."""
-    from mitra_core.models import Business  # local: keeps this module's imports minimal
+    """NUM-07: "Hi Ravi, this is Sunrise Homes. We'll call you in about 2 minutes…".
 
-    business = await session.scalar(select(Business.name).where(Business.id == business_id))
+    Always the template (a new lead has not written to us). An unknown name uses the
+    per-language fallback from ``templates.NAME_FALLBACK``. Buttons: Call me later / Don't call
+    me (the second records an opt-out, see ``manager.customers``).
+    """
     minutes = max(1, round(eta_seconds / 60))
-    await send_template(
+    await send_customer_message(
         session,
         business_id,
         to_phone=phone_e164,
         template="call_heads_up",
-        params={
-            "name": (name or "").strip()[:60] or "there",
-            "business": business or "",
-            "minutes": str(minutes),
+        params={"name": (name or "").strip(), "minutes": str(minutes)},
+        buttons=[("call_later", "Call me later"), ("opt_out", "Don't call me")],
+        ref={
+            "kind": "heads_up",
+            "source": source[:32],
+            "employee_id": str(employee_id) if employee_id else None,
         },
-        purpose="customer",
-        ref={"source": source[:32], "employee_id": str(employee_id) if employee_id else None},
     )
+
+
+async def language_for(session: AsyncSession, business_id: uuid.UUID, phone: str) -> Lang:
+    """Customer's language (exported for callers composing their own free text)."""
+    return await customer_language(session, business_id, phone)

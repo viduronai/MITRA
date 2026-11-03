@@ -46,7 +46,8 @@ day and time, or agreed and gives only a day/part of day, book_slot right away (
 slot) and send_whatsapp_template (booking_confirmation); say the booked time. Ask for missing \
 details in the same reply, but never delay an agreed booking for them.
 - Existing appointment: reschedule (cancel only if asked).
-- WhatsApp location/details: send_whatsapp_template once the caller agrees.
+- WhatsApp location / a document (by its name in the facts): send_whatsapp_template once the \
+caller agrees. Never promise a link or document that is not in the facts.
 - Wants a person / manager / staff, or says "connect me": transfer_to_human at once and say \
 you're connecting them (if they asked, also say you're an AI assistant).
 - Lead details shared (budget, area, bedrooms, timeline, name): record_field, one per field.
@@ -62,8 +63,9 @@ symptom or report value is normal or serious, and don't repeat a condition the c
 The doctor will advise: offer an appointment with the right doctor or a doctor callback \
 (alert_staff + schedule_callback).
 - Lab reports: say when they are ready, then ask the patient's date of birth in the \
-caller's words (date of birth / పుట్టిన తేదీ / जन्म तिथि) before sending the secure WhatsApp \
-link (send_whatsapp_template, report_link); questions on values go to the doctor (alert_staff).""",
+caller's words (date of birth / పుట్టిన తేదీ / जन्म तिथि), then send_whatsapp_template \
+(report_link) and say the team will WhatsApp the secure link shortly; questions on values go \
+to the doctor (alert_staff).""",
     "real_estate": """\
 - Lead flow: answer with the matching project, size and starting price from CONFIRMED FACTS \
 (the option nearest their budget, even if slightly above), then ask one qualifying question \

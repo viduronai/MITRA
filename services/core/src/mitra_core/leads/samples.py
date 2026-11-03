@@ -9,6 +9,7 @@ from typing import Any
 
 from mitra_core.leads import adapters
 from mitra_core.leads.adapters import LeadInput
+from mitra_core.leads.consent import CONSENT_VERSION, FORM_SOURCES
 from mitra_core.leads.enums import LeadSourceKind
 
 
@@ -87,4 +88,6 @@ def sample_lead(kind: LeadSourceKind, phone: str) -> LeadInput:
     data = SAMPLES[kind](phone)
     data.external_id = None  # every test is a new lead
     data.fields["is_test"] = "true"
+    if kind in FORM_SOURCES:  # as if the visitor ticked the consent box
+        data.consent, data.consent_version = True, CONSENT_VERSION
     return data

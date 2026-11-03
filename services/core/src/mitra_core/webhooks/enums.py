@@ -9,10 +9,18 @@ class WebhookEvent(StrEnum):
     CALL_ENDED = "call.ended"
     LEAD_CREATED = "lead.created"
     CAMPAIGN_FINISHED = "campaign.finished"
+    PAYMENT_PAID = "payment.paid"
+    PAYMENT_FAILED = "payment.failed"
     TEST = "test"  # "Send test event": one endpoint, regardless of its subscriptions
 
 
-SUBSCRIBABLE = (WebhookEvent.CALL_ENDED, WebhookEvent.LEAD_CREATED, WebhookEvent.CAMPAIGN_FINISHED)
+SUBSCRIBABLE = (
+    WebhookEvent.CALL_ENDED,
+    WebhookEvent.LEAD_CREATED,
+    WebhookEvent.CAMPAIGN_FINISHED,
+    WebhookEvent.PAYMENT_PAID,
+    WebhookEvent.PAYMENT_FAILED,
+)
 
 
 class DeliveryStatus(StrEnum):

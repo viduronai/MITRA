@@ -51,6 +51,7 @@ class PhoneNumberOut(ResponseModel):
     spam_flag: bool
     forwarding_tested_at: datetime | None
     created_at: datetime
+    missed_call: bool = False  # CALL-20: calls are rejected unanswered and called back
 
 
 class PhoneNumberList(ResponseModel):
@@ -122,6 +123,8 @@ class ResolveOut(ResponseModel):
     employee_id: uuid.UUID
     phone_number_id: uuid.UUID
     caller_known: bool
+    # CALL-20: do NOT answer; reject before answer and report POST /missed-calls instead.
+    missed_call: bool = False
 
 
 class ComplianceCheckIn(RequestModel):
@@ -133,6 +136,7 @@ class ComplianceCheckIn(RequestModel):
     called_number_id: uuid.UUID | None = None  # callback: the number the customer called
     dlt_template_id: DltTemplateId | None = None
     timezone: Literal["Asia/Kolkata"] = "Asia/Kolkata"
+    collection: bool = False  # a payment-collection call (lenders: 08:00-19:00 only)
 
 
 class ReasonOut(ResponseModel):

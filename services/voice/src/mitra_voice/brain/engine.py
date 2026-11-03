@@ -158,6 +158,8 @@ class Brain:
         self.config = config
         self.pack = pack
         self.executor = ToolExecutor(pack, clock=clock) if clock else ToolExecutor(pack)
+        if customer_memory:  # an outbound brief may carry the amount to collect
+            self.executor.grounding.append(customer_memory)
         self.post = PostCheck(pack)
         self.usage = Usage()
         self._localized = localized
@@ -445,7 +447,14 @@ _PROMISE = re.compile(
     re.IGNORECASE,
 )
 _FOLLOW_UP_TOOLS = frozenset(
-    {"schedule_callback", "transfer_to_human", "send_whatsapp_template", "book_slot", "reschedule"}
+    {
+        "schedule_callback",
+        "transfer_to_human",
+        "send_whatsapp_template",
+        "send_payment_link",
+        "book_slot",
+        "reschedule",
+    }
 )
 
 _DONE: dict[str, str] = {

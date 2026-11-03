@@ -462,7 +462,7 @@ async def export_csv(
             [
                 c.row_number,
                 _safe(c.name or ""),
-                unseal(c.phone_enc),
+                unseal(c.phone_enc, c.business_id) if c.phone_enc else "",  # '' = forgotten
                 c.status.value,
                 c.bucket.value if c.bucket else "",
                 " ".join(c.reasons),

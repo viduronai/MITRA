@@ -14,7 +14,7 @@ from mitra_core.schemas.common import PatchModel, RequestModel, ResponseModel
 
 Note = Annotated[str, StringConstraints(strip_whitespace=True, max_length=300)]
 AskText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
-RuleKind = Literal["discount", "refund", "cancellation", "big_booking", "list_call"]
+RuleKind = Literal["discount", "refund", "cancellation", "big_booking", "list_call", "payment_link"]
 
 
 class ApprovalOut(ResponseModel):
@@ -180,3 +180,20 @@ class SimInboundOut(ResponseModel):
 class TickOut(ResponseModel):
     reports: int
     expired: int
+
+
+class InternalWhatsAppSendIn(RequestModel):
+    """What the AI employee promised to WhatsApp the caller (voice -> core, after the call)."""
+
+    employee_id: uuid.UUID
+    contact_phone: Annotated[str, StringConstraints(pattern=r"^\+[1-9][0-9]{7,14}$")]
+    kind: Literal["booking_confirmation", "location", "document", "follow_up"]
+    client_ref: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+    call_id: uuid.UUID | None = None
+    document: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    topic: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] | None = None
+    when: Annotated[str, StringConstraints(strip_whitespace=True, max_length=60)] | None = None
+
+
+class InternalWhatsAppSendOut(ResponseModel):
+    status: Literal["sent", "blocked", "failed", "duplicate", "not_in_knowledge", "invalid"]

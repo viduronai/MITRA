@@ -133,7 +133,9 @@ async def create_card(
     await session.flush()
     text = card_text(card, when_local, day)
     for step in (await ladder(session, business_id))[:3]:
-        await ports.send_whatsapp(session, business_id, step.phone_e164, text, kind="handoff_card")
+        await ports.send_whatsapp(
+            session, business_id, step.phone_e164, text, kind="handoff_card", ref_id=str(card.id)
+        )
     return card
 
 

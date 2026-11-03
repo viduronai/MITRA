@@ -6,6 +6,7 @@
   out, ``clearAudio`` on barge-in. Only streams carrying our per-call token are accepted.
 - ``POST /telephony/plivo/answer``   answer XML for Plivo (signature-checked when configured)
 - ``POST /telephony/exotel/status``  Exotel status callback -> attempt outcome in core
+- ``GET  /telephony/exotel/missed-call``  Exotel Passthru for missed-call numbers (CALL-20)
 - ``POST /telephony/calls``          place an outbound call (service token): compliance first
 - ``POST /telephony/dialer/calls``   place a call core's dialer already cleared (service token):
   core ran compliance.check and recorded the attempt; carries the script variables
@@ -57,6 +58,8 @@ from mitra_voice.pack import load_pack
 from mitra_voice.pipeline import CallPipeline, build_call_pipeline, greet, make_turn_analyzers, say
 from mitra_voice.session import CallSession
 from mitra_voice.team.control import LiveControl
+from mitra_voice.transports import missed_call
+from mitra_voice.transports.payment_links import send_payment_links
 from mitra_voice.transports.routing import (
     CallMeta,
     Route,
@@ -67,6 +70,7 @@ from mitra_voice.transports.routing import (
     route_call,
     to_e164,
 )
+from mitra_voice.transports.whatsapp_sends import send_whatsapp_messages
 
 log = structlog.get_logger(__name__)
 
@@ -221,11 +225,16 @@ def telephony_router(settings: Settings) -> APIRouter:
                 raise HTTPException(status_code=403, detail="bad signature")
         elif not settings.is_local:
             raise HTTPException(status_code=503, detail="plivo is not configured")
+        # Outbound: Plivo's RequestUUID is what place_call returned (the registry key).
+        call = form.get("RequestUUID") or form.get("CallUUID", "")
+        state: TelephonyState = request.app.state.telephony
+        if state.registry.get(call) is None and await missed_call.reject_if_missed_call(
+            state.core, to_e164(form.get("To")), to_e164(form.get("From")), call
+        ):
+            return Response(missed_call.PLIVO_REJECT_XML, media_type="application/xml")
         secret = plivo_stream_secret(settings) or ""
         base = settings.mitra_public_base_url or str(request.base_url)
         ws_base = base.replace("https://", "wss://").replace("http://", "ws://")
-        # Outbound: Plivo's RequestUUID is what place_call returned (the registry key).
-        call = form.get("RequestUUID") or form.get("CallUUID", "")
         url = stream_url(
             ws_base,
             secret,
@@ -245,6 +254,8 @@ def telephony_router(settings: Settings) -> APIRouter:
         if intent and outcome and intent.attempt_id and state.core is not None:
             await state.core.set_outcome(intent.attempt_id, intent.business_id, outcome)
         return {"status": "ok"}
+
+    missed_call.add_missed_call_routes(router, settings)
 
     @router.post("/calls")
     async def place_call(
@@ -340,6 +351,11 @@ async def _serve(
         log.warning("telephony.unroutable", carrier=meta.carrier, reason=str(e))
         await websocket.close(code=POLICY_VIOLATION)
         return
+    if route.missed_call:  # a stream reached us anyway: never talk, core calls back
+        await websocket.close()
+        if state.core is not None and meta.to:
+            await missed_call.report(state.core, meta.to, meta.from_, meta.call_sid)
+        return
     pack = await load_pack(settings, route.scenario, route.employee_id)
     intent = route.intent
     if intent is not None and intent.variables and pack.greeting:
@@ -434,7 +450,9 @@ async def _hang_up(call: CallPipeline, reason: str) -> None:
 
 async def _after_call(session: CallSession, route: Route, state: TelephonyState) -> None:
     """CMP-06: "don't call me" during a call -> suppress the number in core.
-    CALL-05: "call me back tomorrow at 5" -> a callback in core's dialer queue."""
+    CALL-05: "call me back tomorrow at 5" -> a callback in core's dialer queue.
+    ACT-05: payment links the employee promised -> core sends them on WhatsApp.
+    ACT-02: booking confirmation / location / document / follow-up -> core WhatsApps them."""
     if state.core is None or not route.caller_phone or session.action_log is None:
         return
     try:
@@ -442,6 +460,9 @@ async def _after_call(session: CallSession, route: Route, state: TelephonyState)
         business_id = route.business_id or session.pack.business_id
         if not _is_uuid(business_id):
             return
+        if route.caller_phone and _is_uuid(session.pack.employee_id):
+            await send_payment_links(state.core, session, route.caller_phone, actions)
+            await send_whatsapp_messages(state.core, session, route.caller_phone, actions)
         if any(a.get("name") == "opt_out" for a in actions):
             await state.core.opt_out(business_id, route.caller_phone, None)
             return  # never call back someone who asked not to be called

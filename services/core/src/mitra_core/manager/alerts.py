@@ -18,6 +18,7 @@ from mitra_core.models import Call, Commitment, Contact, MemoryFact
 from mitra_core.models.enums import MemoryStatus
 from mitra_core.whatsapp import manager_settings
 from mitra_core.whatsapp import notify_owner as wa_notify_owner
+from mitra_core.whatsapp.service import app_suffix
 
 log = get_logger(__name__)
 
@@ -61,7 +62,15 @@ async def send_alert(
     if link:
         lines.append(get_settings().app_base_url.rstrip("/") + link)
     sent = await wa_notify_owner(
-        session, business_id, kind, "\n".join(lines), ref=ref, dedupe_key=dedupe_key
+        session,
+        business_id,
+        kind,
+        "\n".join(lines),
+        ref=ref,
+        dedupe_key=dedupe_key,
+        # Outside the 24-hour window: owner_alert (title in each recipient's language).
+        params={"detail": detail},
+        url_suffix=app_suffix(link),
     )
     return len(sent)
 

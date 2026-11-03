@@ -7,7 +7,7 @@ from mitra_core.models.demo_call import DemoCall
 from mitra_core.models.employee import Employee
 from mitra_core.models.idempotency import IdempotencyRecord
 from mitra_core.models.knowledge import Fact, KnowledgeSource
-from mitra_core.models.leads import Lead, LeadIntake, LeadSource
+from mitra_core.models.leads import Lead, LeadConsentAttestation, LeadIntake, LeadSource
 from mitra_core.models.manager import (
     Approval,
     ApprovalEvent,
@@ -18,6 +18,8 @@ from mitra_core.models.manager import (
 )
 from mitra_core.models.memory import Commitment, InteractionSummary, MemoryFact
 from mitra_core.models.otp import OtpRequest
+from mitra_core.models.payments import CollectionSettings, PaymentEvent, PaymentRequest
+from mitra_core.models.phones import CallerBlock, MissedCall, PhoneAccessLog
 from mitra_core.models.team import (
     FollowUpTask,
     HandoffCard,
@@ -52,8 +54,10 @@ __all__ = [
     "Business",
     "Call",
     "CallAction",
+    "CallerBlock",
     "Campaign",
     "CampaignContact",
+    "CollectionSettings",
     "Commitment",
     "ComplianceDecision",
     "ConsentRecord",
@@ -70,16 +74,21 @@ __all__ = [
     "InteractionSummary",
     "KnowledgeSource",
     "Lead",
+    "LeadConsentAttestation",
     "LeadIntake",
     "LeadSource",
     "ManagerMessage",
     "ManagerSettings",
     "Membership",
     "MemoryFact",
+    "MissedCall",
     "OptOut",
     "OtpRequest",
     "OutboundAttempt",
     "OutboundJob",
+    "PaymentEvent",
+    "PaymentRequest",
+    "PhoneAccessLog",
     "PhoneNumber",
     "Routine",
     "RoutineRun",

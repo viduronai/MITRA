@@ -29,7 +29,6 @@ class Person:
     name: str | None
     last4: str
     skip: str | None = None  # "opted_out" | "no_number" | None (will be contacted)
-    phone: str | None = None  # E.164 for the run itself; never returned by the API
 
 
 def _day_bounds(now: datetime, tz: str, offset_days: int) -> tuple[datetime, datetime]:
@@ -136,11 +135,10 @@ async def people(
         contact = contacts.get(contact_id)
         if contact is None:
             continue
-        skip, phone = None, None
+        skip = None
         if contact.phone_hash in opted:
             skip = "opted_out"
-        elif needs_phone:
-            phone = await ports.contact_phone(session, contact)
-            skip = None if phone else "no_number"
-        out.append(Person(contact.id, contact.name, contact.phone_last4, skip=skip, phone=phone))
+        elif needs_phone and not await ports.has_contact_phone(session, contact):
+            skip = "no_number"  # the number itself is only decrypted when the task dials
+        out.append(Person(contact.id, contact.name, contact.phone_last4, skip=skip))
     return out

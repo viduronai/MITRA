@@ -18,6 +18,7 @@ from typing import Any
 
 from google.genai import types
 
+from mitra_voice.brain import payment_links, whatsapp_sends
 from mitra_voice.pack import EmployeePack
 
 IST = timezone(timedelta(hours=5, minutes=30), "IST")
@@ -81,25 +82,8 @@ TOOL_SPECS: dict[str, tuple[str, dict[str, Any]]] = {
         "Cancel the caller's existing booking. Only when they clearly ask to cancel.",
         _obj({"current_booking": _s("What the caller said about the booking.")}),
     ),
-    "send_whatsapp_template": (
-        "Send the caller a WhatsApp message.",
-        _obj(
-            {
-                "template": {
-                    "type": "string",
-                    "enum": [
-                        "booking_confirmation",
-                        "location",
-                        "details",
-                        "report_link",
-                        "follow_up",
-                    ],
-                },
-                "details": _s("Short summary of what to send."),
-            },
-            ["template"],
-        ),
-    ),
+    "send_whatsapp_template": whatsapp_sends.SPEC,
+    "send_payment_link": payment_links.SPEC,
     "transfer_to_human": (
         "Transfer the call to a staff member (front desk / sales manager).",
         _obj({"reason": _s("Why the caller needs a person.")}, ["reason"]),
@@ -295,6 +279,8 @@ class ToolExecutor:
     end_call: bool = False
     # Set on phone calls with a staff ladder: starts the real warm transfer (team.control).
     on_transfer: Callable[[str], None] | None = None
+    # Text that may ground a payment amount besides the pack's facts (the call's brief).
+    grounding: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.calendar = Calendar.from_pack(self.pack)
@@ -418,7 +404,30 @@ class ToolExecutor:
         return {"status": "cancelled", "policy": "free up to the clinic's cancellation window"}
 
     def _tool_send_whatsapp_template(self, a: dict[str, Any]) -> dict[str, Any]:
-        return {"status": "queued", "template": a.get("template", "follow_up")}
+        booked = [
+            c.result
+            for c in self.calls
+            if c.name in {"book_slot", "reschedule"}
+            and c.result.get("status") in {"booked", "rescheduled"}
+        ]
+        sent = sum(
+            1 for c in self.calls if c.name == "send_whatsapp_template" and c.result.get("ok")
+        )
+        return whatsapp_sends.send_whatsapp(
+            a,
+            facts=list(self.pack.facts),
+            booking=booked[-1] if booked else None,
+            already_sent=sent,
+        )
+
+    def known_amounts(self) -> set[int]:
+        """Rupee amounts (paise) written in the facts or the brief: the only ones to quote."""
+        texts = [f"{f.key} {f.value}" for f in self.pack.facts] + self.grounding
+        return payment_links.known_amounts(texts)
+
+    def _tool_send_payment_link(self, a: dict[str, Any]) -> dict[str, Any]:
+        sent = sum(1 for c in self.calls if c.name == "send_payment_link" and c.result.get("ok"))
+        return payment_links.send_payment_link(a, grounded=self.known_amounts(), already_sent=sent)
 
     def _tool_transfer_to_human(self, a: dict[str, Any]) -> dict[str, Any]:
         if self.on_transfer is not None:

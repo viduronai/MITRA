@@ -94,7 +94,9 @@ async def test_lead_is_accepted_and_called_within_a_minute(
     assert lead.phone_hash == hash_phone(LEAD_PHONE)
     assert lead.phone_last4 == "5678"
     assert lead.source == "api"
-    assert (consent.scope, consent.source) == ("service", "lead_form")
+    assert (consent.scope, consent.source) == ("service", "owner_attested")
+    assert consent.purpose == "enquiry_response"
+    assert consent.consent_text == "These people asked to be contacted about their enquiry."
     assert consent.phone_hash == hash_phone(LEAD_PHONE)
     assert "api" in consent.note
     assert raw.scalar_one() == 0  # the number is never stored in the clear

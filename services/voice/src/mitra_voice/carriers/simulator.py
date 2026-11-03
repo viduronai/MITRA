@@ -57,6 +57,37 @@ def save_wav(path: Path, pcm: bytes, rate: int = RATE) -> None:
         w.writeframes(pcm)
 
 
+async def simulate_missed_call(
+    base_url: str,
+    *,
+    from_: str,
+    to: str,
+    carrier: Protocol = "exotel",
+    headers: dict[str, str] | None = None,
+) -> int:
+    """A caller rings a missed-call number and the carrier never answers (CALL-20).
+
+    Exotel: the flow's Passthru applet GETs ``/telephony/exotel/missed-call``. Plivo: the answer
+    URL is asked first and must reply ``<Hangup reason="rejected"/>`` (no stream is opened).
+    Returns the HTTP status; for Plivo, 200 only if the call was rejected.
+    """
+    import httpx
+
+    sid = "SIMMISS" + uuid.uuid4().hex[:24]
+    async with httpx.AsyncClient(base_url=base_url, headers=headers or {}) as client:
+        if carrier == "exotel":
+            res = await client.get(
+                "/telephony/exotel/missed-call",
+                params={"CallSid": sid, "CallFrom": from_, "CallTo": to},
+            )
+            return res.status_code
+        res = await client.post(
+            "/telephony/plivo/answer", data={"CallUUID": sid, "From": from_, "To": to}
+        )
+        rejected = res.status_code == 200 and 'Hangup reason="rejected"' in res.text
+        return 200 if rejected else 409
+
+
 # ---- G.711 mu-law (Plivo) ------------------------------------------------------------------------
 
 _BIAS, _CLIP = 0x84, 32635

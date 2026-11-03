@@ -14,8 +14,8 @@ class Contact(UUIDPrimaryKey, Timestamps, Base):
 
     Raw phone numbers are NEVER stored here. ``phone_hash`` is HMAC-SHA256 of the E.164 number
     (see ``mitra_core.pii.hash_phone``) and serves as the lookup/dedupe index; ``phone_last4``
-    is for display only. Storing the full number encrypted (``phone_enc``, KMS envelope
-    encryption per 08-COMPLIANCE-SECURITY §6) is a later step.
+    is for display only. ``phone_enc`` is the number sealed with the business's key
+    (``mitra_core.phones``); read it only through ``phones.reveal_phone`` (access-logged).
     """
 
     __tablename__ = "contact"
@@ -24,5 +24,6 @@ class Contact(UUIDPrimaryKey, Timestamps, Base):
     business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("business.id", ondelete="CASCADE"))
     phone_hash: Mapped[str] = mapped_column(Text)
     phone_last4: Mapped[str] = mapped_column(String(4))
+    phone_enc: Mapped[str | None] = mapped_column(Text)
     name: Mapped[str | None] = mapped_column(String(120))
     language: Mapped[Locale | None] = mapped_column(pg_enum(Locale, "locale"))

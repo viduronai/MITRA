@@ -17,7 +17,15 @@ from mitra_core.team import ports
 from mitra_core.team.handoff import rule_matches
 from mitra_core.team.humans import callback_promise
 from tests.helpers import add_member, bearer, new_actor
-from tests.test_calls import PHONE, TOKEN, booked_call, configure_service, make_tenant
+from tests.test_calls import (
+    PHONE,
+    TOKEN,
+    booked_call,
+    configure_service,
+    end,
+    make_tenant,
+    start,
+)
 
 
 @pytest.fixture
@@ -25,8 +33,10 @@ def outbox(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
     """Capture WhatsApps (manager's sender is swapped out) and give contacts a number."""
     sent: list[dict[str, Any]] = []
 
-    async def send(_s: Any, business_id: uuid.UUID, to: str, body: str, *, kind: str) -> str:
-        sent.append({"to": to, "text": body, "kind": kind})
+    async def send(
+        _s: Any, business_id: uuid.UUID, to: str, body: str, *, kind: str, **extra: Any
+    ) -> str:
+        sent.append({"to": to, "text": body, "kind": kind, **extra})
         return f"wa-{len(sent)}"
 
     async def phone(_s: Any, _contact: Any) -> str:
@@ -193,11 +203,18 @@ async def test_booked_call_hands_off_with_shared_memory(
     assert sum(r["handoffs_7d"] for r in data["teams"][0]["rules"]) == 2
 
 
-async def test_handoff_without_a_number_is_kept_visible(client: httpx.AsyncClient) -> None:
+async def test_handoff_without_a_number_is_kept_visible(
+    client: httpx.AsyncClient, admin_engine: AsyncEngine
+) -> None:
     configure_service()
     t = await make_tenant(client)
     await hire(client, t["headers"], "clinic")
-    await booked_call(client, t)
+    resp = await start(client, t["employee"]["id"])
+    assert resp.status_code == 201, resp.text
+    async with admin_engine.begin() as conn:  # e.g. erased, or a pre-encryption contact
+        await conn.execute(text("UPDATE contact SET phone_enc = NULL"))
+    resp = await end(client, resp.json()["id"], t["employee"]["id"])
+    assert resp.status_code == 200, resp.text
     tasks = (await client.get("/v1/team/tasks", headers=t["headers"])).json()
     remind = next(x for x in tasks if x["task"] == "remind_appointment")
     assert remind["status"] == "no_phone"

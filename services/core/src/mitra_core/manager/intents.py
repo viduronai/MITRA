@@ -23,6 +23,7 @@ IntentName = Literal[
     "callback",
     "call_list",
     "coach",
+    "payment_link",
     "help",
 ]
 QUESTION_INTENTS = frozenset(
@@ -38,7 +39,7 @@ QUESTION_INTENTS = frozenset(
         "help",
     }
 )
-COMMAND_INTENTS = frozenset({"pause", "resume", "callback", "call_list", "coach"})
+COMMAND_INTENTS = frozenset({"pause", "resume", "callback", "call_list", "coach", "payment_link"})
 
 
 @dataclass(slots=True)
@@ -50,7 +51,8 @@ class Intent:
     when: str = ""  # callback time as said ("5", "5:30 pm")
     results: list[str] = field(default_factory=list)  # call_list filter
     day_offset: int = 0  # bookings: 0 today, 1 tomorrow
-    text: str = ""  # coaching instruction
+    text: str = ""  # coaching instruction; payment link purpose
+    amount_paise: int = 0  # payment link amount
 
 
 _TE_SCRIPT = re.compile(r"[ఀ-౿]")
@@ -102,6 +104,15 @@ _CALLBACK = re.compile(
     r"|\bcall\s*back\s+(?P<name2>[A-Za-z]\w*)(?:\s+(?:at|by)\s+(?P<when2>[\w: .]+))?",
     re.IGNORECASE,
 )
+_AMOUNT = r"(?:₹|rs\.?|inr|rupees)?\s*(?P<amt>\d[\d,]*(?:\.\d{1,2})?)\s*(?:rupees|rs)?"
+_PAY_LINK = re.compile(
+    r"send\s+(?:a\s+)?payment\s+link\s+(?:to\s+)?(?P<name2>[A-Za-z]\w*)\s+(?:for|of)\s+"
+    + _AMOUNT
+    + r"|send\s+(?P<name>[A-Za-z]\w*)\s+(?:a\s+)?payment\s+link\s+(?:for|of)\s+"
+    + _AMOUNT.replace("amt", "amt2"),
+    re.IGNORECASE,
+)
+_PAY_PURPOSE = re.compile(r"\b(?:for|towards)\s+(?P<purpose>[^\d₹].{1,120}?)[?.!]*$", re.I)
 _CALL_LIST = re.compile(r"\bcall\s+(?:all|every(?:one|body)?|the)\b", re.IGNORECASE)
 _SEARCH = re.compile(
     r"\b(?:who|anyone|anybody|kaun|evaru)\b.*?\b(?:called|asked|call kiya|phone chesaru)\b"
@@ -128,6 +139,17 @@ def parse(text: str) -> Intent:
     raw = " ".join(text.split())[:500]
     low = raw.lower()
 
+    if m := _PAY_LINK.search(raw):
+        amount = (m.group("amt") or m.group("amt2") or "0").replace(",", "")
+        rest = raw[m.end() :]
+        purpose = _PAY_PURPOSE.search(rest)
+        return Intent(
+            "payment_link",
+            lang,
+            query=m.group("name") or m.group("name2") or "",
+            amount_paise=round(float(amount) * 100),
+            text=purpose.group("purpose").strip() if purpose else "",
+        )
     if m := _COACH.match(raw):
         return Intent("coach", lang, query=m.group("emp") or "", text=m.group("body").strip()[:200])
     if m := _CALLBACK.search(raw):

@@ -1,6 +1,6 @@
 """APPR-01 approval rules: which kinds need "Ask me first", above what, and timeout defaults.
 
-``threshold`` units per kind: discount = percent, refund / big_booking = rupees,
+``threshold`` units per kind: discount = percent, refund / big_booking / payment_link = rupees,
 list_call = number of contacts. ``None`` threshold = always ask. Owners change these in the
 app; a business without a stored rule gets the default below.
 """
@@ -33,6 +33,8 @@ DEFAULT_RULES: dict[str, RuleSpec] = {
     "cancellation": RuleSpec("cancellation", True, None, 60, "decline"),
     "big_booking": RuleSpec("big_booking", True, 50_000, 120, None),
     "list_call": RuleSpec("list_call", True, 50, None, None),
+    # An AI employee sending a payment link above this many rupees (payments module).
+    "payment_link": RuleSpec("payment_link", True, 10_000, 240, "decline"),
 }
 ALWAYS_ASK = frozenset({"manager_command", "behaviour_update"})
 

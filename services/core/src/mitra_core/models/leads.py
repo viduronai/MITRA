@@ -106,3 +106,25 @@ class Lead(UUIDPrimaryKey, Base):
     )
     ip_hash: Mapped[str | None] = mapped_column(Text)
     received_at: Mapped[datetime]
+
+
+class LeadConsentAttestation(UUIDPrimaryKey, Base):
+    """The owner's "These people asked to be contacted about their enquiry" for a generic source
+    (API, Sheets, Zapier...): who ticked it, when, with which words. Append-only; unticking sets
+    ``revoked_at``. Migration 0006_lead_consent."""
+
+    __tablename__ = "lead_consent_attestation"
+    __table_args__ = (
+        Index("ix_lead_consent_attestation_active", "business_id", "source", "attested_at"),
+    )
+
+    business_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("business.id", ondelete="CASCADE"))
+    source: Mapped[str] = mapped_column(String(20))  # LeadSourceKind (generic kinds only)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_user.id", ondelete="SET NULL")
+    )
+    user_name: Mapped[str | None] = mapped_column(String(120))
+    text_version: Mapped[str] = mapped_column(String(20))
+    wording: Mapped[str] = mapped_column("text", Text)  # the exact words ticked
+    attested_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
+    revoked_at: Mapped[datetime | None]

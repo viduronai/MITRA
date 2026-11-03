@@ -1,9 +1,11 @@
-import { AlertTriangle, ArrowLeft, CalendarClock, PhoneCall, Zap, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarClock, IndianRupee, PhoneCall, Zap, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ForgetCustomer, MemoryList } from "@/components/customers/memory-list";
+import { RevealPhone } from "@/components/customers/reveal-phone";
 import { EmptyState } from "@/components/mitra/empty-state";
 import { ResultPill } from "@/components/mitra/result-pill";
+import { CustomerPayments } from "@/components/payments/customer-payments";
 import { localeLabels } from "@/i18n/config";
 import type { TimelineEvent } from "@/lib/api/types";
 import { uiResult } from "@/lib/calls";
@@ -20,13 +22,15 @@ const eventIcons: Record<TimelineEvent["kind"], LucideIcon> = {
   call: PhoneCall,
   action: Zap,
   commitment: CalendarClock,
+  payment: IndianRupee,
 };
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [t, tList, locale, employee, customer] = await Promise.all([
+  const [t, tList, tPay, locale, employee, customer] = await Promise.all([
     getTranslations("customer"),
     getTranslations("customers"),
+    getTranslations("payments.timeline"),
     getLocale(),
     getEmployee(),
     getCustomer(validId(id)),
@@ -52,7 +56,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           </h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-text-muted">
             <span>
-              {t("phone")}: <span className="tabular-nums">••••{customer.phone_last4}</span>
+              {t("phone")}:{" "}
+              <RevealPhone
+                customerId={customer.id}
+                masked={customer.phone_masked ?? `••••${customer.phone_last4}`}
+                hasPhone={customer.has_phone ?? false}
+              />
             </span>
             {customer.language && (
               <span>
@@ -89,10 +98,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 const body = (
                   <>
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{event.title}</span>
+                      <span className="font-medium">
+                        {event.kind === "payment" && event.payment_status ? tPay(event.payment_status) : event.title}
+                      </span>
                       {event.kind === "call" && event.result && <ResultPill result={uiResult(event.result)} />}
                     </span>
-                    {event.detail && event.kind === "call" && (
+                    {event.detail && (event.kind === "call" || event.kind === "payment") && (
                       <span className="mt-0.5 block text-sm leading-5 text-text-muted">{event.detail}</span>
                     )}
                     <span className="mt-0.5 block text-[13px] text-text-subtle">
@@ -129,6 +140,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <p className="mt-1 mb-4 text-sm leading-5 text-text-muted">{t("memoryHelp", { name: employeeName })}</p>
           <MemoryList customerId={customer.id} memory={customer.memory} />
         </section>
+        <CustomerPayments customerId={customer.id} name={customer.name} />
       </div>
     </>
   );

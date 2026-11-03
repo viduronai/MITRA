@@ -5,6 +5,8 @@
 - ``record_attempt`` / ``set_outcome``: frequency caps and per-number answer rate
 - ``opt_out``: "don't call me" during a call (CMP-06)
 - ``schedule_callback``: "call me back tomorrow at 5" -> core's dialer queue (CALL-05)
+- ``send_payment_link``: the employee's payment link -> core's payments (ACT-05)
+- ``report_missed_call``: a call to a missed-call number we did not answer (CALL-20)
 
 Inbound resolution sits on the call-start path, so it has a hard timeout; everything else
 happens before dialling or after hang-up. Phone numbers are sent to core (which hashes them) and
@@ -39,6 +41,7 @@ class Resolved:
     employee_id: str
     phone_number_id: str
     caller_known: bool
+    missed_call: bool = False  # CALL-20: never answer; reject and report instead
 
 
 class CoreTelephony:
@@ -50,6 +53,8 @@ class CoreTelephony:
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._dialer_url = core_url.rstrip("/") + "/internal/v1/dialer"
+        self._payments_url = core_url.rstrip("/") + "/internal/v1/payments"
+        self._whatsapp_url = core_url.rstrip("/") + "/internal/v1/whatsapp"
         self._client = httpx.AsyncClient(
             base_url=core_url.rstrip("/") + PREFIX,
             headers={"Authorization": f"Bearer {service_token}"},
@@ -84,6 +89,7 @@ class CoreTelephony:
             employee_id=body["employee_id"],
             phone_number_id=body["phone_number_id"],
             caller_known=bool(body.get("caller_known")),
+            missed_call=bool(body.get("missed_call")),
         )
 
     async def compliance_check(self, body: dict[str, Any]) -> dict[str, Any]:
@@ -122,6 +128,31 @@ class CoreTelephony:
             log.warning("core.callback_failed", status=res.status_code)
             return None
         return str(res.json()["job_id"])
+
+    async def report_missed_call(self, to: str, from_: str, call_sid: str | None) -> str | None:
+        """CALL-20: core queues the callback; returns its status (queued, deduped, ...)."""
+        body = {"to": to, "from": from_} | ({"carrier_call_sid": call_sid} if call_sid else {})
+        res = await self._send("POST", "/missed-calls", json=body)
+        if res.status_code != 200:
+            log.warning("core.missed_call_failed", status=res.status_code)
+            return None
+        return str(res.json()["status"])
+
+    async def send_payment_link(self, body: dict[str, Any]) -> str | None:
+        """ACT-05: core creates the link (or asks the owner first) and WhatsApps it."""
+        res = await self._send("POST", f"{self._payments_url}/links", json=body)
+        if res.status_code != 201:
+            log.warning("core.payment_link_failed", status=res.status_code)
+            return None
+        return str(res.json()["status"])
+
+    async def send_whatsapp(self, body: dict[str, Any]) -> str | None:
+        """ACT-02: core WhatsApps what the employee promised (links from its own knowledge)."""
+        res = await self._send("POST", f"{self._whatsapp_url}/sends", json=body)
+        if res.status_code != 201:
+            log.warning("core.whatsapp_send_failed", status=res.status_code)
+            return None
+        return str(res.json()["status"])
 
     async def aclose(self) -> None:
         await self._client.aclose()

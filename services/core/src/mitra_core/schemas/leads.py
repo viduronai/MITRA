@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
 
@@ -41,6 +41,10 @@ class LeadSourceOut(ResponseModel):
     lead_count: int = 0
     last_error: str | None = None
     simulated: bool = False  # the portal side is a simulator (no real account connected)
+    # Lead consent policy: "form_checkbox" | "portal_enquiry" | "owner_attestation".
+    consent_policy: str = "owner_attestation"
+    attested_at: datetime | None = None  # owner_attestation sources only
+    attested_by: str | None = None
 
 
 class LeadSetupOut(ResponseModel):
@@ -54,6 +58,10 @@ class LeadSetupOut(ResponseModel):
     dedupe_minutes: int = 10
     urls: IntakeUrls | None = None
     sources: list[LeadSourceOut] = Field(default_factory=list)
+    # Exact checkbox / attestation wording per language (en, hi, te), for snippets and the UI.
+    consent_version: str
+    consent_texts: dict[str, str] = Field(default_factory=dict)
+    attestation_texts: dict[str, str] = Field(default_factory=dict)
 
 
 class LeadSetupPatch(PatchModel):
@@ -75,6 +83,9 @@ class LeadSourcePatch(PatchModel):
     employee_id: uuid.UUID | None = None
     external_id: ExternalId | None = None  # Meta page id
     credential: Credential | None = None  # IndiaMART CRM key / Meta page token (write-only)
+    # Generic sources: the owner confirms "These people asked to be contacted..." (or withdraws).
+    consent_attested: bool | None = None
+    attestation_lang: Literal["en", "hi", "te"] | None = None
 
 
 class LeadOut(ResponseModel):

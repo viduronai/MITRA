@@ -13,13 +13,22 @@ from mitra_core.api.lead_intake import intake_deps
 from mitra_core.clock import Clock, get_clock
 from mitra_core.config import Settings, get_settings
 from mitra_core.errors import AppError, not_found
+from mitra_core.leads import attestation as attestations
+from mitra_core.leads import consent as consent_policy
 from mitra_core.leads import intake as intake_mod
 from mitra_core.leads.enums import LeadSourceKind
 from mitra_core.leads.providers import IndiaMartProvider, get_indiamart_provider
 from mitra_core.leads.pull import pull_indiamart
 from mitra_core.leads.samples import sample_lead
 from mitra_core.leads.service import IntakeDeps, check_rate, ingest, source_for
-from mitra_core.models import Business, Employee, Lead, LeadIntake, LeadSource
+from mitra_core.models import (
+    Business,
+    Employee,
+    Lead,
+    LeadConsentAttestation,
+    LeadIntake,
+    LeadSource,
+)
 from mitra_core.models.enums import MemberRole
 from mitra_core.schemas.leads import (
     IntakeUrls,
@@ -60,10 +69,20 @@ def _simulated(kind: LeadSourceKind, settings: Settings) -> bool:
     return kind == LeadSourceKind.INDIAMART and settings.indiamart_provider == "sim"
 
 
-def source_out(kind: LeadSourceKind, row: LeadSource | None, settings: Settings) -> LeadSourceOut:
+def source_out(
+    kind: LeadSourceKind,
+    row: LeadSource | None,
+    settings: Settings,
+    attested: LeadConsentAttestation | None = None,
+) -> LeadSourceOut:
     sim = _simulated(kind, settings)
+    policy: dict[str, object] = {
+        "consent_policy": consent_policy.policy_of(kind),
+        "attested_at": attested.attested_at if attested else None,
+        "attested_by": attested.user_name if attested else None,
+    }
     if row is None:
-        return LeadSourceOut(kind=kind, connected=False, simulated=sim)
+        return LeadSourceOut(kind=kind, connected=False, simulated=sim).model_copy(update=policy)
     return LeadSourceOut(
         kind=kind,
         connected=True,
@@ -79,7 +98,7 @@ def source_out(kind: LeadSourceKind, row: LeadSource | None, settings: Settings)
         lead_count=row.lead_count,
         last_error=row.last_error,
         simulated=sim,
-    )
+    ).model_copy(update=policy)
 
 
 def lead_out(lead: Lead) -> LeadOut:
@@ -111,19 +130,35 @@ async def _setup_out(
             select(LeadSource).where(LeadSource.business_id == tenant.business_id)
         )
     }
-    sources = [source_out(k, rows.get(k.value), settings) for k in LeadSourceKind]
-    if intake is None:
-        return LeadSetupOut(enabled=False, sources=sources)
-    return LeadSetupOut(
-        enabled=True,
-        slug=intake.slug,
-        secret_hint=intake.secret_hint,
-        secret=secret,
-        rotated_at=intake.rotated_at,
-        previous_valid_until=intake.previous_valid_until,
-        dedupe_minutes=intake.dedupe_minutes,
-        urls=_urls(settings, intake.slug),
+    business = await session.get(Business, tenant.business_id)
+    attested = {
+        k: await attestations.active(session, tenant.business_id, k)
+        for k in consent_policy.GENERIC_SOURCES
+    }
+    sources = [source_out(k, rows.get(k.value), settings, attested.get(k)) for k in LeadSourceKind]
+    name = business.name if business else ""
+    texts = LeadSetupOut(
+        enabled=False,
         sources=sources,
+        consent_version=consent_policy.CONSENT_VERSION,
+        consent_texts={
+            lang: consent_policy.consent_text(name, lang) for lang in consent_policy.LANGS
+        },
+        attestation_texts=dict(consent_policy.ATTESTATION_TEXTS),
+    )
+    if intake is None:
+        return texts
+    return texts.model_copy(
+        update={
+            "enabled": True,
+            "slug": intake.slug,
+            "secret_hint": intake.secret_hint,
+            "secret": secret,
+            "rotated_at": intake.rotated_at,
+            "previous_valid_until": intake.previous_valid_until,
+            "dedupe_minutes": intake.dedupe_minutes,
+            "urls": _urls(settings, intake.slug),
+        }
     )
 
 
@@ -191,6 +226,7 @@ async def patch_source(
     kind: LeadSourceKind,
     body: LeadSourcePatch,
     settings: Settings = Depends(get_settings),
+    clock: Clock = Depends(get_clock),
     tenant: Tenant = Depends(_can_manage),
     session: AsyncSession = Depends(get_tenant_session),
 ) -> LeadSourceOut:
@@ -205,6 +241,15 @@ async def patch_source(
         )
         if found is None:
             raise not_found("Employee")
+    if body.consent_attested is not None:
+        if kind not in consent_policy.GENERIC_SOURCES:
+            raise AppError(422, "not_applicable", "This source records consent by itself")
+        if body.consent_attested:
+            await attestations.attest(
+                session, tenant.business_id, kind, tenant.user, body.attestation_lang, clock()
+            )
+        else:
+            await attestations.revoke(session, tenant.business_id, kind, clock())
     for name in ("enabled", "auto_call", "call_delay_seconds", "heads_up"):
         if name in fields:
             setattr(row, name, getattr(body, name))
@@ -222,7 +267,8 @@ async def patch_source(
         # The page id belongs to another business (invisible here through RLS).
         await session.rollback()
         raise AppError(409, "conflict", "This page is already connected to Mitra") from None
-    return source_out(kind, row, settings)
+    attested = await attestations.active(session, tenant.business_id, kind)
+    return source_out(kind, row, settings, attested)
 
 
 @router.post("/sources/{kind}/test", response_model=TestLeadOut, summary="Send a test lead")

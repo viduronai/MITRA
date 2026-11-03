@@ -52,6 +52,17 @@ Opt-out phrases ("don't call me", "call cheyakandi", "mat karo call") → acknow
 - BFSI: no guarantees of approval/returns; read only approved disclosures.
 - Real estate: prices/availability only from facts pack/live sheet; no legal claims.
 
+### 5.1 Payment collection (ACT-05 / ACT-11)
+
+- The money is the **business's**: links are created in the business's own Razorpay account (keys sealed per business, never shown again) or point at its own UPI ID. Nothing flows through Mitra, and it is kept separate from Mitra's wallet billing.
+- An AI employee may only quote an amount written in the business's facts or the call's brief (the voice service refuses any other amount). Discounts and amounts above the owner's threshold wait for "Ask me first".
+- Reminders stay polite and limited: one WhatsApp the morning after the due date ("already paid? ignore this"), then at most one call through the normal dialer, so calling hours, frequency caps and "don't call me" apply unchanged. No threats, no shaming, no calls to third parties (family, employer), no repeated calls. Everything stops the moment the link is paid or cancelled; an opted-out customer gets no reminders.
+- **Lenders (NBFCs, microfinance, gold loans, any lending / BFSI business; founder decision, 3 Nov 2026):** the RBI Fair Practices Code and its recovery-agent rules apply to the business. The owner marks the business as a lender in Payments → How you collect; from then on the **compliance gate** (not just the UI) allows payment-collection calls only **8 am–7 pm** local time (RBI recovery conduct), combined with our general service window, so in practice 9 am–7 pm. Calls outside it are deferred to the next allowed time. Collection calls are the dialer jobs for routine goal "collect the payment" or carrying a payment amount. Mitra never uses recovery language, and the business remains responsible as the lender. TODO(legal): confirm whether an AI reminder caller counts as a "recovery agent" under RBI directions.
+- **Link expiry:** links expire 15 days after sending (1–180, per business). One WhatsApp goes out 2 days before expiry if unpaid; at expiry the link is marked expired and any queued reminder call is cancelled.
+- **"Already paid":** a customer's "Already paid" tap or "PAID" reply only flags the link for the owner, who confirms with "Mark paid". It is never marked paid automatically; pending reminder calls are withdrawn while the owner checks.
+- TODO(razorpay): `payment.failed` events are matched to a link through the `mitra_request_id` note; confirm with real Razorpay test keys that the note is copied onto the payment.
+- Webhooks are verified with the business's own secret (HMAC-SHA256 over the raw body) and applied once per event id. Outgoing `payment.paid` / `payment.failed` events carry ids, amounts and last-4 digits only.
+
 ## 6. Data protection & security controls
 
 | Control | Implementation |
@@ -116,6 +127,18 @@ Vendor-reported benchmark (unverified): answer rates of ~20–35% unverified vs 
 ### 8.4 Legal note
 Rules for 1601 phases and CNAP business names are still being rolled out. Before outbound launch, legal counsel confirms (a) that consented lead follow-ups count as service, not promotional, for each vertical, and (b) the obligations for virtual numbers used by clients. Product defaults stay conservative: **outbound only to people with a consent record or an existing relationship.**
 
+### 8.5 Lead consent policy (founder decision, 3 Nov 2026)
+
+> **Needs a legal check before launch.** This is the founder's product policy, built into the code (`services/core/src/mitra_core/leads/consent.py`), not a legal opinion.
+
+How each lead source proves the person asked to be contacted. Every consent record is **service** scope only; promotional contact still needs explicit promotional consent plus the DND scrub (§3), and the AI disclosure and "don't call me" handling are unchanged (§4).
+
+| Source | Rule | Record kept |
+|---|---|---|
+| **Forms Mitra controls**: website form snippet, Google Forms script | Unticked, required checkbox: "I agree to get a call or WhatsApp from <Business>, possibly from an AI assistant, about my enquiry." (en / hi / te). No tick: no call, no message | Source = the form, exact text + version (`lead-v1`) + time |
+| **Third-party lead forms**: Meta Lead Ads, Google Ads lead forms, IndiaMART, JustDial | The enquiry counts as consent to answer that enquiry only (`enquiry_response`), for 30 days (configurable: `MITRA_LEAD_PORTAL_CONSENT_DAYS`). After that the compliance gate treats it as no consent. An explicit "no" in the payload: no call, no message. Setup screens recommend adding the consent line to the portal form | Source = the portal, purpose, expiry |
+| **Generic sources**: lead API, Google Sheets, Zapier / Make / Pabbly / n8n | The owner must tick "These people asked to be contacted about their enquiry" for the source. Without it, leads are stored but not called ("Not called: no consent confirmed") | Who ticked it, when, the exact words and version (`attest-v1`); unticking is logged too |
+
 ## 9. Compliance checklist before outbound GA
 
 - [ ] Legal opinion on TCCCPR/DLT obligations for our model (platform vs telemarketer)
@@ -123,8 +146,9 @@ Rules for 1601 phases and CNAP business names are still being rolled out. Before
 - [ ] Truecaller Verified Business + CNAP name registration process tested end-to-end
 - [ ] Legal confirmation that consented lead follow-ups are "service" for each launch vertical
 - [ ] DND scrubbing provider integrated & tested
-- [ ] Consent capture verified for each lead source
+- [ ] Consent capture verified for each lead source (lawyer reviews §8.5 lead consent policy)
 - [ ] DPA + privacy policy + terms reviewed
 - [ ] Disclosure wording reviewed in TE/HI/EN
 - [ ] Erasure workflow end-to-end tested
+- [ ] Payment reminders reviewed for lenders (RBI Fair Practices Code / recovery-agent rules, §5.1)
 - [ ] Healthcare guardrail eval set ≥ 200 cases passing

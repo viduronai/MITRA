@@ -12,10 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.calls.labels import VISIBLE_ACTIONS, action_label
 from mitra_core.calls.queries import escape_like
-from mitra_core.errors import not_found
+from mitra_core.errors import AppError, not_found
 from mitra_core.logging import get_logger
 from mitra_core.models import Call, CallAction, Commitment, Contact, MemoryFact
 from mitra_core.models.enums import CallResult, CommitmentStatus, MemberRole, MemoryStatus
+from mitra_core.payments.timeline import payment_events
+from mitra_core.phones import forget_phone, has_phone, mask_phone, reveal_phone
 from mitra_core.schemas.customer import (
     CommitmentOut,
     CustomerDetail,
@@ -24,6 +26,7 @@ from mitra_core.schemas.customer import (
     ForgetOut,
     MemoryFactOut,
     MemoryFactUpdate,
+    PhoneRevealOut,
     Tag,
     TimelineEvent,
 )
@@ -224,15 +227,44 @@ async def get_customer(
         )
         for m in commitments
     ]
-    events.sort(key=lambda e: (e.at, {"call": 0, "action": 1, "commitment": 2}[e.kind]))
+    if tenant.role in (MemberRole.OWNER, MemberRole.MANAGER):  # staff cannot see money
+        events += await payment_events(session, contact.id)
+    order = {"call": 0, "action": 1, "commitment": 2, "payment": 3}
+    events.sort(key=lambda e: (e.at, order[e.kind]))
     events.reverse()
     return CustomerDetail(
         **row.model_dump(),
         created_at=contact.created_at,
+        phone_masked=mask_phone(contact.phone_last4),
+        has_phone=await has_phone(session, tenant.business_id, contact.id),
         memory=[MemoryFactOut.model_validate(m) for m in memory],
         commitments=[CommitmentOut.model_validate(m) for m in commitments],
         timeline=events,
     )
+
+
+@router.post(
+    "/{contact_id}/phone",
+    response_model=PhoneRevealOut,
+    summary="Show this customer's full number (owner/manager; every view is logged)",
+)
+async def reveal_customer_phone(
+    contact_id: uuid.UUID,
+    tenant: Tenant = Depends(_can_manage),
+    session: AsyncSession = Depends(get_tenant_session),
+) -> PhoneRevealOut:
+    contact = await _get_contact(session, tenant, contact_id)
+    phone = await reveal_phone(
+        session,
+        tenant.business_id,
+        contact.id,
+        purpose="owner_view",
+        actor=f"user:{tenant.user.id}",
+    )
+    if phone is None:
+        raise AppError(404, "no_number", "No number is on file for this customer")
+    await session.commit()
+    return PhoneRevealOut(phone=phone, phone_masked=mask_phone(contact.phone_last4))
 
 
 async def _get_fact(
@@ -310,6 +342,8 @@ async def forget_customer(
     # ON DELETE CASCADE removes calls (with transcripts and actions), summaries, memory and
     # commitments. TODO(dpdp): delete recording objects in S3 once recordings are uploaded, keep
     # an opt-out suppression hash if the customer opted out, and write an audit_log entry.
+    # The encrypted number goes with the contact row; the dialer's sealed copies are erased too.
+    await forget_phone(session, tenant.business_id, contact.phone_hash)
     await session.delete(contact)
     await session.commit()
     log.info("customer.forgotten", business_id=str(tenant.business_id), calls=calls)

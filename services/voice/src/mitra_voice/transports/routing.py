@@ -81,6 +81,7 @@ class Route:
     business_id: str | None = None
     intent: OutboundIntent | None = None
     phone_number_id: str | None = None  # inbound: the business number that was dialled
+    missed_call: bool = False  # CALL-20 number: hang up at once, core calls back
 
 
 class RouteError(RuntimeError):
@@ -129,6 +130,7 @@ async def route_call(
                 meta.from_,
                 resolved.business_id,
                 phone_number_id=resolved.phone_number_id,
+                missed_call=resolved.missed_call,
             )
         if not settings.is_local:
             raise RouteError("dialled number is not a Mitra number")

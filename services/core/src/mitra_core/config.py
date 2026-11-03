@@ -64,6 +64,9 @@ class Settings(BaseSettings):
 
     # HMAC key for the contact phone-number index (08-COMPLIANCE-SECURITY §6).
     phone_hash_key: SecretStr = SecretStr(_DEV_PHONE_HASH_KEY)
+    # Master key for encrypted customer numbers (mitra_core.phones; per-business keys via HKDF).
+    # Unset: derived from the phone-hash key (domain-separated). TODO(kms): KMS data key.
+    phone_enc_key: SecretStr | None = None
 
     idempotency_ttl_hours: int = 24
 
@@ -102,6 +105,9 @@ class Settings(BaseSettings):
     razorpay_webhook_secret: SecretStr = Field(
         default=SecretStr(""), validation_alias="RAZORPAY_WEBHOOK_SECRET"
     )
+    # UPI collections for the business's own customers (mitra_core.payments): "sim" = local
+    # Payment Links simulator (any keys accepted); "razorpay" = the business's own account.
+    collections_provider: Literal["sim", "razorpay"] = "sim"
     # Supplier details printed on GST invoices. TODO(billing): real legal entity + GSTIN.
     billing_supplier_name: str = "Mitra (supplier name not configured)"
     billing_supplier_gstin: str = ""
@@ -138,6 +144,8 @@ class Settings(BaseSettings):
     public_api_url: str = "http://localhost:8000"
     lead_intake_max_per_minute: int = 60  # per business, all sources together
     lead_form_max_per_ip_hour: int = 10  # website form (no secret possible in a browser)
+    # Portal enquiries (Meta, Google Ads, IndiaMART, JustDial) are service consent for this long.
+    lead_portal_consent_days: int = 30
     # Meta Lead Ads: "sim" fabricates the lead for a leadgen id; "graph" calls the Graph API.
     # The app secret signs webhooks (X-Hub-Signature-256); Meta's names, no MITRA_ prefix.
     meta_leads_provider: Literal["sim", "graph"] = "sim"
@@ -180,6 +188,8 @@ class Settings(BaseSettings):
                 raise ValueError("MITRA_OTP_HASH_KEY must be set outside local/test environments")
             if self.payment_provider == "mock":
                 raise ValueError("MITRA_PAYMENT_PROVIDER=mock is not allowed in staging/prod")
+            if self.collections_provider == "sim":
+                raise ValueError("MITRA_COLLECTIONS_PROVIDER=sim is not allowed in staging/prod")
             if self.effective_service_token == _DEV_SERVICE_TOKEN:
                 raise ValueError("MITRA_SERVICE_TOKEN must not be the dev placeholder")
         token = self.effective_service_token

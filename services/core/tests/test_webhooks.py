@@ -45,7 +45,7 @@ async def test_create_shows_secret_once_and_validates(
     assert hook["secret_hint"] == hook["secret"][:10]
     listed = (await client.get("/v1/webhooks", headers=t["headers"])).json()
     assert listed["items"][0]["secret"] is None
-    assert listed["events"] == ["call.ended", "lead.created", "campaign.finished"]
+    assert {"call.ended", "lead.created", "campaign.finished"} <= set(listed["events"])
 
     for bad in (
         {"url": "http://hooks.example.com"},

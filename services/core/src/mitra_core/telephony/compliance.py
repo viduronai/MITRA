@@ -56,6 +56,9 @@ class CallingRules:
 
     service_window: tuple[time, time] = (time(9, 0), time(21, 0))
     promotional_window: tuple[time, time] = (time(10, 0), time(19, 0))
+    # Lenders (BFSI) collecting dues: RBI recovery conduct, 08:00-19:00 (08 section 5.1). Applied
+    # on top of the service window, so the stricter edge of each wins.
+    lender_collection_window: tuple[time, time] = (time(8, 0), time(19, 0))
     max_per_day: int = 3
     max_per_week: int = 7
 
@@ -108,6 +111,8 @@ class ComplianceFacts:
     dlt_template_id: str | None = None
     sector_mandated: bool = False  # BFSI / utilities / logistics: service calls via 1600/1601
     wallet_pause: str | None = None  # billing PauseReason value: outbound is paused until top-up
+    collection: bool = False  # a payment-collection call (a reminder about money owed)
+    lender: bool = False  # the business lends money (collection settings: lending / BFSI)
     rules: CallingRules = DEFAULT_RULES
 
 
@@ -177,7 +182,11 @@ def select_caller_id(facts: ComplianceFacts) -> tuple[NumberInfo | None, str | N
 def _window(facts: ComplianceFacts) -> tuple[time, time]:
     if facts.purpose == CallPurpose.PROMOTIONAL:
         return facts.rules.promotional_window
-    return facts.rules.service_window
+    start, end = facts.rules.service_window
+    if facts.collection and facts.lender:
+        lender_start, lender_end = facts.rules.lender_collection_window
+        return max(start, lender_start), min(end, lender_end)
+    return start, end
 
 
 def next_window_start(local_now: datetime, window: tuple[time, time]) -> datetime:

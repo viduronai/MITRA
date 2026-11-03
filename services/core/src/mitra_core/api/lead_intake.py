@@ -34,6 +34,7 @@ from mitra_core.errors import AppError, not_found
 from mitra_core.leads import adapters
 from mitra_core.leads.adapters import AdapterError, LeadInput
 from mitra_core.leads.calling import HeadsUp, LeadDialer, get_heads_up, get_lead_dialer
+from mitra_core.leads.consent import CONSENT_VERSION
 from mitra_core.leads.enums import LeadSourceKind, LeadStatus
 from mitra_core.leads.intake import SECRET_HEADER, get_intake, hash_secret
 from mitra_core.leads.service import IntakeDeps, IntakeResult, check_ip_rate, check_rate, ingest
@@ -259,7 +260,8 @@ async def intake_form(
         body = await read_body(request)
         if str(body.get("website") or "").strip():  # honeypot: humans never fill it
             return JSONResponse({"status": "received"}, 202, headers=_CORS)
-        if adapters.consent_value(body.get("consent")) is not True:
+        version_ok = body.get("consent_version") == CONSENT_VERSION
+        if adapters.consent_value(body.get("consent")) is not True or not version_ok:
             raise AppError(422, "consent_required", "Please tick the box to agree to a call back")
         business_id = (await session.execute(_BY_FORM, {"slug": slug[:40]})).scalar_one_or_none()
         if business_id is None:

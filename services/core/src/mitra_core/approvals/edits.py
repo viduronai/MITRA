@@ -16,6 +16,8 @@ Rule = Literal["lower_int"]  # a whole number from 1 up to the requested value
 EDIT_RULES: dict[str, dict[str, Rule]] = {
     # Calling a list: the owner can call fewer people, never more and never another list.
     "list_call": {"contacts": "lower_int"},
+    # A payment link: the owner can ask for less, never more and never another customer.
+    "payment_link": {"amount_paise": "lower_int"},
 }
 
 

@@ -365,16 +365,21 @@ export interface MemoryFact {
 }
 
 export interface TimelineEvent {
-  kind: "call" | "action" | "commitment";
+  kind: "call" | "action" | "commitment" | "payment";
   at: IsoDateTime;
   title: string;
   detail: string | null;
   call_id: Uuid | null;
   result: ApiCallResult | null;
+  payment_request_id?: Uuid | null;
+  payment_status?: "awaiting_approval" | "sent" | "paid" | "failed" | "expired" | "cancelled" | null;
 }
 
 export interface CustomerDetail extends CustomerRow {
   created_at: IsoDateTime;
+  /** "+91 ••••• •3210"; the full number only via "Show number" (logged in core). */
+  phone_masked?: string | null;
+  has_phone?: boolean;
   memory: MemoryFact[];
   commitments: { id: Uuid; kind: string; description: string; due_at: IsoDateTime | null; status: string }[];
   timeline: TimelineEvent[];

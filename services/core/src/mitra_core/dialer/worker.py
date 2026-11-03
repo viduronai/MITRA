@@ -33,6 +33,7 @@ from mitra_core.dialer.outcomes import (
     next_calling_time,
     pause_campaign,
 )
+from mitra_core.dialer.queue import is_collection
 from mitra_core.dialer.sealing import unseal
 from mitra_core.dialer.settings import DialerSettings
 from mitra_core.dialer.voice import DialRejectedError, PlaceRequest, VoiceDialer
@@ -179,7 +180,12 @@ async def _process(
             report.deferred += 1
             return
 
-    phone = unseal(job.phone_enc)
+    try:
+        phone = unseal(job.phone_enc, business.id)
+    except ValueError:  # erased ("forget this customer") or sealed with another key
+        await block_job(session, job, ["no_number"], now)
+        report.blocked += 1
+        return
     facts = await telephony.load_facts(
         session,
         business=business,
@@ -189,6 +195,7 @@ async def _process(
         settings=deps.settings,
         dnd=deps.dnd,
         called_number_id=job.called_number_id,
+        collection=is_collection(job.variables or {}),
     )
     result = evaluate(facts)
     telephony.log_decision(

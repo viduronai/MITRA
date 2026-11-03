@@ -46,6 +46,7 @@ PHONE_KEYS = (
 NAME_KEYS = ("name", "full_name", "your_name", "customer_name", "sender_name")
 _RESERVED = frozenset(
     {"source", "source_detail", "external_id", "consent", "consent_text", "fields", "first_name"}
+    | {"consent_version", "consent_lang"}
     | {"last_name", "website", "secret", "key", "google_key"}
 )
 _KEY_CLEAN = re.compile(r"[^a-z0-9]+")
@@ -65,6 +66,8 @@ class LeadInput:
     external_id: str | None = None
     consent: bool | None = None  # None: implied by the enquiry itself (lead form)
     consent_text: str | None = None
+    consent_version: str | None = None  # Mitra-controlled forms: which checkbox text
+    consent_lang: str | None = None
 
 
 def field_key(raw: object) -> str:
@@ -104,6 +107,14 @@ def consent_value(value: object) -> bool | None:
     return None
 
 
+def _explicit_consent(values: Mapping[str, object]) -> bool | None:
+    """A portal form's own consent question, if it has one: any refusal wins."""
+    answers = [consent_value(v) for k, v in values.items() if "consent" in k]
+    if any(a is False for a in answers):
+        return False
+    return True if any(answers) else None
+
+
 def _require_phone(raw: object) -> str:
     phone = normalize_indian_mobile(raw)
     if phone is None:
@@ -141,6 +152,8 @@ def parse_generic(body: Mapping[str, Any], default: LeadSourceKind) -> LeadInput
         external_id=_text(flat.get("external_id"), 80),
         consent=consent_value(flat.get("consent")),
         consent_text=_text(flat.get("consent_text"), 150),
+        consent_version=_text(flat.get("consent_version"), 20),
+        consent_lang=_text(flat.get("consent_lang"), 5),
     )
 
 
@@ -162,7 +175,8 @@ def parse_google_ads(body: Mapping[str, Any]) -> LeadInput:
         f"{values.get('first_name', '')} {values.get('last_name', '')}", 120
     )
     campaign = _text(body.get("campaign_id"), 60)
-    fields = _clean_fields(values.items())
+    consent = _explicit_consent(values)
+    fields = _clean_fields((k, v) for k, v in values.items() if "consent" not in k)
     if body.get("is_test"):
         fields["is_test"] = "true"
     return LeadInput(
@@ -172,6 +186,7 @@ def parse_google_ads(body: Mapping[str, Any]) -> LeadInput:
         fields=fields,
         source_detail=f"Google Ads campaign {campaign}" if campaign else None,
         external_id=_text(body.get("lead_id"), 80),
+        consent=consent,
     )
 
 
@@ -202,6 +217,7 @@ def parse_indiamart_record(rec: Mapping[str, Any]) -> LeadInput:
         fields=fields,
         source_detail=f"IndiaMART: {product}" if product else "IndiaMART",
         external_id=_text(rec.get("UNIQUE_QUERY_ID"), 80),
+        consent=_explicit_consent({field_key(k): v for k, v in rec.items()}),
     )
 
 
@@ -230,6 +246,7 @@ def parse_justdial(body: Mapping[str, Any]) -> LeadInput:
         fields=_clean_fields((k, flat.get(k)) for k in _JUSTDIAL_FIELDS),
         source_detail=f"JustDial: {category}" if category else "JustDial",
         external_id=_text(flat.get("leadid"), 80),
+        consent=_explicit_consent(flat),
     )
 
 

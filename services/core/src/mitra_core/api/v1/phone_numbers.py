@@ -74,6 +74,7 @@ def _out(n: PhoneNumber) -> PhoneNumberOut:
         spam_flag=n.spam_flag,
         forwarding_tested_at=n.forwarding_tested_at,
         created_at=n.created_at,
+        missed_call=n.missed_call,
     )
 
 

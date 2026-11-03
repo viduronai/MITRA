@@ -19,6 +19,7 @@ from mitra_core.db import get_sessionmaker
 from mitra_core.errors import AppError
 from mitra_core.logging import get_logger
 from mitra_core.manager.brain import converse
+from mitra_core.manager.customers import handle_customer_inbound
 from mitra_core.manager.i18n import t
 from mitra_core.manager.intents import Lang
 from mitra_core.manager.planner import Planner, Transcriber
@@ -31,7 +32,16 @@ from mitra_core.whatsapp.service import record_inbound, send_buttons, send_text
 
 log = get_logger(__name__)
 
-Outcome = Literal["unknown_sender", "decided", "rejected", "answered", "ignored"]
+Outcome = Literal[
+    "unknown_sender",
+    "decided",
+    "rejected",
+    "answered",
+    "ignored",
+    "recorded",
+    "opted_out",
+    "acted",
+]
 
 
 def _lang(locale: str) -> Lang:
@@ -137,8 +147,8 @@ async def handle_inbound(
         senders = await resolve_sender(session, msg.from_phone)
         await session.rollback()
         if not senders:
-            log.info("manager.unknown_sender")
-            return "unknown_sender"
+            # A customer (or a stranger): store it, honour STOP (manager/customers.py).
+            return await handle_customer_inbound(msg, provider=provider, now=now)
         if msg.kind == "button_reply":
             return await _button(session, msg, senders, provider, now)
 

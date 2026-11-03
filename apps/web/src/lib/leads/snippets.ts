@@ -4,16 +4,27 @@
 
 export const SECRET_PLACEHOLDER = "PASTE_YOUR_MITRA_SECRET";
 
-/** Website form (INT-02): no secret in the browser; the form endpoint needs the consent box. */
-export function websiteFormSnippet(formUrl: string, businessName: string): string {
+/** Consent checkbox wording, its version and language (lead consent policy rule 1). */
+export interface ConsentBox {
+  text: string;
+  version: string;
+  lang: string;
+}
+
+const escapeHtml = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** Website form (INT-02): no secret in the browser; an unticked, required consent box. */
+export function websiteFormSnippet(formUrl: string, consent: ConsentBox): string {
   return `<!-- Mitra enquiry form: paste where the form should appear -->
 <form id="mitra-lead-form">
   <input name="name" placeholder="Your name" required>
   <input name="phone" type="tel" placeholder="Mobile number" required>
   <input name="message" placeholder="What are you looking for?">
   <input name="website" tabindex="-1" autocomplete="off" style="display:none">
+  <input type="hidden" name="consent_version" value="${consent.version}">
+  <input type="hidden" name="consent_lang" value="${consent.lang}">
   <label><input type="checkbox" name="consent" value="yes" required>
-    I agree to get a call from ${businessName} about my enquiry.</label>
+    ${escapeHtml(consent.text)}</label>
   <button type="submit">Call me back</button>
   <p id="mitra-lead-status" role="status"></p>
 </form>
@@ -58,19 +69,26 @@ function sendNewRowsToMitra() {
 }`;
 }
 
-/** Google Forms (INT-14): runs on every response. */
-export function formsSnippet(url: string, secret: string | null): string {
-  return `// In the Google Form: ⋮ → Apps Script → paste → Save. Then Triggers → Add trigger:
-// function "onFormSubmit", event source "From form", event type "On form submit".
+/** Google Forms (INT-14): runs on every response; needs the required consent question. */
+export function formsSnippet(url: string, secret: string | null, consent: ConsentBox): string {
+  return `// In the Google Form:
+// 1. Add a required "Checkboxes" question whose only option is exactly the CONSENT_TEXT below.
+// 2. ⋮ → Apps Script → paste → Save. Triggers → Add trigger: function "onFormSubmit",
+//    event source "From form", event type "On form submit".
 // Name a question "Phone" (and "Name"); other questions become details for the call.
 var MITRA_URL = "${url}";
 var MITRA_SECRET = "${secret ?? SECRET_PLACEHOLDER}";
+var CONSENT_TEXT = ${JSON.stringify(consent.text)};
 
 function onFormSubmit(e) {
-  var lead = { source: "google_forms", external_id: e.response.getId() };
+  var lead = { source: "google_forms", external_id: e.response.getId(),
+    consent_version: "${consent.version}", consent_lang: "${consent.lang}" };
   e.response.getItemResponses().forEach(function (item) {
-    lead[item.getItem().getTitle()] = String(item.getResponse());
+    var answer = item.getResponse();
+    if (String(answer).indexOf(CONSENT_TEXT) >= 0) { lead.consent = true; return; }
+    lead[item.getItem().getTitle()] = String(answer);
   });
+  if (!lead.consent) return; // no tick, no call
   UrlFetchApp.fetch(MITRA_URL, {
     method: "post", contentType: "application/json", muteHttpExceptions: true,
     headers: { "X-Mitra-Secret": MITRA_SECRET }, payload: JSON.stringify(lead)

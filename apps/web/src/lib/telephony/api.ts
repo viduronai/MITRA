@@ -1,7 +1,15 @@
 import "server-only";
 import { ApiError } from "@/lib/api";
 import type { ApiErrorBody } from "@/lib/api/types";
-import type { Forwarding, ForwardingTest, KycDocument, PhoneNumber, PhoneNumberList } from "./types";
+import type {
+  CallerBlock,
+  Forwarding,
+  ForwardingTest,
+  KycDocument,
+  MissedCallSetup,
+  PhoneNumber,
+  PhoneNumberList,
+} from "./types";
 
 // Same server-only base URL as lib/api/http.ts; telephony keeps its own small client (like
 // billing) so the shared MitraApi interface stays untouched.
@@ -11,7 +19,7 @@ const TIMEOUT_MS = 15_000;
 async function request<T>(
   path: string,
   token: string,
-  { method = "GET", body }: { method?: "GET" | "POST" | "PATCH"; body?: unknown } = {},
+  { method = "GET", body }: { method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"; body?: unknown } = {},
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json", Authorization: `Bearer ${token}` };
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -27,7 +35,7 @@ async function request<T>(
   } catch {
     throw new ApiError(0, "unreachable", "The Mitra service could not be reached.");
   }
-  const data: unknown = await response.json().catch(() => null);
+  const data: unknown = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     const error = (data as ApiErrorBody | null)?.error;
     throw new ApiError(response.status, error?.code ?? `http_${response.status}`, error?.message ?? response.statusText);
@@ -54,6 +62,16 @@ export const telephonyApi = {
   testForwarding: (token: string, id: string) =>
     request<ForwardingTest>(`/phone-numbers/${enc(id)}/forwarding-test`, token, { method: "POST" }),
   resume: (token: string, id: string) => request<PhoneNumber>(`/phone-numbers/${enc(id)}/resume`, token, { method: "POST" }),
+  // Missed-call number (CALL-20).
+  missedCall: (token: string) => request<MissedCallSetup>("/missed-call", token),
+  setMissedCallNumber: (token: string, phoneNumberId: string | null) =>
+    request<MissedCallSetup>("/missed-call/number", token, { method: "PUT", body: { phone_number_id: phoneNumberId } }),
+  blockCaller: (token: string, missedCallId: string) =>
+    request<CallerBlock>("/missed-call/blocks", token, { method: "POST", body: { missed_call_id: missedCallId } }),
+  unblockCaller: (token: string, id: string) => request<null>(`/missed-call/blocks/${enc(id)}`, token, { method: "DELETE" }),
+  // A customer's full number: owner/manager only, every view is logged in core.
+  revealPhone: (token: string, customerId: string) =>
+    request<{ phone: string; phone_masked: string | null }>(`/customers/${enc(customerId)}/phone`, token, { method: "POST" }),
 };
 
 /** The number customers are forwarded to: the first live number, with its codes. */

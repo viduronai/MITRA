@@ -20,6 +20,7 @@ from mitra_core.clock import utcnow
 from mitra_core.dialer.enums import ACTIVE_JOB_STATUSES, JobStatus
 from mitra_core.dialer.sealing import seal
 from mitra_core.models.campaign import OutboundJob
+from mitra_core.phones import remember_phone
 from mitra_core.pii import hash_phone, phone_last4
 from mitra_core.telephony.enums import CallPurpose
 
@@ -33,6 +34,12 @@ DEFAULT_LADDER = (30, 120, 1440)  # minutes: 30 min -> 2 h -> next day (CALL-04)
 
 class EnqueueError(ValueError):
     """Bad input to ``enqueue_call`` (the message never contains the phone number)."""
+
+
+def is_collection(variables: dict[str, str]) -> bool:
+    """A payment-collection call (routine goal ``collect_payment`` or a payment reminder):
+    lenders may make these only in RBI hours (compliance gate)."""
+    return variables.get("task") == "collect_payment" or bool(variables.get("payment_amount"))
 
 
 def clean_variables(variables: dict[str, str]) -> dict[str, str]:
@@ -90,7 +97,7 @@ async def enqueue_call(
         "campaign_contact_id": campaign_contact_id,
         "phone_hash": hash_phone(phone_e164),
         "phone_last4": phone_last4(phone_e164),
-        "phone_enc": seal(phone_e164),
+        "phone_enc": seal(phone_e164, business_id),
         "purpose": CallPurpose(purpose),
         "variables": clean_variables(variables),
         "source": source,
@@ -100,6 +107,8 @@ async def enqueue_call(
         "retry_ladder": ladder,
         "called_number_id": called_number_id,
     }
+    # A known customer keeps the number too (missed callers, lead follow-ups, reminders).
+    await remember_phone(session, business_id, hash_phone(phone_e164), phone_e164)
     stmt = insert(OutboundJob).values(**values)
     if dedupe_key is not None:
         stmt = stmt.on_conflict_do_nothing(

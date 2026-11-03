@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.billing import service as billing
@@ -117,6 +117,7 @@ async def load_facts(
     called_number_id: uuid.UUID | None = None,
     dlt_template_id: str | None = None,
     timezone: str = "Asia/Kolkata",
+    collection: bool = False,
 ) -> ComplianceFacts:
     bid = business.id
     phone_hash = hash_phone(phone_e164)
@@ -125,6 +126,8 @@ async def load_facts(
             ConsentRecord.business_id == bid,
             ConsentRecord.phone_hash == phone_hash,
             ConsentRecord.revoked_at.is_(None),
+            # Portal enquiries are consent for a limited time (lead consent policy, 0006).
+            or_(ConsentRecord.expires_at.is_(None), ConsentRecord.expires_at > now),
         )
     )
     opt_outs = list(
@@ -144,6 +147,15 @@ async def load_facts(
     if purpose == CallPurpose.PROMOTIONAL:
         status = await dnd_status(session, bid, phone_e164, phone_hash, now, dnd)
     pause = billing.status_of(await billing.lock_wallet(session, bid, now)).pause_reason
+    lender = False
+    if collection:  # payments module: lenders' collection calls keep RBI hours
+        from mitra_core.models import CollectionSettings
+
+        lender = bool(
+            await session.scalar(
+                select(CollectionSettings.is_lender).where(CollectionSettings.business_id == bid)
+            )
+        )
     return ComplianceFacts(
         purpose=purpose,
         now=now,
@@ -161,6 +173,8 @@ async def load_facts(
         dlt_template_id=dlt_template_id,
         sector_mandated=business.industry in MANDATED_INDUSTRIES,
         wallet_pause=pause.value if pause else None,
+        collection=collection,
+        lender=lender,
     )
 
 
@@ -241,6 +255,7 @@ async def note_inbound_relationship(
             ConsentRecord.phone_hash == phone_hash,
             ConsentRecord.scope == ConsentScope.SERVICE,
             ConsentRecord.revoked_at.is_(None),
+            or_(ConsentRecord.expires_at.is_(None), ConsentRecord.expires_at > func.now()),
         )
         .limit(1)
     )

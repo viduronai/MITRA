@@ -15,7 +15,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mitra_core.clock import utcnow
-from mitra_core.models import Business, Contact, Employee, FollowUpTask, StaffMember
+from mitra_core.models import Business, Call, Contact, Employee, FollowUpTask, StaffMember
+from mitra_core.models.enums import CallDirection, CallResult
 from mitra_core.team import ports
 from mitra_core.team.humans import ladder
 
@@ -67,6 +68,13 @@ def customer_message(task: FollowUpTask, employee: Employee | None, business_nam
     name = ctx.get("name") or "there"
     if task.task == "send_report":
         return f"Hi {name}, {sender} from {business_name} here. Your report is ready."
+    if task.task == "collect_payment" and ctx.get("payment_link"):
+        return (
+            f"Hi {name}, {sender} from {business_name} here. A gentle reminder: "
+            f"{ctx.get('payment_amount', '')} for {ctx.get('payment_purpose', 'your bill')} is "
+            f"pending. Pay here: {ctx['payment_link']}\n"
+            "Already paid? Please ignore this message."
+        )
     return (
         f"Hi {name}, {sender} from {business_name} here, following up on your call. "
         "Reply here or we'll call you shortly."
@@ -82,6 +90,10 @@ async def _call_variables(task: FollowUpTask) -> dict[str, str]:
         out["previous_summary"] = str(ctx["summary"])
     if ctx.get("result"):
         out["previous_result"] = str(ctx["result"])
+    # Payment reminders: the only amount the employee may quote is the request's own.
+    for key in ("payment_amount", "payment_purpose", "payment_due"):
+        if ctx.get(key):
+            out[key] = str(ctx[key])
     return out
 
 
@@ -127,7 +139,7 @@ async def _escalate(session: AsyncSession, task: FollowUpTask) -> None:
         :3
     ]:
         ref = await ports.send_whatsapp(
-            session, task.business_id, phone, text, kind="team_escalation"
+            session, task.business_id, phone, text, kind="team_escalation", ref_id=str(task.id)
         )
         sent.append({"name": name, "last4": phone[-4:], "message_id": ref})
     task.outcome = {"briefed": sent, "text": text, "fallback": "ladder"}
@@ -143,13 +155,26 @@ async def _brief(session: AsyncSession, task: FollowUpTask) -> None:
     sent = []
     for name, phone in targets:
         ref = await ports.send_whatsapp(
-            session, task.business_id, phone, text, kind=f"team_{task.kind}"
+            session, task.business_id, phone, text, kind=f"team_{task.kind}", ref_id=str(task.id)
         )
         sent.append({"name": name, "last4": phone[-4:], "message_id": ref})
     task.outcome = {"briefed": sent, "text": text}
     task.status = "sent" if any(s["message_id"] for s in sent) else "failed"
     if not targets:
         task.outcome["reason"] = "no_staff"
+
+
+async def _is_missed_call_rescue(session: AsyncSession, task: FollowUpTask) -> bool:
+    """CALL-02: a task caused by a missed inbound call rings back as a ``callback`` (the
+    customer called first; caller ID = the business number, 08 section 8.1)."""
+    if task.source_call_id is None:
+        return False
+    call = await session.get(Call, task.source_call_id)
+    return (
+        call is not None
+        and call.result == CallResult.MISSED
+        and call.direction == CallDirection.INBOUND
+    )
 
 
 async def dispatch_task(
@@ -166,6 +191,8 @@ async def dispatch_task(
     if task.channel == "whatsapp" and task.due_at > now:
         return  # the scheduler sends it when due
     contact = await session.get(Contact, task.contact_id) if task.contact_id else None
+    rescue = await _is_missed_call_rescue(session, task)
+    purpose = "callback" if rescue else "service"
     phone = await ports.contact_phone(session, contact) if contact else None
     if phone is None:
         task.status = "no_phone"
@@ -177,7 +204,14 @@ async def dispatch_task(
         business = await session.get(Business, task.business_id)
         text = customer_message(task, employee, business.name if business else "us")
         outcome["whatsapp"] = await ports.send_whatsapp(
-            session, task.business_id, phone, text, kind="team_follow_up"
+            session,
+            task.business_id,
+            phone,
+            text,
+            kind="team_follow_up",
+            task=task.task,
+            ref_id=str(task.id),
+            name=(task.context or {}).get("name"),
         )
         if task.channel == "whatsapp":
             task.status = "sent" if outcome["whatsapp"] else "failed"
@@ -193,11 +227,14 @@ async def dispatch_task(
         task.business_id,
         employee_id=task.to_employee_id,
         phone_e164=phone,
-        purpose="service",
+        purpose=purpose,
         variables=await _call_variables(task),
         source="team",
         not_before=max(not_before, now),
-        dedupe_key=f"task:{task.id}",
+        # Missed-call rescue: one pending callback per caller, shared with CALL-20 and CALL-05.
+        dedupe_key=f"callback:{contact.phone_hash[:32]}"
+        if rescue and contact
+        else f"task:{task.id}",
     )
     outcome["job_id"] = queued.ref if queued else None
     task.outcome = outcome

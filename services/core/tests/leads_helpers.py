@@ -23,6 +23,7 @@ SVC = bearer(TOKEN)
 LEAD_PHONE = "+919812345678"
 META_SECRET = "meta-app-secret-for-tests"
 META_VERIFY = "meta-verify-token"
+CONSENT_VERSION = "lead-v1"
 
 
 def configure(**overrides: Any) -> Settings:
@@ -129,7 +130,19 @@ async def enable_leads(client: httpx.AsyncClient, t: dict[str, Any]) -> dict[str
     assert resp.status_code == 200, resp.text
     setup: dict[str, Any] = resp.json()
     t["slug"], t["secret"] = setup["slug"], setup["secret"]
+    for kind in GENERIC:  # the owner vouches for generic sources (consent policy rule 3)
+        await attest(client, t, kind)
     return setup
+
+
+GENERIC = ("api", "google_sheets", "zapier")
+
+
+async def attest(client: httpx.AsyncClient, t: dict[str, Any], kind: str, on: bool = True) -> None:
+    resp = await client.patch(
+        f"/v1/leads/sources/{kind}", json={"consent_attested": on}, headers=t["headers"]
+    )
+    assert resp.status_code == 200, resp.text
 
 
 _numbers = iter(range(10**6))

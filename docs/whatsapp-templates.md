@@ -10,6 +10,8 @@ WhatsApp allows free-form messages only within **24 hours of the person's last m
 
 - **Category: Utility** for every template. Each one is about something the person asked for or already has (an enquiry, a booking, a payment, their own business). None of them carry offers. If Meta reclassifies one as Marketing, it still works but costs more and needs marketing consent, so reword it instead of accepting the change.
 - **Named variables** (`{{name}}`). They match the field names the code sends. Meta needs a sample value for each; the samples are in the tables.
+- **Telugu `{{name}}` carries the honorific.** The code sends "Ravi గారు" (sample for Meta: `Ravi గారు`), so when the name is unknown it sends "అండి" and the greeting reads "నమస్కారం అండి," (pending founder review). Hindi falls back to "जी" ("नमस्ते जी,"), English to "there".
+- **App links** ("Open in Mitra", "Open report") are `<APP_URL>/{{1}}`. **TODO (founder): confirm the app domain** before submitting; the code reads it from one setting (`MITRA_APP_BASE_URL`) and never hard-codes it.
 - A variable can't contain a line break or tab and can't be the first or last thing in the body. The code must flatten text before filling a variable (see "Code changes" below).
 - **Languages:** `en`, `hi`, `te`. Each language is a separate submission under the same template name.
 - Business names go in a variable (`{{business}}`), so one approved template works for every Mitra customer while we send from Mitra's number. When a business connects its own WhatsApp number later (Embedded Signup), the same templates are copied to its account.
@@ -25,7 +27,7 @@ Quick-reply buttons: **Call me later** · **Don't call me**
 |---|---|
 | en | Hi {{name}}, this is {{business}}. We'll call you in about {{minutes}} minutes about your enquiry. |
 | hi | नमस्ते {{name}}, हम {{business}} से हैं। आपकी enquiry के बारे में हम लगभग {{minutes}} मिनट में आपको call करेंगे। |
-| te | నమస్కారం {{name}} గారు, మేము {{business}} నుంచి. మీ enquiry గురించి సుమారు {{minutes}} నిమిషాల్లో మీకు call చేస్తాం. |
+| te | నమస్కారం {{name}}, మేము {{business}} నుంచి. మీ enquiry గురించి సుమారు {{minutes}} నిమిషాల్లో మీకు call చేస్తాం. |
 
 Samples: name = Ravi · business = Sunrise Homes · minutes = 2
 
@@ -45,7 +47,7 @@ Buttons: quick reply **Change time** · URL **Get directions** (`https://maps.ap
 |---|---|
 | en | Hi {{name}}, your appointment at {{business}} is confirmed for {{when}}. |
 | hi | नमस्ते {{name}}, {{business}} में आपकी appointment {{when}} के लिए confirm हो गई है। |
-| te | నమస్కారం {{name}} గారు, {{business}}లో మీ appointment {{when}}కి confirm అయింది. |
+| te | నమస్కారం {{name}}, {{business}}లో మీ appointment {{when}}కి confirm అయింది. |
 
 Samples: name = Ravi · business = Sunrise Clinic · when = Tue 21 Oct, 6:15 pm
 
@@ -89,7 +91,7 @@ Quick-reply buttons: **Call me** · **Not now**
 |---|---|
 | en | Hi {{name}}, {{business}} here, following up on your enquiry about {{topic}}. Reply here or tap below and we'll call you. |
 | hi | नमस्ते {{name}}, {{business}} से बात कर रहे हैं, {{topic}} के बारे में आपकी enquiry पर follow-up। यहाँ reply करें या नीचे tap करें, हम call करेंगे। |
-| te | నమస్కారం {{name}} గారు, {{business}} నుంచి, {{topic}} గురించి మీ enquiry మీద follow-up. ఇక్కడ reply చేయండి లేదా కింద tap చేయండి, మేము call చేస్తాం. |
+| te | నమస్కారం {{name}}, {{business}} నుంచి, {{topic}} గురించి మీ enquiry మీద follow-up. ఇక్కడ reply చేయండి లేదా కింద tap చేయండి, మేము call చేస్తాం. |
 
 Samples: name = Ravi · business = Sunrise Homes · topic = 2BHK in Kondapur
 
@@ -100,7 +102,7 @@ Button: URL **Pay now** (`https://rzp.io/{{1}}`; the code sends the link id)
 |---|---|
 | en | Hi {{name}}, here is your payment link from {{business}} for {{purpose}}: ₹{{amount}}. You can pay by UPI or card. |
 | hi | नमस्ते {{name}}, {{business}} की ओर से {{purpose}} के लिए आपका payment link: ₹{{amount}}. UPI या card से pay कर सकते हैं। |
-| te | నమస్కారం {{name}} గారు, {{purpose}} కోసం {{business}} నుంచి మీ payment link: ₹{{amount}}. UPI లేదా card తో pay చేయవచ్చు. |
+| te | నమస్కారం {{name}}, {{purpose}} కోసం {{business}} నుంచి మీ payment link: ₹{{amount}}. UPI లేదా card తో pay చేయవచ్చు. |
 
 Samples: name = Ravi · business = Sunrise Clinic · purpose = consultation · amount = 500
 
@@ -120,16 +122,27 @@ Samples: business = Sunrise Clinic · amount = 500 · purpose = consultation · 
 |---|---|
 | en | Thank you, {{name}}. {{business}} has received ₹{{amount}} for {{purpose}}. |
 | hi | धन्यवाद {{name}}। {{business}} को {{purpose}} के लिए ₹{{amount}} मिल गए हैं। |
-| te | ధన్యవాదాలు {{name}} గారు. {{purpose}} కోసం ₹{{amount}} {{business}}కి అందాయి. |
+| te | ధన్యవాదాలు {{name}}. {{purpose}} కోసం ₹{{amount}} {{business}}కి అందాయి. |
 
 Samples: name = Ravi · business = Sunrise Clinic · amount = 500 · purpose = consultation
+
+### 10a. `payment_upi_request`: UPI-only collection, no payment gateway (ACT-05)
+No buttons (a UPI ID can't be a link button). The customer replies **PAID**; Mitra flags it for the owner to confirm, it never marks a request paid by itself.
+
+| | Body |
+|---|---|
+| en | Hi {{name}}, {{business}} has requested ₹{{amount}} for {{purpose}}. Please pay to UPI ID {{upi_id}}. Reply PAID once done. |
+| hi | नमस्ते {{name}}, {{business}} ने {{purpose}} के लिए ₹{{amount}} का request भेजा है। कृपया UPI ID {{upi_id}} पर pay करें। Pay करने के बाद PAID reply करें। |
+| te | నమస్కారం {{name}}, {{purpose}} కోసం {{business}} ₹{{amount}} request చేసింది. దయచేసి UPI ID {{upi_id}}కి pay చేయండి. Pay చేశాక PAID అని reply చేయండి. |
+
+Samples: name = Ravi · business = Sunrise Clinic · amount = 500 · purpose = consultation · upi_id = sunriseclinic@okicici
 
 ---
 
 ## B. Messages to owners, managers and staff
 
 ### 11. `owner_alert`: hot lead, upset customer, VIP, urgent, payment failed, campaign paused (MGR-05, TEAM-05)
-Button: URL **Open in Mitra** (`https://app.mitra.ai/{{1}}`; the code sends the path)
+Button: URL **Open in Mitra** (`<APP_URL>/{{1}}`; the code sends the path; domain TODO, see Rules)
 
 | | Body |
 |---|---|
@@ -140,7 +153,7 @@ Button: URL **Open in Mitra** (`https://app.mitra.ai/{{1}}`; the code sends the 
 Samples: title = Hot lead · business = Sunrise Homes · detail = Ravi is interested in a 2BHK and wants a site visit on Saturday.
 
 ### 12. `daily_report`: morning summary (MGR-01)
-Button: URL **Open report**
+Button: URL **Open report** (`<APP_URL>/{{1}}`; the code sends `?from=whatsapp`)
 
 | | Body |
 |---|---|
@@ -178,10 +191,12 @@ The `action` values must be translated per language by the code (en "call back",
 
 ## Code changes needed before going live
 
+Status 3 Nov 2026: all five are built (`services/core/src/mitra_core/whatsapp/`; the registry in `templates.py` is tested to match this page word for word). Still open: the app domain (TODO above) and native-speaker review.
+
 1. **Send templates outside the 24-hour window.** Today only `call_heads_up` uses a template; alerts, reports, approvals, staff messages and customer messages are sent as free text, which Meta drops outside the window. The WhatsApp service should check the window per recipient and switch to the matching template above.
 2. **Flatten variables:** no line breaks, tabs or more than 4 spaces in a row; trim long values (alert `detail` to about 300 characters).
 3. **Named parameters:** send `parameter_format: NAMED` with the names above.
-4. **Name fallback:** `call_heads_up` currently falls back to "there" when the name is unknown, which reads wrong in Hindi and Telugu. Use a per-language word ("ji" / "గారు" alone reads oddly too), or a second template without the name.
+4. **Name fallback:** done per language (see Rules: Telugu sends the honorific inside `{{name}}`).
 5. **STOP and opt-out:** treat "STOP", "Don't call me", and the Hindi/Telugu equivalents as an opt-out (CMP-06).
 
 ## What Meta needs from you

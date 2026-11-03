@@ -11,6 +11,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -82,6 +83,7 @@ async def start_run(
     now: datetime | None = None,
     event_contact: uuid.UUID | None = None,
     source_call_id: uuid.UUID | None = None,
+    context: dict[str, Any] | None = None,
 ) -> RoutineRun:
     """Resolve the audience now; execute, or wait for approval when it is large."""
     now = now or utcnow()
@@ -113,7 +115,7 @@ async def start_run(
             payload={"routine_run_id": str(run.id), "count": len(found.contacted)},
         )
         return run
-    await _execute(session, routine, run, spec, found.contacted, now, source_call_id)
+    await _execute(session, routine, run, spec, found.contacted, now, source_call_id, context)
     return run
 
 
@@ -125,6 +127,7 @@ async def _execute(
     persons: list[Person],
     now: datetime,
     source_call_id: uuid.UUID | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> None:
     delay = spec.trigger.delay_minutes if isinstance(spec.trigger, EventTrigger) else 0
     statuses: dict[str, str] = {}
@@ -142,7 +145,8 @@ async def _execute(
             due_at=now + timedelta(minutes=delay),
             status="pending",
             context=await context_packet(session, contact, None)
-            | {"routine": routine.name, "goal": spec.action.goal},
+            | {"routine": routine.name, "goal": spec.action.goal}
+            | (extra or {}),
         )
         session.add(task)
         await session.flush()

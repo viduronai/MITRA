@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,6 +42,7 @@ from mitra_core.models.enums import (
     MemoryStatus,
     Sentiment,
 )
+from mitra_core.phones import seal_phone
 from mitra_core.pii import hash_phone, phone_last4
 from mitra_core.schemas.call import CallEndIn, CallerCard, CallStartIn, MemoryItem
 from mitra_core.tenancy import TenantContext
@@ -58,14 +59,26 @@ def flatten_transcript(turns: list[dict[str, object]]) -> str:
 
 
 async def upsert_contact(session: AsyncSession, business_id: uuid.UUID, phone: str) -> Contact:
+    """The contact for this number; its number is kept sealed (``mitra_core.phones``)."""
     digest = hash_phone(phone)
+    sealed = seal_phone(business_id, phone)
     await session.execute(
         insert(Contact)
-        .values(business_id=business_id, phone_hash=digest, phone_last4=phone_last4(phone))
-        .on_conflict_do_nothing(index_elements=["business_id", "phone_hash"])
+        .values(
+            business_id=business_id,
+            phone_hash=digest,
+            phone_last4=phone_last4(phone),
+            phone_enc=sealed,
+        )
+        .on_conflict_do_update(
+            index_elements=["business_id", "phone_hash"],
+            set_={"phone_enc": func.coalesce(Contact.phone_enc, sealed)},
+        )
     )
     contact = await session.scalar(
-        select(Contact).where(Contact.business_id == business_id, Contact.phone_hash == digest)
+        select(Contact)
+        .where(Contact.business_id == business_id, Contact.phone_hash == digest)
+        .execution_options(populate_existing=True)
     )
     assert contact is not None  # noqa: S101  (just inserted or already there)
     return contact

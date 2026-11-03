@@ -4,8 +4,9 @@
 
 1. same portal lead id seen before -> answered as a duplicate, nothing new is stored;
 2. same phone within the business's dedupe window -> a ``duplicate`` row, no second call;
-3. contact upserted (hash only) and a purpose-tagged consent record written with the source
-   and time (unless the form says consent was NOT given);
+3. contact upserted (hash only); the lead consent policy (``leads.consent``) decides whether a
+   SERVICE consent record is written (form checkbox / portal enquiry / owner attestation). If
+   not, the lead is stored and nothing else happens: no call, no message, no routine;
 4. the source's routine decides: call or not, which employee, how soon;
 5. the compliance gate is consulted to tell the owner what will happen: allowed -> queued,
    outside hours -> scheduled for the next window, refused -> blocked with the reason;
@@ -25,18 +26,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mitra_core.calls.service import upsert_contact
 from mitra_core.config import Settings
 from mitra_core.errors import AppError
+from mitra_core.leads import attestation as attestations
+from mitra_core.leads import consent as consent_policy
 from mitra_core.leads.adapters import LeadInput
 from mitra_core.leads.calling import HeadsUp, LeadDialer
 from mitra_core.leads.enums import LeadSourceKind, LeadStatus
 from mitra_core.logging import get_logger
-from mitra_core.models import Business, ConsentRecord, Employee, Lead, LeadIntake, LeadSource
+from mitra_core.models import (
+    Business,
+    ConsentRecord,
+    Employee,
+    Lead,
+    LeadIntake,
+    LeadSource,
+)
 from mitra_core.models.enums import EmployeeStatus, RoleTemplate
 from mitra_core.pii import hash_phone, phone_last4
 from mitra_core.team.routines.events import fire_event
 from mitra_core.telephony import service as telephony
 from mitra_core.telephony.compliance import evaluate
 from mitra_core.telephony.dnd import DndProvider
-from mitra_core.telephony.enums import CallPurpose, ConsentScope, ConsentSource, Decision
+from mitra_core.telephony.enums import CallPurpose, ConsentScope, Decision
 from mitra_core.webhooks.enums import WebhookEvent
 from mitra_core.webhooks.events import lead_created_payload
 from mitra_core.webhooks.service import emit_event
@@ -174,13 +184,6 @@ async def _recent_same_phone(
     )
 
 
-def _consent_note(data: LeadInput) -> str:
-    note = f"Enquiry via {data.source.value}"
-    if data.consent_text:
-        note += f": {data.consent_text}"
-    return note[:200]
-
-
 async def ingest(
     session: AsyncSession,
     business: Business,
@@ -231,16 +234,30 @@ async def ingest(
     if data.name and not contact.name:
         contact.name = data.name
     lead.contact_id = contact.id
-    if data.consent is False:
-        lead.status = LeadStatus.NO_CONSENT.value
+    attestation = None
+    if data.source in consent_policy.GENERIC_SOURCES:
+        attestation = await attestations.for_policy(session, bid, data.source)
+    outcome = consent_policy.decide(
+        data,
+        business_name=business.name,
+        attestation=attestation,
+        now=now,
+        portal_days=deps.settings.lead_portal_consent_days,
+    )
+    if outcome.refused is not None:
+        lead.status = outcome.refused.value  # stored, never called or messaged
     else:
         consent = ConsentRecord(
             id=uuid.uuid4(),
             business_id=bid,
             phone_hash=phone_hash,
-            scope=ConsentScope.SERVICE,
-            source=ConsentSource.LEAD_FORM,
-            note=_consent_note(data),
+            scope=ConsentScope.SERVICE,  # never promotional (policy rule 4)
+            source=outcome.source,
+            purpose=consent_policy.ENQUIRY_PURPOSE,
+            text_version=outcome.text_version,
+            consent_text=outcome.text,
+            expires_at=outcome.expires_at,
+            note=outcome.note,
             captured_at=now,
         )
         session.add(consent)
@@ -252,7 +269,7 @@ async def ingest(
     if lead.status == LeadStatus.QUEUED.value:
         await _plan_call(session, business, source, lead, data, now=now, deps=deps)
 
-    if lead.status != LeadStatus.NO_CONSENT.value:
+    if lead.consent_record_id is not None:
         # Owner routines on new leads (WhatsApp only; the call itself is planned above).
         await fire_event(session, bid, "lead.created", contact_id=contact.id, now=now)
     rows = await emit_event(

@@ -92,5 +92,15 @@ class ExotelCarrier:
         log.warning("exotel.transfer_not_implemented", call_sid=call_sid)
         return "failed"
 
+    async def use_missed_call_flow(self, exophone: str, passthru_url: str) -> None:
+        """CALL-20: point an ExoPhone at a flow of Passthru(``passthru_url``) + Hangup, so calls
+        to it are never answered (free for the caller) and are reported to us.
+
+        TODO(exotel): needs Exotel's flow/ExoPhone update API on a live account; until then ops
+        sets the flow in the Exotel dashboard (docs/telephony.md).
+        """
+        log.warning("exotel.missed_call_flow_not_implemented")
+        raise CarrierError("exotel missed-call flow must be set in the Exotel dashboard for now")
+
     async def aclose(self) -> None:
         await self._client.aclose()

@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mitra_core import simulation
 from mitra_core.approvals import register_handler, request_approval
 from mitra_core.calls.queries import business_tz
+from mitra_core.clock import utcnow
 from mitra_core.logging import get_logger
 from mitra_core.manager import tools
 from mitra_core.manager.i18n import PERIOD, RESULT, t, word
@@ -200,7 +201,47 @@ async def draft(
             await _requester(session, business_id, "behaviour_update", text, payload, user_id), text
         )
 
+    if intent.name == "payment_link":
+        return await _draft_payment_link(session, business_id, intent, user_id)
+
     raise CommandError(t("help", lang))
+
+
+async def _draft_payment_link(
+    session: AsyncSession, business_id: uuid.UUID, intent: Intent, user_id: uuid.UUID
+) -> Draft:
+    """ACT-05: "Send Ramesh a payment link for ₹2,000" (the owner's own amount)."""
+    from mitra_core.payments.messages import rupees
+    from mitra_core.payments.settings import get_settings_row
+
+    lang = intent.lang
+    if not 100 <= intent.amount_paise <= 100_000_000:
+        raise CommandError(t("payment_amount_missing", lang))
+    if (await get_settings_row(session, business_id)).mode == "none":
+        raise CommandError(t("payments_not_set_up", lang))
+    contacts = await tools.find_contacts(session, business_id, intent.query)
+    if not contacts:
+        raise CommandError(t("customer_none", lang, query=intent.query))
+    contact = contacts[0][0]
+    purpose = intent.text.strip()[:200] or "your bill"
+    name = contact.name or intent.query
+    text = t(
+        "confirm_payment_link",
+        lang,
+        name=name,
+        amount=rupees(intent.amount_paise),
+        purpose=purpose,
+    )
+    payload: dict[str, Any] = {
+        "action": "payment_link",
+        "contact_id": str(contact.id),
+        "contact_name": name,
+        "amount_paise": intent.amount_paise,
+        "purpose": purpose,
+    }
+    return Draft(
+        await _requester(session, business_id, "manager_command", text, payload, user_id), text
+    )
 
 
 # --- handlers (run once, after the owner confirms) ------------------------------------------
@@ -223,7 +264,7 @@ async def _phone_for(session: AsyncSession, contact: Contact) -> str | None:
         from mitra_core.team.ports import contact_phone
     except ImportError:  # pragma: no cover - team module not installed
         return None
-    return await contact_phone(session, contact)
+    return await contact_phone(session, contact, purpose="manager_command", actor="manager")
 
 
 async def _enqueue(
@@ -290,6 +331,23 @@ async def handle_command(session: AsyncSession, approval: Approval) -> None:
         approval.payload = {**approval.payload, "queued": queued}
         if queued == 0:
             raise LookupError("no dialable numbers in this list")
+        return
+    if action == "payment_link":
+        from mitra_core.payments import NewRequest, create_request
+
+        await create_request(
+            session,
+            approval.business_id,
+            NewRequest(
+                amount_paise=int(approval.payload["amount_paise"]),
+                purpose=str(approval.payload.get("purpose") or "your bill"),
+                source="manager",
+                contact_id=uuid.UUID(str(approval.payload["contact_id"])),
+                created_by=approval.decided_by,
+                client_ref=f"manager:{approval.id}",
+            ),
+            now=approval.decided_at or utcnow(),
+        )
         return
     raise ValueError(f"unknown manager action {action!r}")
 

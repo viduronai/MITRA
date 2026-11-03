@@ -6,6 +6,7 @@ the ``business_id`` explicitly and binds it before touching a table, so RLS stil
 request to one business.
 
 - ``GET  /resolve?to=&from=``         dialled number -> business + answering employee
+- ``POST /missed-calls``              CALL-20: a call to the missed-call number (not answered)
 - ``POST /compliance/check``          ``compliance.check(contact, purpose, time, number)``
 - ``POST /attempts``, ``PATCH /attempts/{id}``   dial attempts + outcomes (caps, answer rate)
 - ``POST /opt-outs``, ``POST /consents``         CMP-06 suppression, CMP-03 consent capture
@@ -30,6 +31,7 @@ from mitra_core.errors import AppError, not_found
 from mitra_core.models import Business, ConsentRecord, OptOut, OutboundAttempt, PhoneNumber
 from mitra_core.pii import hash_phone
 from mitra_core.schemas.common import E164Phone
+from mitra_core.schemas.missed_call import MissedCallIn, MissedCallOut
 from mitra_core.schemas.telephony import (
     AttemptIn,
     AttemptOut,
@@ -50,6 +52,7 @@ from mitra_core.telephony import service
 from mitra_core.telephony.compliance import evaluate
 from mitra_core.telephony.dnd import DndProvider, get_dnd_provider
 from mitra_core.telephony.enums import KycStatus
+from mitra_core.telephony.missed import handle_missed_call
 from mitra_core.tenancy import TenantContext, set_tenant
 
 router = APIRouter(
@@ -87,7 +90,7 @@ async def resolve_number(
     if employee is None:
         raise AppError(409, "no_employee", "This business has no employee to answer calls")
     known = False
-    if from_:
+    if from_ and not number.missed_call:  # a missed call records its own consent
         known = await service.note_inbound_relationship(session, business_id, from_)
         await session.commit()
     return ResolveOut(
@@ -96,7 +99,51 @@ async def resolve_number(
         employee_id=employee.id,
         phone_number_id=number.id,
         caller_known=known,
+        missed_call=number.missed_call,
     )
+
+
+@router.post("/missed-calls", response_model=MissedCallOut)
+async def missed_call(
+    body: MissedCallIn,
+    clock: Clock = Depends(get_clock),
+    session: AsyncSession = Depends(get_session),
+) -> MissedCallOut:
+    """The voice service rejected a call to a missed-call number: queue the callback."""
+    business_id = await service.business_for_number(session, body.to)
+    if business_id is None:
+        raise not_found("Phone number")
+    business = await _bind(session, business_id)
+    number = await session.scalar(
+        select(PhoneNumber).where(
+            PhoneNumber.business_id == business_id, PhoneNumber.e164 == body.to
+        )
+    )
+    if number is None:
+        raise not_found("Phone number")
+    if not number.missed_call:
+        raise AppError(409, "not_missed_call_number", "This is not a missed-call number")
+    employee = await service.answering_employee(session, business_id, number)
+    if employee is None:
+        raise AppError(409, "no_employee", "This business has no employee to call back")
+    result = await handle_missed_call(
+        session,
+        business,
+        number,
+        employee,
+        body.from_,
+        now=body.at or clock(),
+        carrier_call_sid=body.carrier_call_sid,
+    )
+    row = result.row
+    out = MissedCallOut(
+        id=row.id,
+        status=row.status,  # type: ignore[arg-type]
+        call_back_at=row.call_back_at,
+        deferred=result.deferred,
+    )
+    await session.commit()
+    return out
 
 
 @router.post("/compliance/check", response_model=ComplianceCheckOut)
@@ -121,6 +168,7 @@ async def compliance_check(
         called_number_id=body.called_number_id,
         dlt_template_id=body.dlt_template_id,
         timezone=body.timezone,
+        collection=body.collection,
     )
     result = evaluate(facts)
     row = service.log_decision(

@@ -24,7 +24,12 @@ from mitra_core.schemas.common import RequestModel
 Weekday = Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 WEEKDAYS: tuple[Weekday, ...] = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 EventName = Literal[
-    "lead.created", "call.missed", "appointment.no_show", "booking.made", "payment.failed"
+    "lead.created",
+    "call.missed",
+    "appointment.no_show",
+    "booking.made",
+    "payment.failed",
+    "payment.overdue",
 ]
 EVENTS: tuple[str, ...] = EventName.__args__  # type: ignore[attr-defined]
 Audience = Literal[
@@ -129,6 +134,7 @@ _EVENT_WORDS = {
     "appointment.no_show": "someone misses their appointment",
     "booking.made": "a booking is made",
     "payment.failed": "a payment fails",
+    "payment.overdue": "a payment link is unpaid after its due date",
 }
 _GOAL_WORDS = {
     "confirm": "confirm",

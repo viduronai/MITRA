@@ -39,8 +39,16 @@ gantt
 | Wave | Scope | Status |
 |---|---|---|
 | A | Calls & customer memory, wallet billing, telephony & compliance gate, site sub-pages | Done (2 Nov 2026) |
-| B | Dialer & campaigns, lead intake & webhooks, WhatsApp manager & approvals, AI team, routines, escalation, listen & whisper | In progress |
-| C | Missed-call number (CALL-20); UPI collections with auto-matching (ACT-05, ACT-11) | Queued |
+| B | Dialer & campaigns, lead intake & webhooks, WhatsApp manager & approvals, AI team, routines, escalation, listen & whisper | Done (3 Nov 2026) |
+| C | Encrypted customer phones + missed-call rescue; missed-call number (CALL-20); UPI collections with auto-matching (ACT-05, ACT-11); lead consent policy; WhatsApp 24-hour window, templates, opt-out and button actions | Done (3 Nov 2026) |
+
+**Go-live checklist (engineering):**
+- Schedule the background jobs: dialer tick, team/routines tick, manager tick (reports, approval timeouts), webhook delivery, IndiaMART pull, payment-link expiry.
+- Set a dedicated `MITRA_PHONE_ENC_KEY` (not derived from the phone-hash key) and move webhook / lead-source / Razorpay secrets to KMS envelope encryption.
+- Production providers: Meta WhatsApp Cloud API (templates in `docs/whatsapp-templates.md` approved), Razorpay collections (`MITRA_COLLECTIONS_PROVIDER=razorpay`), Exotel/Plivo, Meta Lead Ads app review.
+- Confirm the app domain (`app_base_url`) before submitting templates with URL buttons.
+- Legal review of the lead consent policy (docs/08 §8.5) and collection rules (docs/08 §5.1).
+- Open every new screen in a browser on a phone; so far they pass type checks and builds only.
 
 ## 2. Go-to-market
 

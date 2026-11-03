@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { requireSession } from "@/lib/session";
+import { telephonyApi } from "@/lib/telephony/api";
 
 export type ActionResult = { ok: true } | { ok: false };
 
@@ -47,4 +48,23 @@ export async function forgetCustomer(customerId: string): Promise<ActionResult> 
   revalidatePath("/customers");
   revalidatePath("/calls");
   redirect("/customers?forgotten=1");
+}
+
+export type RevealResult = { ok: true; phone: string } | { ok: false; error: "forbidden" | "none" | "generic" };
+
+/** "Show number": owner/manager only; core logs every view (who, when, why). Never cached. */
+export async function revealPhone(customerId: string): Promise<RevealResult> {
+  if (!UUID.test(customerId)) return { ok: false, error: "generic" };
+  const { token } = await requireSession();
+  try {
+    const { phone } = await telephonyApi.revealPhone(token, customerId);
+    return { ok: true, phone };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 401) redirect("/login?expired=1");
+      if (error.status === 403) return { ok: false, error: "forbidden" };
+      if (error.status === 404) return { ok: false, error: "none" };
+    }
+    return { ok: false, error: "generic" };
+  }
 }

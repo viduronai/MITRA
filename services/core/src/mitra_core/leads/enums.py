@@ -25,6 +25,7 @@ class LeadStatus(StrEnum):
     DUPLICATE = "duplicate"  # same phone within the dedupe window: no second call
     NOT_CALLED = "not_called"  # auto-call is off for this source
     BLOCKED = "blocked"  # compliance gate refused (opt-out, no caller id, wallet...)
-    NO_CONSENT = "no_consent"  # the form said consent was NOT given
+    NO_CONSENT = "no_consent"  # the form said consent was NOT given (or no checkbox)
+    NO_ATTESTATION = "no_attestation"  # generic source the owner has not vouched for
     NO_EMPLOYEE = "no_employee"  # nobody to make the call
     FAILED = "failed"  # the dialer refused the job

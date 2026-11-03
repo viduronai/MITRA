@@ -1,10 +1,9 @@
 """Seal a phone number so a queued call can be dialled later without storing it in the clear.
 
-Stdlib only (no crypto dependency yet): encrypt-then-MAC with HMAC-SHA256 as the PRF in counter
-mode for the keystream and a separate HMAC-SHA256 tag over nonce + ciphertext. Keys are derived
-from ``MITRA_DIALER_SEAL_KEY`` (else from the phone-hash key) with distinct labels.
-
-TODO(kms): replace with KMS envelope encryption (08-COMPLIANCE-SECURITY section 6).
+``seal`` / ``unseal`` route through the shared :mod:`mitra_core.phones` (AES-256-GCM under a
+per-business key, format ``v2``). ``unseal_v1`` reads values written before migration
+0006_phones: encrypt-then-MAC with HMAC-SHA256 as the PRF in counter mode and a separate
+HMAC-SHA256 tag, keys derived from ``MITRA_DIALER_SEAL_KEY`` (else the phone-hash key).
 """
 
 from __future__ import annotations
@@ -13,17 +12,25 @@ import base64
 import hashlib
 import hmac
 import os
-import secrets
+import uuid
 
 from mitra_core.config import get_settings
+from mitra_core.phones import PhoneSealError, seal_phone, unseal_phone
 
 _VERSION = "v1"
 _NONCE = 16
 _TAG = 16
 
 
-class SealError(ValueError):
-    """The sealed value is corrupt or was sealed with another key."""
+SealError = PhoneSealError  # the sealed value is corrupt or was sealed with another key
+
+
+def seal(plain: str, business_id: uuid.UUID) -> str:
+    return seal_phone(business_id, plain)
+
+
+def unseal(sealed: str, business_id: uuid.UUID) -> str:
+    return unseal_phone(business_id, sealed)
 
 
 def _master() -> bytes:
@@ -45,15 +52,7 @@ def _stream(nonce: bytes, length: int) -> bytes:
     return out[:length]
 
 
-def seal(plain: str) -> str:
-    data = plain.encode()
-    nonce = secrets.token_bytes(_NONCE)
-    body = bytes(a ^ b for a, b in zip(data, _stream(nonce, len(data)), strict=True))
-    tag = hmac.new(_key("mac"), nonce + body, hashlib.sha256).digest()[:_TAG]
-    return f"{_VERSION}:" + base64.urlsafe_b64encode(nonce + body + tag).decode()
-
-
-def unseal(sealed: str) -> str:
+def unseal_v1(sealed: str) -> str:
     version, _, payload = sealed.partition(":")
     if version != _VERSION:
         raise SealError("unknown seal version")

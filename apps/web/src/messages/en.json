@@ -20,7 +20,8 @@
     "brand": "Mitra home",
     "ask": "Ask Mitra",
     "campaigns": "Campaigns",
-    "live": "Live calls"
+    "live": "Live calls",
+    "payments": "Payments"
   },
   "header": {
     "isWorking": "{name} is working",
@@ -198,7 +199,9 @@
     "whatsapp": "WhatsApp preview",
     "whatsappHint": "See the messages Mitra sends (test mode)",
     "campaigns": "Campaigns",
-    "campaignsHint": "Call a list of people"
+    "campaignsHint": "Call a list of people",
+    "payments": "Payments",
+    "paymentsHint": "Payment links, what came in, how you collect"
   },
   "connect": {
     "network": "Your network",
@@ -726,7 +729,14 @@
     "forgotten": "{customer} has been forgotten.",
     "error": "Couldn't save that. Please try again.",
     "memoryLabel": "Memory value",
-    "forgottenDone": "Customer forgotten. Their calls and memory are deleted."
+    "forgottenDone": "Customer forgotten. Their calls and memory are deleted.",
+    "showNumber": "Show number",
+    "hideNumber": "Hide",
+    "revealErrors": {
+      "forbidden": "Only the owner or a manager can see full numbers.",
+      "none": "No number is on file for this customer.",
+      "generic": "Couldn't show the number. Please try again."
+    }
   },
   "leads": {
     "title": "Connect my leads",
@@ -779,7 +789,7 @@
       "meta": "Find your Facebook Page ID (your Page → About → Page transparency) and paste it here. Leads from your ad forms then come in by themselves.",
       "website_form": "Paste this code into your website where the form should appear. It has a consent box, which the law needs. Switch this source on first.",
       "google_sheets": "Open your Google Sheet → Extensions → Apps Script. Paste this, save, then add a trigger that runs \"sendNewRowsToMitra\" every minute.",
-      "google_forms": "Open your Google Form → ⋮ → Apps Script. Paste this, save, then add an \"On form submit\" trigger. Name one question \"Phone\".",
+      "google_forms": "Open your Google Form. Add a required \"Checkboxes\" question with the consent line below as its only option. Then ⋮ → Apps Script: paste this, save, and add an \"On form submit\" trigger. Name one question \"Phone\".",
       "google_ads": "In Google Ads, open your lead form → Lead delivery → Webhook. Paste this address, and paste your secret key as the \"Key\".",
       "indiamart": "Ask IndiaMART to push leads to this address, or paste your IndiaMART CRM key below and Mitra fetches new enquiries every few minutes.",
       "justdial": "Send this address to your JustDial account manager and ask them to push leads to it.",
@@ -808,7 +818,8 @@
       "blocked": "Not called: {reason}",
       "no_consent": "Not called: no consent",
       "no_employee": "Not called: no AI employee free",
-      "failed": "Could not start the call"
+      "failed": "Could not start the call",
+      "no_attestation": "Not called: no consent confirmed"
     },
     "recentTitle": "Latest enquiries",
     "recentEmpty": "Enquiries appear here as soon as they arrive.",
@@ -820,6 +831,14 @@
       "invalid": "Please check what you entered and try again.",
       "forbidden": "Only the owner or a manager can change this.",
       "conflict": "This is already connected to another Mitra business."
+    },
+    "consent": {
+      "needsAttestation": "Leads from here are saved but not called until you confirm below.",
+      "attestHint": "Tick this only if every person sent from here asked to be contacted. We log who ticked it and when.",
+      "attestedBy": "Confirmed by {name} on {time}. Untick to stop calling new leads from here.",
+      "portalRule": "An enquiry from here lets Mitra call or WhatsApp only about that enquiry, for 30 days. Never for offers.",
+      "portalTip": "Recommended: add this consent line to your form there",
+      "formRule": "The code includes an unticked consent box people must tick. Without the tick we don't call or message."
     }
   },
   "webhooks": {
@@ -832,7 +851,9 @@
     "eventNames": {
       "call.ended": "A call ends",
       "lead.created": "A new lead arrives",
-      "campaign.finished": "A call list finishes"
+      "campaign.finished": "A call list finishes",
+      "payment.paid": "A customer pays a payment link",
+      "payment.failed": "A customer's payment fails"
     },
     "name": "Name (optional)",
     "headers": "Extra headers (optional)",
@@ -929,14 +950,16 @@
         "refund": "A refund is promised",
         "cancellation": "A booking is cancelled",
         "big_booking": "A big booking is made",
-        "list_call": "A list of people will be called"
+        "list_call": "A list of people will be called",
+        "payment_link": "Your AI employee sends a payment link"
       },
       "above": {
         "discount": "above (%)",
         "refund": "above (₹)",
         "cancellation": "always",
         "big_booking": "above (₹)",
-        "list_call": "more than (people)"
+        "list_call": "more than (people)",
+        "payment_link": "above (₹)"
       }
     },
     "kinds": {
@@ -946,7 +969,8 @@
       "big_booking": "Big booking",
       "list_call": "Call a list",
       "manager_command": "Your command",
-      "behaviour_update": "Change how they behave"
+      "behaviour_update": "Change how they behave",
+      "payment_link": "Payment link"
     },
     "status": {
       "pending": "Waiting for you",
@@ -1040,7 +1064,9 @@
       "manager": "Manager",
       "customer": "Customer",
       "staff": "Staff"
-    }
+    },
+    "template": "approved template",
+    "blocked": "Not sent: outside the 24-hour window with no template, or the person opted out."
   },
   "campaigns": {
     "title": "Campaigns",
@@ -1392,7 +1418,8 @@
       "call.missed": "a call is missed",
       "appointment.no_show": "someone misses their appointment",
       "booking.made": "a booking is made",
-      "payment.failed": "a payment fails"
+      "payment.failed": "a payment fails",
+      "payment.overdue": "a payment link is still unpaid after its due date"
     },
     "onOff": "{name} on",
     "runNow": "Run now",
@@ -1409,7 +1436,8 @@
       "hot_lead_follow_up": "Follow up interested leads 3 times a week",
       "emi_reminder": "Remind when an EMI or fee payment fails",
       "booking_thanks": "Send a thank-you on WhatsApp after a booking",
-      "win_back": "Win back customers who've gone quiet"
+      "win_back": "Win back customers who've gone quiet",
+      "payment_reminder": "Politely remind people who haven't paid on time"
     },
     "builderTitle": "Write your own",
     "needEmployee": "Hire an employee first.",
@@ -1509,5 +1537,181 @@
     "takeoverLog": "You asked to take over",
     "delivered": "seen",
     "pendingDelivery": "sending"
+  },
+  "missedCall": {
+    "title": "Missed-call number",
+    "desc": "Customers give a missed call and Mitra calls them back in a minute. Free for them.",
+    "numberLabel": "Use this number for missed calls",
+    "off": "Off",
+    "pendingNumber": "Number being set up ({city})",
+    "needNumber": "Get a local number above first, then use it for missed calls.",
+    "notLive": "This number is still being set up. Missed calls start working once it is live.",
+    "posterTitle": "Put this on your board or WhatsApp status",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyLine": "Copy the {lang} line",
+    "lang": {
+      "en": "English",
+      "hi": "Hindi",
+      "te": "Telugu"
+    },
+    "printCard": "Print counter card with QR code",
+    "statsTitle": "Last {days} days",
+    "stats": {
+      "missed": "Missed calls",
+      "calledBack": "Called back",
+      "answered": "Answered"
+    },
+    "recentTitle": "Recent missed calls",
+    "status": {
+      "queued": "Call back queued",
+      "deduped": "Already calling back",
+      "rate_limited": "Too many calls, skipped",
+      "blocked": "Blocked"
+    },
+    "block": "Block",
+    "blocked": "Caller blocked",
+    "alreadyBlocked": "This caller is already blocked",
+    "blocksTitle": "Blocked callers",
+    "unblock": "Unblock",
+    "unblocked": "Caller unblocked",
+    "saved": "Missed-call number saved",
+    "turnedOff": "Missed-call number turned off",
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "unreachable": "Mitra could not be reached. Check your internet.",
+      "invalid": "That number can't be used for missed calls.",
+      "forbidden": "Only the owner or a manager can change this.",
+      "conflict": "Please refresh and try again."
+    },
+    "cardTitle": "Missed-call card",
+    "back": "Back to Phone & connections",
+    "print": "Print",
+    "cardKicker": "Give a missed call. We'll call you back.",
+    "qrLabel": "QR code that dials {number}",
+    "scanHint": "Scan with your phone camera to dial",
+    "free": "The missed call is free. We call you back within a minute during working hours."
+  },
+  "payments": {
+    "title": "Payments",
+    "subtitle": "Money your customers pay you, straight into your own account.",
+    "settingsLink": "How you collect",
+    "loadError": "Payments could not be loaded. Please try again.",
+    "setupTitle": "Get paid by link",
+    "setupBody": "Connect your own Razorpay account, or add your UPI ID. Your team can then send payment links on WhatsApp, and reminders stop the moment the customer pays.",
+    "setupCta": "Set it up",
+    "collected": "Collected this month",
+    "paidCount": "{count, plural, =0 {nothing yet} one {# payment} other {# payments}}",
+    "waiting": "Waiting to be paid",
+    "openCount": "{count, plural, =0 {no open links} one {# open link} other {# open links}}",
+    "failedTitle": "Failed payments",
+    "failedHint": "The link still works; we've told you on WhatsApp",
+    "manualNote": "You collect with a UPI ID, so we can't see payments arrive. Tap “Mark paid” when the money reaches your account.",
+    "simulatedNote": "Test mode: links open a practice page where you can pay or make the payment fail. No real money moves.",
+    "newTitle": "Send a payment link",
+    "toCustomer": "To {name}, on WhatsApp.",
+    "thisCustomer": "this customer",
+    "phone": "Customer's mobile number",
+    "name": "Name (optional)",
+    "amount": "Amount (₹)",
+    "purpose": "What it's for",
+    "purposePlaceholder": "Consultation fee",
+    "due": "Pay by (optional)",
+    "dueHint": "If it's not paid by then, we send one polite reminder.",
+    "send": "Send on WhatsApp",
+    "created": "Payment link sent.",
+    "listTitle": "Payment links",
+    "filter": "Show",
+    "all": "All",
+    "empty": "No payment links yet.",
+    "discount": "{pct}% off",
+    "forgotten": "Removed customer",
+    "dueOn": "due {date}",
+    "paidOn": "paid {date}",
+    "reviewApproval": "Waiting for your OK: review",
+    "resend": "Send again",
+    "resent": "Sent again.",
+    "markPaid": "Mark paid",
+    "markPaidConfirm": "Mark this as paid? Do this only when the money has reached your account.",
+    "markedPaid": "Marked as paid. We thanked the customer.",
+    "copy": "Copy link",
+    "copied": "Link copied.",
+    "cancel": "Cancel",
+    "cancelConfirm": "Cancel this payment link? Reminders stop too.",
+    "cancelled": "Payment link cancelled.",
+    "back": "Payments",
+    "customerTitle": "Payments",
+    "customerEmpty": "No payment links for this customer.",
+    "sendLink": "Send payment link",
+    "status": {
+      "awaiting_approval": "Waiting for your OK",
+      "sent": "Not paid yet",
+      "paid": "Paid",
+      "failed": "Payment failed",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "source": {
+      "owner": "Sent by you",
+      "employee": "Sent by your AI employee",
+      "manager": "From your WhatsApp command"
+    },
+    "sendError": {
+      "no_phone": "no number on file, copy the link and share it",
+      "whatsapp_failed": "WhatsApp didn't deliver, copy the link and share it"
+    },
+    "timeline": {
+      "awaiting_approval": "Payment link waiting for your OK",
+      "sent": "Payment link sent",
+      "paid": "Payment received",
+      "failed": "Payment failed",
+      "expired": "Payment link expired",
+      "cancelled": "Payment link cancelled"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "unreachable": "Mitra can't be reached right now. Please try again in a minute.",
+      "invalid": "That doesn't look right. Please check the number, amount and details.",
+      "forbidden": "Only the owner or a manager can see payments. Only the owner can change how you collect.",
+      "notConnected": "Set up how you collect first.",
+      "notOpen": "This payment can't be changed any more."
+    },
+    "settings": {
+      "title": "How you collect",
+      "subtitle": "Payments go straight to your own account. Mitra never holds your money.",
+      "howTitle": "Collect with",
+      "modes": {
+        "razorpay": "Razorpay",
+        "upi": "UPI ID",
+        "none": "Off"
+      },
+      "modeHints": {
+        "razorpay": "Payments are confirmed automatically",
+        "upi": "Simple, but you mark payments as paid yourself",
+        "none": "No payment links"
+      },
+      "simulated": "Test mode: any Razorpay test keys work and links open a practice page.",
+      "keyId": "Key ID",
+      "keySecret": "Key secret",
+      "webhookSecret": "Webhook secret",
+      "savedSecret": "Saved. Leave blank to keep it",
+      "webhookUrl": "Your webhook address",
+      "copyUrl": "Copy webhook address",
+      "copied": "Copied.",
+      "webhookHelp": "In the Razorpay Dashboard, open Webhooks, add this address with the same webhook secret, and tick payment_link.paid, payment_link.expired, payment_link.cancelled and payment.failed.",
+      "upiWarning": "With only a UPI ID we can't see when someone pays. Customers get a UPI link; you mark each payment as paid when it reaches your bank.",
+      "vpa": "Your UPI ID",
+      "payee": "Name customers see (optional)",
+      "reminders": "Send a polite reminder when a link is unpaid after its due date",
+      "remindersHint": "One WhatsApp the next morning. If the “Payment reminder” routine is on, one call a day later, within calling hours. It stops the moment they pay.",
+      "save": "Save",
+      "saved": "Saved.",
+      "expiry": "Links work for (days)",
+      "expiryHint": "15 by default. One reminder goes out 2 days before a link stops working.",
+      "lender": "We lend money (loans, EMIs, gold loans)",
+      "lenderHint": "Payment reminder calls then happen only between 8 am and 7 pm, as RBI expects from lenders."
+    },
+    "customerSaysPaid": "Customer says paid: check and mark paid",
+    "expiresOn": "link works till {date}"
   }
 }

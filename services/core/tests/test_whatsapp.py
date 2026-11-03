@@ -18,7 +18,7 @@ from mitra_core.db import tenant_session
 from mitra_core.main import app
 from mitra_core.models.enums import MemberRole
 from mitra_core.tenancy import TenantContext
-from mitra_core.whatsapp import CloudApiProvider, notify_owner, notify_staff, send_template
+from mitra_core.whatsapp import CloudApiProvider, notify_owner, send_staff_task, send_template
 from mitra_core.whatsapp.inbound import parse_cloud_webhook, verify_signature
 from tests.helpers import Actor, add_member
 from tests.manager_helpers import make_business, wa_messages
@@ -103,10 +103,22 @@ async def test_template_and_staff_messages_store_no_raw_phone(
             template="call_heads_up",
             params={"name": "Ravi", "minutes": "2"},
         )
-        await notify_staff(session, bid, user_id=staff.user_id, text="Hot lead: call Lakshmi")
+        await send_staff_task(
+            session,
+            bid,
+            user_id=staff.user_id,
+            text="Hot lead: call Lakshmi",
+            action="call_back",
+            customer="Lakshmi",
+            brief="Hot lead",
+        )
         await session.commit()
     msgs = await wa_messages(admin_engine, biz["id"])
-    assert [m["kind"] for m in msgs] == ["template", "text"]
+    # Neither has written to us: both go as approved templates (call_heads_up, staff_handoff).
+    assert [m["kind"] for m in msgs] == ["template", "template"]
+    assert msgs[1]["body"] == (
+        "Task from Sunrise Clinic: please call back Lakshmi. Hot lead Tap Done when finished."
+    )
     assert all("+91" not in m["body"] for m in msgs)
     sim = await client.get("/v1/manager/whatsapp-sim/messages", headers=biz["headers"])
     assert sim.status_code == 200

@@ -19,8 +19,10 @@ from mitra_core.api import (
     internal_calls,
     internal_dialer,
     internal_leads,
+    internal_payments,
     internal_team,
     internal_telephony,
+    internal_whatsapp,
     lead_intake,
     meta_leads,
     whatsapp_webhook,
@@ -121,8 +123,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(lead_intake.router)
     app.include_router(meta_leads.router)
     app.include_router(internal_leads.router)
+    app.include_router(internal_payments.router)
     app.include_router(whatsapp_webhook.router)
     app.include_router(whatsapp_webhook.internal_router)
+    app.include_router(internal_whatsapp.router)
     return app
 
 

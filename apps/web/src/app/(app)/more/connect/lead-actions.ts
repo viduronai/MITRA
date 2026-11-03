@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { ApiError } from "@/lib/api";
 import { leadsApi, webhooksApi } from "@/lib/leads/api";
 import {
@@ -64,8 +65,13 @@ export async function rotateLeadSecret(): Promise<LeadResult<LeadSetup>> {
 export async function updateLeadSource(kind: LeadSourceKind, patch: LeadSourcePatch): Promise<LeadResult<LeadSource>> {
   if (!isKind(kind)) return { ok: false, error: "invalid" };
   const body: LeadSourcePatch = {};
-  for (const key of ["enabled", "auto_call", "heads_up"] as const) {
+  for (const key of ["enabled", "auto_call", "heads_up", "consent_attested"] as const) {
     if (typeof patch[key] === "boolean") body[key] = patch[key];
+  }
+  if (body.consent_attested !== undefined) {
+    // The owner's own words are logged in the language they read them in.
+    const locale = await getLocale();
+    body.attestation_lang = locale === "hi" || locale === "te" ? locale : "en";
   }
   if (patch.call_delay_seconds !== undefined) {
     if (!DELAYS.includes(patch.call_delay_seconds)) return { ok: false, error: "invalid" };

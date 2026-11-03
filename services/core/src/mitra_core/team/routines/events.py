@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,8 +28,13 @@ async def fire_event(
     contact_id: uuid.UUID,
     now: datetime | None = None,
     source_call_id: uuid.UUID | None = None,
+    context: dict[str, Any] | None = None,
 ) -> list[RoutineRun]:
-    """``source_call_id``: the call that caused the event; re-processing it fires nothing new."""
+    """``source_call_id``: the call that caused the event; re-processing it fires nothing new.
+
+    ``context``: extra facts for the follow-up (e.g. a payment's amount), merged into each task's
+    context packet and passed to the call's script variables.
+    """
     if name not in EVENTS:
         raise ValueError(f"unknown routine event {name!r}")
     if source_call_id is not None:
@@ -53,6 +59,7 @@ async def fire_event(
             now=now or utcnow(),
             event_contact=contact_id,
             source_call_id=source_call_id,
+            context=context,
         )
         for r in routines
     ]

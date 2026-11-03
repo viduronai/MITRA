@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { telephonyApi } from "@/lib/telephony/api";
-import type { ForwardingTest, KycDocument, PhoneNumber } from "@/lib/telephony/types";
+import type { CallerBlock, ForwardingTest, KycDocument, MissedCallSetup, PhoneNumber } from "@/lib/telephony/types";
 import { requireSession } from "@/lib/session";
 
 /** Inputs are validated here (system boundary); core re-validates everything. */
@@ -69,4 +69,24 @@ export async function testForwarding(id: string): Promise<ConnectResult<Forwardi
 export async function resumeNumber(id: string): Promise<ConnectResult<PhoneNumber>> {
   if (!validId(id)) return { ok: false, error: "invalid" };
   return run((token) => telephonyApi.resume(token, id));
+}
+
+// ---- Missed-call number (CALL-20) ----------------------------------------------------------------
+
+export async function setMissedCallNumber(id: string | null): Promise<ConnectResult<MissedCallSetup>> {
+  if (id !== null && !validId(id)) return { ok: false, error: "invalid" };
+  return run((token) => telephonyApi.setMissedCallNumber(token, id));
+}
+
+export async function blockMissedCaller(missedCallId: string): Promise<ConnectResult<CallerBlock>> {
+  if (!validId(missedCallId)) return { ok: false, error: "invalid" };
+  return run((token) => telephonyApi.blockCaller(token, missedCallId));
+}
+
+export async function unblockCaller(blockId: string): Promise<ConnectResult> {
+  if (!validId(blockId)) return { ok: false, error: "invalid" };
+  return run(async (token) => {
+    await telephonyApi.unblockCaller(token, blockId);
+    return null;
+  });
 }

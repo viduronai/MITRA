@@ -28,6 +28,8 @@ export type PhoneNumber = {
   spam_flag: boolean;
   forwarding_tested_at: string | null;
   created_at: string;
+  /** CALL-20: calls are rejected unanswered and Mitra calls back. */
+  missed_call?: boolean;
 };
 
 export type PhoneNumberList = {
@@ -53,4 +55,30 @@ export type ForwardingTest = {
   simulated: boolean;
   tested_at: string | null;
   message: string;
+};
+
+export type MissedCallStatus = "queued" | "deduped" | "rate_limited" | "blocked";
+
+export type MissedCallRow = {
+  id: string;
+  phone_masked: string | null;
+  status: MissedCallStatus;
+  received_at: string;
+  call_back_at: string | null;
+  /** The callback's dialer status or last outcome (answered, no_answer, queued, ...). */
+  outcome: string | null;
+};
+
+export type CallerBlock = { id: string; phone_masked: string | null; reason: string | null; created_at: string };
+
+export type MissedCallSetup = {
+  phone_number_id: string | null;
+  e164: string | null;
+  display: string | null;
+  live: boolean;
+  tel_uri: string | null;
+  poster: { en: string; hi: string; te: string } | null;
+  stats: { days: number; missed: number; called_back: number; answered: number };
+  recent: MissedCallRow[];
+  blocks: CallerBlock[];
 };

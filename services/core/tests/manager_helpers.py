@@ -15,9 +15,11 @@ from mitra_core.pii import hash_phone
 from tests.helpers import Actor, create_business, create_employee, new_actor
 
 
-async def make_business(client: httpx.AsyncClient, name: str = "Sunrise Clinic") -> dict[str, Any]:
+async def make_business(
+    client: httpx.AsyncClient, name: str = "Sunrise Clinic", **fields: Any
+) -> dict[str, Any]:
     owner = new_actor("Asha")
-    business = await create_business(client, owner, name=name)
+    business = await create_business(client, owner, name=name, **fields)
     emp = await create_employee(client, owner, business["id"])
     return {
         "owner": owner,

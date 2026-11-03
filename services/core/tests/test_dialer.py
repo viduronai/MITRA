@@ -33,13 +33,14 @@ PHONE = "+919876500001"
 
 
 def test_seal_roundtrip_and_tamper() -> None:
-    sealed = seal(PHONE)
+    business_id = uuid.uuid4()
+    sealed = seal(PHONE, business_id)
     assert PHONE not in sealed
-    assert unseal(sealed) == PHONE
-    assert seal(PHONE) != sealed  # random nonce
+    assert unseal(sealed, business_id) == PHONE
+    assert seal(PHONE, business_id) != sealed  # random nonce
     broken = sealed[:-3] + ("A" if sealed[-3] != "A" else "B") + sealed[-2:]
     with pytest.raises(SealError):
-        unseal(broken)
+        unseal(broken, business_id)
 
 
 async def _jobs(business_id: str) -> list[OutboundJob]:
