@@ -1,0 +1,19 @@
+# Keep Docker build contexts small and free of secrets (deploy/docker/*.Dockerfile).
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+deploy/*.env
+.git
+docs
+evals
+services/*/tests
+services/voice/recordings

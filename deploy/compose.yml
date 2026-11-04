@@ -1,0 +1,113 @@
+# One Mitra environment (staging, demo or prod) on one server. Each environment is a separate
+# server with its own database, keys and env files; nothing is shared between them.
+#
+#   cd /opt/mitra && docker compose --env-file .env up -d     (deploy/README.md has the steps)
+#
+# Images are built by GitHub Actions (.github/workflows/deploy-staging.yml) and pulled here.
+# Values come from: .env (compose interpolation: image tag, domain, Postgres password) and
+# env/core.env, env/voice.env (app settings and secrets). None of these files are committed.
+name: mitra
+
+x-core: &core
+  image: ${MITRA_IMAGE_PREFIX:?}/mitra-core:${MITRA_TAG:?}
+  env_file: env/core.env
+  restart: unless-stopped
+  logging: &logs
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      MITRA_DOMAIN: ${MITRA_DOMAIN:?}
+      MITRA_NOINDEX: ${MITRA_NOINDEX:-true}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    extra_hosts: ["host.docker.internal:host-gateway"] # the voice service runs on the host
+    logging: *logs
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mitra
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: mitra
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mitra -d mitra"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *logs
+
+  # Runs the migrations, then exits; the API starts only after it succeeded.
+  migrate:
+    <<: *core
+    restart: "no"
+    command: ["alembic", "upgrade", "heads"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  core:
+    <<: *core
+    ports: ["127.0.0.1:8000:8000"] # host-only: the voice service (host network) reaches it here
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  scheduler:
+    <<: *core
+    command: ["python", "-m", "mitra_core.scheduler"]
+    environment:
+      MITRA_SCHEDULER_API_URL: http://core:8000
+    depends_on:
+      core: { condition: service_healthy }
+
+  web:
+    image: ${MITRA_IMAGE_PREFIX:?}/mitra-web:${MITRA_TAG:?}
+    restart: unless-stopped
+    environment:
+      MITRA_API_URL: http://core:8000
+      # Staging only: show the login code (the API must also run with MITRA_OTP_SHOW_CODE).
+      MITRA_SHOW_DEV_OTP: ${MITRA_SHOW_DEV_OTP:-0}
+    depends_on:
+      core: { condition: service_healthy }
+    logging: *logs
+
+  marketing:
+    image: ${MITRA_IMAGE_PREFIX:?}/mitra-marketing:${MITRA_TAG:?}
+    restart: unless-stopped
+    logging: *logs
+
+  # Host network: the browser test page uses WebRTC, whose media needs UDP ports on the server's
+  # own address (open UDP 10000-65535 in the server firewall; TCP 8200 stays closed, Caddy
+  # proxies it).
+  voice:
+    image: ${MITRA_IMAGE_PREFIX:?}/mitra-voice:${MITRA_TAG:?}
+    restart: unless-stopped
+    network_mode: host
+    env_file: env/voice.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8200"
+      MITRA_CORE_URL: http://127.0.0.1:8000
+    depends_on:
+      core: { condition: service_healthy }
+    logging: *logs
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,47 @@
+# HTTPS for one environment. MITRA_DOMAIN is e.g. staging.viduronai.in, so the hosts are:
+#   staging.viduronai.in        owner app
+#   api.staging.viduronai.in    core API (webhooks from Razorpay / Meta / carriers land here)
+#   site.staging.viduronai.in   marketing site (its demo-call form posts to /v1/demo-calls here)
+#   voice.staging.viduronai.in  voice service (browser test page + carrier media streams)
+# Caddy gets and renews the Let's Encrypt certificates on its own once DNS points here.
+
+(common) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	# Staging and demo stay out of search results (MITRA_NOINDEX=false only for production).
+	@noindex expression `"{$MITRA_NOINDEX}" == "true"`
+	header @noindex X-Robots-Tag "noindex, nofollow"
+}
+
+{$MITRA_DOMAIN} {
+	import common
+	reverse_proxy web:3000
+}
+
+api.{$MITRA_DOMAIN} {
+	import common
+	# Service-to-service routes are reached inside the server only (scheduler, voice).
+	respond /internal/* 404
+	reverse_proxy core:8000
+}
+
+site.{$MITRA_DOMAIN} {
+	import common
+	# Same origin as the page, so the browser needs no CORS for the demo-call form.
+	handle /v1/demo-calls* {
+		reverse_proxy core:8000
+	}
+	handle {
+		reverse_proxy marketing:3000
+	}
+}
+
+voice.{$MITRA_DOMAIN} {
+	import common
+	reverse_proxy host.docker.internal:8200
+}

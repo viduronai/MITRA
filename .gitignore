@@ -40,3 +40,7 @@ infra/data/
 
 # Local UI walkthrough screenshots
 docs/screens/
+
+# Deploy secrets (written on the server only)
+deploy/.env
+deploy/env/*.env

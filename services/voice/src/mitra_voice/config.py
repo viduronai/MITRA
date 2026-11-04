@@ -107,6 +107,9 @@ class Settings(BaseSettings):
     mitra_telephony_carrier: Literal["sim", "exotel", "plivo"] = "sim"
     # Public https base of this service, used to build wss:// stream URLs for the carrier.
     mitra_public_base_url: str | None = None
+    # ICE servers for the browser test page (WebRTC), e.g. ["stun:stun.l.google.com:19302"].
+    # Empty is fine on localhost; a cloud server behind NAT needs STUN to learn its public IP.
+    mitra_webrtc_ice_servers: list[str] = []
     # Exotel: Dashboard > API settings (SID, key, token, subdomain) and App Bazaar (flow id).
     exotel_account_sid: str | None = None
     exotel_api_key: str | None = None

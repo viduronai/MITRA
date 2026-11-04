@@ -81,7 +81,7 @@ def auth_session(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=OtpRequestOut,
     response_model_exclude_none=True,
-    summary="Send a 6-digit login code to a phone (dev: returned as dev_code in env=local)",
+    summary="Send a 6-digit login code to a phone (dev_code: env=local or a test staging)",
 )
 async def request_otp(
     body: OtpRequestIn,
@@ -119,7 +119,7 @@ async def request_otp(
         request_id=request_id,
         expires_in=settings.otp_ttl_seconds,
         resend_in=settings.otp_resend_seconds,
-        dev_code=code if settings.env == "local" else None,
+        dev_code=code if settings.env == "local" or settings.otp_show_code else None,
     )
 
 

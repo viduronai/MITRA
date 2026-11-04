@@ -6,6 +6,7 @@ import uuid
 
 import httpx
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -44,6 +45,15 @@ async def test_dev_code_only_in_local_env(client: httpx.AsyncClient) -> None:
     assert code.isdigit()
     verified = await _verify(client, resp.json()["request_id"], code)
     assert verified.status_code == 200, verified.text
+
+
+async def test_show_code_is_staging_only(client: httpx.AsyncClient) -> None:
+    app.dependency_overrides[get_settings] = lambda: Settings(env="dev")
+    assert "dev_code" not in (await _request(client)).json()
+    app.dependency_overrides[get_settings] = lambda: Settings(env="dev", otp_show_code=True)
+    assert len((await _request(client, phone="+919876500777")).json()["dev_code"]) == 6
+    with pytest.raises(ValidationError, match="never prod"):
+        Settings(env="prod", otp_show_code=True)
 
 
 async def test_new_user_login_is_unscoped(client: httpx.AsyncClient, fixed_code: str) -> None:

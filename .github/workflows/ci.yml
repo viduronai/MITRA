@@ -1,0 +1,76 @@
+# Every push and pull request: lint, type-check and test all four apps.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call: # deploy-staging.yml runs this first
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: mitra
+          POSTGRES_PASSWORD: mitra_dev_password # throwaway CI database, same as local dev
+          POSTGRES_DB: mitra_test
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mitra -d mitra_test" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+    defaults:
+      run:
+        working-directory: services/core
+    env:
+      MITRA_TEST_DB_HOST: localhost:5433
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy src
+      - run: uv run pytest -q
+
+  voice:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/voice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.28"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check src tests
+      - run: uv run mypy src
+      - run: uv run pytest -q
+
+  web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p apps/web
+      - run: npm run lint --workspace apps/web
+      - run: npx tsc --noEmit -p apps/marketing
+      - run: npm run lint --workspace apps/marketing

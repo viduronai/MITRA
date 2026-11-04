@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     otp_max_attempts: int = 5
     otp_max_requests: int = 3
     otp_window_seconds: int = 600
+    # Show the login code in the API response outside env=local. Staging only (test data):
+    # anyone could log in as any number. Refused in prod. TODO(otp): WhatsApp/SMS delivery.
+    otp_show_code: bool = False
 
     # Public "Call me now" demo calls from the marketing site (per phone, then per client IP).
     demo_call_max_per_phone: int = 2
@@ -186,6 +189,8 @@ class Settings(BaseSettings):
             raise ValueError("database_url must contain a lowercase Postgres role name")
         if not self.app_db_password:
             raise ValueError("database_url must contain a password for the app role")
+        if self.otp_show_code and self.env == "prod":
+            raise ValueError("MITRA_OTP_SHOW_CODE is for local/staging test data, never prod")
         if self.env in {"staging", "prod"}:
             if self.jwt_secret.get_secret_value() == _DEV_JWT_SECRET:
                 raise ValueError("MITRA_JWT_SECRET must be set outside local/test environments")
@@ -202,10 +207,11 @@ class Settings(BaseSettings):
             only_env = env_key and not (self.phone_enc_key_kms or self.phone_enc_key_file)
             if only_env and len(env_key.strip()) < 32:
                 raise ValueError("MITRA_PHONE_ENC_KEY must be at least 32 characters")
-            if self.payment_provider == "mock":
-                raise ValueError("MITRA_PAYMENT_PROVIDER=mock is not allowed in staging/prod")
-            if self.collections_provider == "sim":
-                raise ValueError("MITRA_COLLECTIONS_PROVIDER=sim is not allowed in staging/prod")
+            # Staging holds test data only, so it may keep the payment simulators.
+            if self.env == "prod" and self.payment_provider == "mock":
+                raise ValueError("MITRA_PAYMENT_PROVIDER=mock is not allowed in prod")
+            if self.env == "prod" and self.collections_provider == "sim":
+                raise ValueError("MITRA_COLLECTIONS_PROVIDER=sim is not allowed in prod")
             if self.effective_service_token == _DEV_SERVICE_TOKEN:
                 raise ValueError("MITRA_SERVICE_TOKEN must not be the dev placeholder")
         token = self.effective_service_token

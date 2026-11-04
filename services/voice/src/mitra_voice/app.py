@@ -29,7 +29,7 @@ import structlog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pipecat.transports.base_transport import TransportParams
-from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
+from pipecat.transports.smallwebrtc.connection import IceServer, SmallWebRTCConnection
 from pipecat.transports.smallwebrtc.request_handler import (
     IceCandidate,
     SmallWebRTCPatchRequest,
@@ -184,8 +184,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             print(f"[mitra-voice] team voice refused: {reason}", file=sys.stderr)
         log.info("voices.loaded", team=len(registry.team), refused=len(registry.refused))
         await asyncio.to_thread(warm_up, providers, settings)
-        # No STUN/TURN: fine for localhost; TODO(deploy) TURN for browsers off-LAN.
-        app.state.webrtc = SmallWebRTCRequestHandler(ice_servers=[])
+        # STUN lets a server behind NAT offer its public address (none needed on localhost).
+        # TODO(deploy): TURN for callers behind strict firewalls.
+        app.state.webrtc = SmallWebRTCRequestHandler(
+            ice_servers=[IceServer(urls=url) for url in settings.mitra_webrtc_ice_servers]
+        )
         app.state.sessions = SessionRegistry()
         app.state.text_sessions = TextSessionStore(settings=settings)
         app.state.tasks = set()
