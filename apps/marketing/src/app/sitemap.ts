@@ -3,6 +3,8 @@ import { localePath, locales } from "@/content";
 import { languageAlternates } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 
+export const dynamic = "force-static";
+
 // Privacy and Terms are drafts (noindex) until legal review, so not listed.
 const englishOnly = [
   "/how-it-works",

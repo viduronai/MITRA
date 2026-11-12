@@ -1,0 +1,7 @@
+[build]
+command = "npm run build --workspace @mitra/marketing"
+publish = "apps/marketing/out"
+
+[build.environment]
+NEXT_OUTPUT = "export"
+NODE_VERSION = "22"
